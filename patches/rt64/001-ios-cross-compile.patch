@@ -1,0 +1,173 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 79dfc38..c7fdec9 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -5,13 +5,18 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+ 
+ if (APPLE)
+     enable_language(OBJC OBJCXX)
+-    set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15")
++    if (NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
++        set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15")
++    endif()
+ endif()
+ 
+ option(RT64_STATIC "Build RT64 as a static library" OFF)
+-
+-
+ option(RT64_SDL_WINDOW_VULKAN "Build RT64 to expect an SDL Window outside of Windows" OFF)
++option(RT64_BUILD_TOOLS "Build RT64 host-side tools" ON)
++
++set(DXC_PATH "" CACHE FILEPATH "Host DXC executable used for shader compilation")
++set(SPIRV_CROSS_MSL_PATH "" CACHE FILEPATH "Host spirv_cross_msl executable")
++set(FILE_TO_C_PATH "" CACHE FILEPATH "Host file_to_c executable")
+ 
+ if (NOT ${RT64_STATIC})
+     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+@@ -35,7 +40,17 @@ function(preprocess INFILE OUTFILE OPTIONS)
+     endif()
+ endfunction()
+ 
+-if (WIN32)
++if (DXC_PATH)
++    if(APPLE)
++        get_filename_component(DXC_ARCH_BIN_DIR "${DXC_PATH}" DIRECTORY)
++        get_filename_component(DXC_BIN_DIR "${DXC_ARCH_BIN_DIR}" DIRECTORY)
++        get_filename_component(DXC_ROOT_DIR "${DXC_BIN_DIR}" DIRECTORY)
++        get_filename_component(DXC_ARCH "${DXC_ARCH_BIN_DIR}" NAME)
++        set(DXC "DYLD_LIBRARY_PATH=${DXC_ROOT_DIR}/lib/${DXC_ARCH}" "${DXC_PATH}")
++    else()
++        set(DXC "${DXC_PATH}")
++    endif()
++elseif (WIN32)
+     set (DXC "${PROJECT_SOURCE_DIR}/src/contrib/dxc/bin/x64/dxc.exe")
+     add_compile_definitions(
+         NOMINMAX
+@@ -69,9 +84,21 @@ set(ZSTD_LEGACY_SUPPORT OFF)
+ set(ZSTD_BUILD_STATIC ON)
+ set(ZSTD_BUILD_SHARED OFF)
+ 
+-add_subdirectory(src/tools/file_to_c)
++if(FILE_TO_C_PATH)
++    add_executable(file_to_c IMPORTED GLOBAL)
++    set_target_properties(file_to_c PROPERTIES IMPORTED_LOCATION "${FILE_TO_C_PATH}")
++else()
++    add_subdirectory(src/tools/file_to_c)
++endif()
+ add_subdirectory(src/contrib/re-spirv)
+-add_subdirectory(src/contrib/nativefiledialog-extended)
++if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
++    add_library(nfd INTERFACE)
++    target_include_directories(nfd INTERFACE
++        "${PROJECT_SOURCE_DIR}/src/contrib/nativefiledialog-extended/src/include"
++    )
++else()
++    add_subdirectory(src/contrib/nativefiledialog-extended)
++endif()
+ add_subdirectory(src/contrib/zstd/build/cmake)
+ 
+ if (CMAKE_SYSTEM_NAME MATCHES "Linux" AND RT64_SDL_WINDOW_VULKAN)
+@@ -135,6 +162,29 @@ function(build_shader_dxil_impl TARGETOBJ FILENAME TARGET_NAME OUTNAME)
+     target_sources(${TARGETOBJ} PRIVATE ${OUTNAME}.dxil.c)
+ endfunction()
+ 
++if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
++    if(CMAKE_OSX_SYSROOT MATCHES "iphonesimulator")
++        set(RT64_APPLE_METAL_SDK "iphonesimulator")
++        set(RT64_APPLE_METAL_MIN_FLAG "-mios-simulator-version-min=${CMAKE_OSX_DEPLOYMENT_TARGET}")
++    else()
++        set(RT64_APPLE_METAL_SDK "iphoneos")
++        set(RT64_APPLE_METAL_MIN_FLAG "-mios-version-min=${CMAKE_OSX_DEPLOYMENT_TARGET}")
++    endif()
++else()
++    set(RT64_APPLE_METAL_SDK "macosx")
++    set(RT64_APPLE_METAL_MIN_FLAG "")
++endif()
++
++set(RT64_METAL_COMPILER_COMMAND
++    "xcrun;-sdk;${RT64_APPLE_METAL_SDK};metal"
++    CACHE STRING "Command used to compile Metal shader sources")
++set(RT64_METALLIB_COMMAND
++    "xcrun;-sdk;${RT64_APPLE_METAL_SDK};metallib"
++    CACHE STRING "Command used to link Metal shader libraries")
++set(RT64_METAL_COMPILER_FLAGS
++    "${RT64_APPLE_METAL_MIN_FLAG}"
++    CACHE STRING "Additional flags passed to the Metal shader compiler")
++
+ function(build_shader_msl_impl TARGETOBJ FILENAME TARGET_NAME OUTNAME)
+     add_custom_command(OUTPUT ${OUTNAME}.spv
+             COMMAND ${DXC} ${DXC_SPV_OPTS} ${ARGN} ${FILENAME} /Fo ${OUTNAME}.spv
+@@ -143,10 +193,10 @@ function(build_shader_msl_impl TARGETOBJ FILENAME TARGET_NAME OUTNAME)
+             COMMAND spirv_cross_msl ${OUTNAME}.spv ${OUTNAME}.metal
+             DEPENDS ${OUTNAME}.spv spirv_cross_msl)
+     add_custom_command(OUTPUT ${OUTNAME}.ir
+-            COMMAND xcrun -sdk macosx metal -o ${OUTNAME}.ir -c ${OUTNAME}.metal $<$<CONFIG:Debug>:-frecord-sources>
++            COMMAND ${RT64_METAL_COMPILER_COMMAND} ${RT64_METAL_COMPILER_FLAGS} -o ${OUTNAME}.ir -c ${OUTNAME}.metal $<$<CONFIG:Debug>:-frecord-sources>
+             DEPENDS ${OUTNAME}.metal)
+     add_custom_command(OUTPUT ${OUTNAME}.metallib
+-            COMMAND xcrun -sdk macosx metallib ${OUTNAME}.ir -o ${OUTNAME}.metallib
++            COMMAND ${RT64_METALLIB_COMMAND} ${OUTNAME}.ir -o ${OUTNAME}.metallib
+             DEPENDS ${OUTNAME}.ir)
+     add_custom_command(OUTPUT ${OUTNAME}.metal.c
+             COMMAND file_to_c ${OUTNAME}.metallib ${TARGET_NAME}BlobMSL ${OUTNAME}.metal.c ${OUTNAME}.metal.h
+@@ -289,6 +339,10 @@ if (WIN32)
+     set(SDL2_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/src/contrib/mupen64plus-win32-deps/SDL2-2.26.3/include")
+     set(SDL2_LIBRARIES "SDL2" "SDL2main")
+     link_directories("${PROJECT_SOURCE_DIR}/src/contrib/mupen64plus-win32-deps/SDL2-2.26.3/lib/x64")
++elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS")
++    if(NOT SDL2_INCLUDE_DIRS)
++        message(FATAL_ERROR "SDL2_INCLUDE_DIRS must point to SDL2 headers when cross-compiling RT64 for iOS")
++    endif()
+ else()
+     find_package(SDL2 REQUIRED)
+ endif()
+@@ -446,18 +500,29 @@ target_link_libraries(rt64 libzstd_static)
+ target_link_libraries(rt64 plume)
+ 
+ # Add tools.
+-add_subdirectory(src/tools/texture_hasher)
+-add_subdirectory(src/tools/texture_packer)
++if(RT64_BUILD_TOOLS)
++    add_subdirectory(src/tools/texture_hasher)
++    add_subdirectory(src/tools/texture_packer)
++endif()
+ 
+ # Add any Apple-specific source files and libraries
+ if (APPLE)
+-    add_subdirectory(src/tools/spirv_cross_msl)
++    if(SPIRV_CROSS_MSL_PATH)
++        add_executable(spirv_cross_msl IMPORTED GLOBAL)
++        set_target_properties(spirv_cross_msl PROPERTIES IMPORTED_LOCATION "${SPIRV_CROSS_MSL_PATH}")
++    else()
++        add_subdirectory(src/tools/spirv_cross_msl)
++    endif()
+ 
+     target_sources(rt64 PRIVATE
+         "${PROJECT_SOURCE_DIR}/src/apple/rt64_apple.mm"
+     )
+     target_include_directories(rt64 PRIVATE "${PROJECT_SOURCE_DIR}/src/contrib/metal-cpp")
+-    target_link_libraries(rt64 "-framework Metal -framework QuartzCore -framework CoreGraphics -framework IOKit")
++    if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
++        target_link_libraries(rt64 "-framework Metal -framework QuartzCore -framework CoreGraphics -framework Foundation -framework UIKit")
++    else()
++        target_link_libraries(rt64 "-framework Metal -framework QuartzCore -framework CoreGraphics -framework IOKit")
++    endif()
+ endif()
+ 
+ # Add any Windows-specific source files and libraries
+@@ -556,4 +621,3 @@ build_pixel_shader(  rt64 "src/shaders/Im3DPS.hlsl")
+ build_pixel_shader(  rt64 "src/shaders/PostProcessPS.hlsl")
+ 
+ target_include_directories(rt64 PRIVATE ${CMAKE_BINARY_DIR}/src)
+-
+diff --git a/src/apple/rt64_apple.mm b/src/apple/rt64_apple.mm
+index 2de90b9..4926c4d 100644
+--- a/src/apple/rt64_apple.mm
++++ b/src/apple/rt64_apple.mm
+@@ -1,6 +1,5 @@
+ #include "rt64_apple.h"
+ 
+-#import <AppKit/AppKit.h>
+ #import <Foundation/Foundation.h>
+ 
+ const char* GetHomeDirectory() {

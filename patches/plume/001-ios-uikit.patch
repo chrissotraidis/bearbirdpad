@@ -1,0 +1,278 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 0789c20..a1ac7db 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
+ set(CMAKE_CXX_STANDARD 17)
+ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+ 
+-if(APPLE AND NOT CMAKE_OSX_DEPLOYMENT_TARGET)
++if(APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS" AND NOT CMAKE_OSX_DEPLOYMENT_TARGET)
+     # 10.15 because of our use of supportsFamily()
+     set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15" CACHE STRING "Minimum macOS deployment target")
+ endif()
+@@ -58,10 +58,16 @@ set(PLUME_SOURCES
+ 
+ # Platform-specific files
+ if(APPLE)
++    if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
++        set(PLUME_APPLE_WINDOW_SOURCE plume_uikit.mm)
++    else()
++        set(PLUME_APPLE_WINDOW_SOURCE plume_apple.mm)
++    endif()
++
+     list(APPEND PLUME_SOURCES
+         plume_metal.cpp
+         plume_metal.h
+-        plume_apple.mm
++        ${PLUME_APPLE_WINDOW_SOURCE}
+         plume_apple.h
+     )
+ elseif(WIN32)
+diff --git a/plume_apple.h b/plume_apple.h
+index 731d3c4..4a3bfe0 100644
+--- a/plume_apple.h
++++ b/plume_apple.h
+@@ -21,6 +21,7 @@ namespace plume {
+ 
+     class CocoaWindow {
+         void* windowHandle;
++        void* viewHandle;
+         CocoaWindowAttributes cachedAttributes;
+         std::atomic<int> cachedRefreshRate;
+         mutable std::mutex attributesMutex;
+@@ -28,7 +29,7 @@ namespace plume {
+         void updateWindowAttributesInternal(bool forceSync = false);
+         void updateRefreshRateInternal(bool forceSync = false);
+     public:
+-        CocoaWindow(void* window);
++        CocoaWindow(void* window, void* view = nullptr);
+         ~CocoaWindow();
+ 
+         // Get cached window attributes, may trigger async update
+diff --git a/plume_apple.mm b/plume_apple.mm
+index 1384fe9..33ebb20 100644
+--- a/plume_apple.mm
++++ b/plume_apple.mm
+@@ -56,8 +56,8 @@ namespace plume {
+ 
+     // MARK: - CocoaWindow
+ 
+-    CocoaWindow::CocoaWindow(void* window)
+-        : windowHandle(window), cachedRefreshRate(0) {
++    CocoaWindow::CocoaWindow(void* window, void* view)
++        : windowHandle(window), viewHandle(view), cachedRefreshRate(0) {
+         cachedAttributes = {0, 0, 0, 0};
+ 
+         if ([NSThread isMainThread]) {
+diff --git a/plume_metal.cpp b/plume_metal.cpp
+index 373c87e..ed86c0d 100644
+--- a/plume_metal.cpp
++++ b/plume_metal.cpp
+@@ -1916,7 +1916,7 @@ namespace plume {
+         // Metal supports a maximum of 3 drawables.
+         this->drawables.resize(MAX_DRAWABLES);
+ 
+-        this->windowWrapper = std::make_unique<CocoaWindow>(desc.renderWindow.window);
++        this->windowWrapper = std::make_unique<CocoaWindow>(desc.renderWindow.window, desc.renderWindow.view);
+         getWindowSize(width, height);
+ 
+         // Set the layer's drawable size to match the window size
+@@ -2022,12 +2022,20 @@ namespace plume {
+ 
+     void MetalSwapChain::setVsyncEnabled(const bool vsyncEnabled) {
+         MetalAutoreleasePool releasePool;
++#if PLUME_IOS
++        (void)vsyncEnabled;
++#else
+         layer->setDisplaySyncEnabled(vsyncEnabled);
++#endif
+     }
+ 
+     bool MetalSwapChain::isVsyncEnabled() const {
+         MetalAutoreleasePool releasePool;
++#if PLUME_IOS
++        return true;
++#else
+         return layer->displaySyncEnabled();
++#endif
+     }
+ 
+     uint32_t MetalSwapChain::getWidth() const {
+@@ -3779,8 +3787,11 @@ namespace plume {
+         this->renderInterface = renderInterface;
+ 
+         // Device Selection
+-        NS::Array* devices = MTL::CopyAllDevices();
+         MTL::Device *preferredDevice = nullptr;
++#if PLUME_IOS
++        (void)preferredDeviceName;
++#else
++        NS::Array* devices = MTL::CopyAllDevices();
+         for (NS::UInteger i = 0; i < devices->count(); i++) {
+             MTL::Device *device = (MTL::Device *)devices->object(i);
+             const NS::String *preferredDeviceNameNS = NS::String::string(preferredDeviceName.c_str(), NS::UTF8StringEncoding);
+@@ -3789,14 +3800,21 @@ namespace plume {
+                 break;
+             }
+         }
++#endif
+ 
+         mtl = preferredDevice ? preferredDevice : MTL::CreateSystemDefaultDevice();
+         mtl->retain();
++#if !PLUME_IOS
+         devices->release();
++#endif
+ 
+         const std::string deviceName(mtl->name()->utf8String());
+         description.name = deviceName;
++#if PLUME_IOS
++        description.type = RenderDeviceType::INTEGRATED;
++#else
+         description.type = mapDeviceType(mtl->location());
++#endif
+         description.driverVersion = 1; // Unavailable
+         description.vendor = mtl->supportsFamily(MTL::GPUFamilyApple1) ? RenderDeviceVendor::APPLE : getRenderDeviceVendor(mtl->registryID());
+         description.dedicatedVideoMemory = mtl->recommendedMaxWorkingSetSize();
+@@ -4193,11 +4211,19 @@ namespace plume {
+         capabilities.shaderFormat = RenderShaderFormat::METAL;
+ 
+         // Fill device names.
++#if PLUME_IOS
++        MTL::Device *device = MTL::CreateSystemDefaultDevice();
++        if (device != nullptr) {
++            deviceNames.push_back(std::string(device->name()->utf8String()));
++        }
++#else
+-        const NS::Array* devices = MTL::CopyAllDevices();
++        NS::Array* devices = MTL::CopyAllDevices();
+         for (NS::UInteger i = 0; i < devices->count(); i++) {
+             NS::String* deviceName = ((MTL::Device *)devices->object(i))->name();
+             deviceNames.push_back(std::string(deviceName->utf8String()));
+         }
++        devices->release();
++#endif
+     }
+ 
+     MetalInterface::~MetalInterface() {}
+diff --git a/plume_uikit.mm b/plume_uikit.mm
+new file mode 100644
+index 0000000..f596404
+--- /dev/null
++++ b/plume_uikit.mm
+@@ -0,0 +1,115 @@
++//
++// plume
++//
++// Copyright (c) 2024 renderbag and contributors. All rights reserved.
++// Licensed under the MIT license. See LICENSE file for details.
++//
++
++#include "plume_apple.h"
++
++#import <QuartzCore/CAMetalLayer.h>
++#import <UIKit/UIKit.h>
++
++namespace plume {
++    RenderDeviceVendor getRenderDeviceVendor(uint64_t registryID) {
++        (void)registryID;
++        return RenderDeviceVendor::APPLE;
++    }
++
++    static void readWindowState(void *windowHandle, void *viewHandle, CocoaWindowAttributes &attributes, int &refreshRate) {
++        UIWindow *window = (__bridge UIWindow *)windowHandle;
++        CAMetalLayer *metalLayer = (__bridge CAMetalLayer *)viewHandle;
++        CGRect bounds = metalLayer != nil ? metalLayer.bounds : window.bounds;
++        CGFloat scale = metalLayer != nil ? metalLayer.contentsScale : window.screen.scale;
++        UIScreen *screen = window.windowScene.screen ?: window.screen;
++
++        attributes.x = 0;
++        attributes.y = 0;
++        attributes.width = (int)round(bounds.size.width * scale);
++        attributes.height = (int)round(bounds.size.height * scale);
++        refreshRate = screen != nil ? (int)screen.maximumFramesPerSecond : 60;
++    }
++
++    CocoaWindow::CocoaWindow(void *window, void *view)
++        : windowHandle(window), viewHandle(view), cachedRefreshRate(60) {
++        cachedAttributes = {0, 0, 0, 0};
++
++        if ([NSThread isMainThread]) {
++            int refreshRate = 60;
++            readWindowState(windowHandle, view, cachedAttributes, refreshRate);
++            cachedRefreshRate.store(refreshRate);
++        } else {
++            updateWindowAttributesInternal(true);
++            updateRefreshRateInternal(true);
++        }
++    }
++
++    CocoaWindow::~CocoaWindow() {}
++
++    void CocoaWindow::updateWindowAttributesInternal(bool forceSync) {
++        auto updateBlock = ^{
++            CocoaWindowAttributes freshAttributes{};
++            int refreshRate = 60;
++            readWindowState(windowHandle, viewHandle, freshAttributes, refreshRate);
++
++            std::lock_guard<std::mutex> lock(attributesMutex);
++            cachedAttributes = freshAttributes;
++        };
++
++        if (forceSync) {
++            dispatch_sync(dispatch_get_main_queue(), updateBlock);
++        } else {
++            dispatch_async(dispatch_get_main_queue(), updateBlock);
++        }
++    }
++
++    void CocoaWindow::updateRefreshRateInternal(bool forceSync) {
++        auto updateBlock = ^{
++            CocoaWindowAttributes attributes{};
++            int refreshRate = 60;
++            readWindowState(windowHandle, viewHandle, attributes, refreshRate);
++            cachedRefreshRate.store(refreshRate);
++        };
++
++        if (forceSync) {
++            dispatch_sync(dispatch_get_main_queue(), updateBlock);
++        } else {
++            dispatch_async(dispatch_get_main_queue(), updateBlock);
++        }
++    }
++
++    void CocoaWindow::getWindowAttributes(CocoaWindowAttributes *attributes) const {
++        if ([NSThread isMainThread]) {
++            CocoaWindowAttributes freshAttributes{};
++            int refreshRate = 60;
++            readWindowState(windowHandle, viewHandle, freshAttributes, refreshRate);
++
++            std::lock_guard<std::mutex> lock(attributesMutex);
++            const_cast<CocoaWindow *>(this)->cachedAttributes = freshAttributes;
++            *attributes = freshAttributes;
++        } else {
++            {
++                std::lock_guard<std::mutex> lock(attributesMutex);
++                *attributes = cachedAttributes;
++            }
++            const_cast<CocoaWindow *>(this)->updateWindowAttributesInternal(false);
++        }
++    }
++
++    int CocoaWindow::getRefreshRate() const {
++        if ([NSThread isMainThread]) {
++            CocoaWindowAttributes attributes{};
++            int refreshRate = 60;
++            readWindowState(windowHandle, viewHandle, attributes, refreshRate);
++            const_cast<CocoaWindow *>(this)->cachedRefreshRate.store(refreshRate);
++            return refreshRate;
++        }
++
++        const int refreshRate = cachedRefreshRate.load();
++        const_cast<CocoaWindow *>(this)->updateRefreshRateInternal(false);
++        return refreshRate;
++    }
++
++    void CocoaWindow::toggleFullscreen() {
++    }
++}
