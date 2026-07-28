@@ -13,6 +13,7 @@ build_root="$repo_root/build-host"
 rom_path=$1
 decompressed_rom="$source_root/banjo.us.v10.decompressed.z64"
 expected_retail_hash="1B67585D56E07F8C"
+expected_retail_size="16777216"
 expected_decompressed_sha1="1fe1632098865f639e22c11b9a81ee8f29c75d7a"
 compressor_source="$source_root/lib/bk-decomp/tools/bk_rom_compressor"
 compressor_build="$build_root/bk-rom-compressor"
@@ -21,6 +22,16 @@ compressor="$compressor_build/release/bk_rom_decompress"
 if [ ! -f "$rom_path" ]; then
     echo "Retail ROM not found: $rom_path" >&2
     exit 2
+fi
+
+retail_size=$(wc -c < "$rom_path" | tr -d '[:space:]')
+if [ "$retail_size" != "$expected_retail_size" ]; then
+    echo "Retail ROM size mismatch: expected $expected_retail_size bytes (16 MiB), found $retail_size" >&2
+    if [ "$retail_size" = "8388608" ]; then
+        echo "The file is exactly half the required size and appears truncated." >&2
+    fi
+    echo "Do not pad the file: the missing range contains game data. Re-dump the complete cartridge image." >&2
+    exit 1
 fi
 
 if [ ! -x "$build_root/bin/rom_xxh3" ] ||

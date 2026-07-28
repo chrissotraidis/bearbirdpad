@@ -1,14 +1,14 @@
-# Status — updated 2026-07-28, iteration 5
+# Status — updated 2026-07-28, iteration 6
 
 Phase: 0 — Pinned sources, host tools, macOS baseline
 
-Done this iteration: blocker protocol invoked after the third consecutive generated-source preparation failure — evidence: `find ref -maxdepth 1 -type f` → the same single ROM file is present; `./scripts/prepare-generated.sh 'ref/Banjo-Kazooie (U) [!].z64'` → rejected before decompression with expected XXH3-64 `1B67585D56E07F8C`, found `D287BE61F6682734` (failure 3/3).
+Done this iteration: identified the actionable ROM failure and added an early, safe diagnostic — evidence: N64 header → `NBKE`, revision `00`, and expected NTSC-U v1.0 header CRC `A4BF9306 BF0CDFD1`; `stat` → 8,388,608 bytes, exactly half the required 16,777,216 bytes; pinned compressor source → required game overlays extend through `0xFDAA30`, beyond the local file; `scripts/prepare-generated.sh` now rejects short inputs with a re-dump instruction and warns that padding cannot restore missing data.
 
 Next goal: BLOCKED until the invalid file in `ref/` is replaced with a legally owned Banjo-Kazooie NTSC-U retail dump; resume with `scripts/prepare-generated.sh <path>`.
 
 HUMAN-VERIFY queue: none.
 
-Blockers: BLOCKED — Phase 0 generated sources and the macOS baseline cannot proceed because the only ROM in `ref/` is not the required NTSC-U retail image. Evidence: three consecutive runs produced the same runtime hash mismatch; the pinned compressor identity check also expects NTSC-U MD5 `b29599651a13f681c9923d69354bf4a3`, while this already-big-endian 8 MiB input is `4bc8449426ca1c72b7b0bb1323dad47f`. Tried: verified the runtime's exact XXH3 implementation and byte-order normalization, built the pinned host tools, and reran the guarded preparation path without modifying or exporting the ROM. Decision forced: stop before Phase 1 because Phase 0 acceptance is not green. Recommendation and recovery: replace the local input with a valid dump that normalizes to XXH3-64 `1B67585D56E07F8C`; there is no sanctioned fallback, and no ROM will be searched for or downloaded.
+Blockers: BLOCKED — Phase 0 generated sources and the macOS baseline cannot proceed because the only ROM in `ref/` is an incomplete 8 MiB image. Its header claims the correct NTSC-U v1.0 revision, but a complete dump is 16 MiB and contains required data above the 8 MiB boundary. Recommendation and recovery: re-dump the full cartridge image; the result must be 16,777,216 bytes and normalize to XXH3-64 `1B67585D56E07F8C`. Renaming, byte swapping, or padding the current file cannot recover the missing data. No ROM will be searched for or downloaded.
 
 ref/ additions: none.
 
