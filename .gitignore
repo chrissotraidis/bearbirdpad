@@ -1,0 +1,14 @@
+# macOS
+.DS_Store
+
+# Pinned upstream checkouts and build trees (created by scripts/, never committed)
+sources/
+build*/
+
+# ROM data and ROM-derived generated sources — never committed, in any form
+*.z64
+*.v64
+*.n64
+RecompiledFuncs/
+RecompiledPatches/
+rsp/n_aspMain.cpp
