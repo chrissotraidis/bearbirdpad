@@ -1,8 +1,8 @@
-# Status — updated 2026-07-28, iteration 3
+# Status — updated 2026-07-28, iteration 4
 
 Phase: 0 — Pinned sources, host tools, macOS baseline
 
-Done this iteration: ROM validation and idempotent generated-source preparation tooling implemented; the generated-source goal remains open — evidence: `./scripts/build-host-tools.sh` → native arm64 `rom_xxh3` built against the pinned runtime's xxHash; `./scripts/prepare-generated.sh 'ref/Banjo-Kazooie (U) [!].z64'` → rejected before decompression with expected XXH3-64 `1B67585D56E07F8C`, found `D287BE61F6682734` (failure 1/3); source check → the pinned compressor accepts NTSC-U MD5 `b29599651a13f681c9923d69354bf4a3`, while this already-big-endian 8 MiB file is `4bc8449426ca1c72b7b0bb1323dad47f`.
+Done this iteration: generated-source preparation retried against the current local input; the goal remains open — evidence: `find ref -maxdepth 1 -type f` → the same single ROM file is present; `./scripts/prepare-generated.sh 'ref/Banjo-Kazooie (U) [!].z64'` → rejected before decompression with expected XXH3-64 `1B67585D56E07F8C`, found `D287BE61F6682734` (failure 2/3).
 
 Next goal: replace the invalid file in `ref/` with a legally owned Banjo-Kazooie NTSC-U retail dump and rerun `scripts/prepare-generated.sh <path>`.
 
