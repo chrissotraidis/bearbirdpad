@@ -12,3 +12,8 @@ build*/
 RecompiledFuncs/
 RecompiledPatches/
 rsp/n_aspMain.cpp
+
+# ref/ is local-only reference material (ROM, cloned repos, texture packs).
+# Only its README is tracked.
+ref/*
+!ref/README.md
