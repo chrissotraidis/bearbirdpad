@@ -23,10 +23,10 @@ cmake \
     -DBANJOPAD_SOURCE_ROOT="$source_root"
 
 cmake --build "$build_root" \
-    --target N64RecompCLI RSPRecomp file_to_c spirv_cross_msl \
+    --target N64RecompCLI RSPRecomp file_to_c spirv_cross_msl rom_xxh3 \
     --parallel "$jobs"
 
-for tool in N64Recomp RSPRecomp file_to_c spirv_cross_msl; do
+for tool in N64Recomp RSPRecomp file_to_c spirv_cross_msl rom_xxh3; do
     tool_path="$build_root/bin/$tool"
     if [ ! -x "$tool_path" ]; then
         echo "Host tool was not produced: $tool_path" >&2

@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
 set(BANJOPAD_SOURCE_ROOT
     "${CMAKE_CURRENT_LIST_DIR}/../../sources/banjo"
@@ -17,12 +18,16 @@ set(n64recomp_source
     "${BANJOPAD_SOURCE_ROOT}/lib/N64ModernRuntime/N64Recomp")
 set(rt64_source "${BANJOPAD_SOURCE_ROOT}/lib/rt64")
 set(spirv_cross_source "${rt64_source}/src/contrib/spirv-cross")
+set(xxhash_source
+    "${BANJOPAD_SOURCE_ROOT}/lib/N64ModernRuntime/thirdparty/xxHash")
 
 foreach(required_path
         "${n64recomp_source}/CMakeLists.txt"
         "${rt64_source}/src/tools/file_to_c/file_to_c.cpp"
         "${rt64_source}/src/tools/spirv_cross_msl/spirv_cross_msl.cpp"
-        "${spirv_cross_source}/CMakeLists.txt")
+        "${spirv_cross_source}/CMakeLists.txt"
+        "${xxhash_source}/xxhash.c"
+        "${xxhash_source}/xxhash.h")
     if(NOT EXISTS "${required_path}")
         message(FATAL_ERROR
             "Missing pinned host-tool input: ${required_path}. "
@@ -31,6 +36,9 @@ foreach(required_path
 endforeach()
 
 add_subdirectory("${n64recomp_source}" n64recomp EXCLUDE_FROM_ALL)
+
+add_library(xxhash STATIC "${xxhash_source}/xxhash.c")
+target_include_directories(xxhash PUBLIC "${xxhash_source}")
 
 set(SPIRV_CROSS_CLI OFF CACHE BOOL "" FORCE)
 set(SPIRV_CROSS_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
@@ -55,3 +63,7 @@ target_include_directories(spirv_cross_msl PRIVATE "${spirv_cross_source}")
 target_link_libraries(spirv_cross_msl PRIVATE
     spirv-cross-core
     spirv-cross-msl)
+
+add_executable(rom_xxh3 rom_xxh3.cpp)
+target_compile_features(rom_xxh3 PRIVATE cxx_std_17)
+target_link_libraries(rom_xxh3 PRIVATE xxhash)
