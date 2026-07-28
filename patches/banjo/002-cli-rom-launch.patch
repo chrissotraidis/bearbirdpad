@@ -1,0 +1,61 @@
+diff --git a/src/main/main.cpp b/src/main/main.cpp
+index e25d9d5..8913338 100644
+--- a/src/main/main.cpp
++++ b/src/main/main.cpp
+@@ -1,10 +1,12 @@
+ #include <cstdio>
+ #include <cassert>
++#include <cstring>
+ #include <unordered_map>
+ #include <vector>
+ #include <array>
+ #include <filesystem>
+ #include <numeric>
++#include <optional>
+ #include <stdexcept>
+ #include <cinttypes>
+ 
+@@ -616,8 +618,17 @@ void on_launcher_init(recompui::LauncherMenu *menu) {
+ #define REGISTER_FUNC(name) recomp::overlays::register_base_export(#name, name)
+ 
+ int main(int argc, char** argv) {
+-    (void)argc;
+-    (void)argv;
++    std::optional<std::filesystem::path> launch_rom_path;
++    bool auto_start = false;
++
++    for (int i = 1; i < argc; i++) {
++        if (strcmp(argv[i], "--rom") == 0 && i + 1 < argc) {
++            launch_rom_path = argv[++i];
++        } else if (strcmp(argv[i], "--auto-start") == 0) {
++            auto_start = true;
++        }
++    }
++
+     recomp::Version project_version{};
+     if (!recomp::Version::from_string(version_string, project_version)) {
+         ultramodern::error_handling::message_box(("Invalid version string: " + version_string).c_str());
+@@ -717,6 +728,23 @@ int main(int argc, char** argv) {
+         recomp::register_game(game);
+     }
+ 
++    if (launch_rom_path.has_value()) {
++        auto game_id = supported_games[0].game_id;
++        recomp::RomValidationError rom_error = recomp::select_rom(*launch_rom_path, game_id);
++        if (rom_error != recomp::RomValidationError::Good) {
++            fprintf(stderr, "Failed to import launch ROM (error %d): %s\n", static_cast<int>(rom_error), launch_rom_path->c_str());
++            return EXIT_FAILURE;
++        }
++
++        printf("Imported launch ROM: %s\n", launch_rom_path->c_str());
++        if (auto_start) {
++            recomp::start_game(game_id, {});
++        }
++    } else if (auto_start) {
++        fprintf(stderr, "--auto-start requires --rom <path>.\n");
++        return EXIT_FAILURE;
++    }
++
+     recomp::mods::register_deprecated_mod("bk_recomp_mod_fov_slider", recomp::mods::DeprecationStatus::BrokenVersion, recomp::Version(1, 1, 0));
+ 
+     REGISTER_FUNC(recomp_get_window_resolution);

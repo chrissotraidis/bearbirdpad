@@ -1,0 +1,12 @@
+diff --git a/ultramodern/src/events.cpp b/ultramodern/src/events.cpp
+index 090cc42..90cccbb 100644
+--- a/ultramodern/src/events.cpp
++++ b/ultramodern/src/events.cpp
+@@ -614,6 +614,7 @@ void ultramodern::init_events(RDRAM_ARG ultramodern::renderer::WindowHandle wind
+         throw std::runtime_error("Failed to initialize the renderer");
+     }
+ 
++    set_dummy_vi(false);
+     events_context.vi.thread = std::thread{ vi_thread_func };
+ }
+ 

@@ -1,0 +1,53 @@
+diff --git a/.github/macos/apple_bundle.cmake b/.github/macos/apple_bundle.cmake
+index 4a6ea08..ea844ab 100644
+--- a/.github/macos/apple_bundle.cmake
++++ b/.github/macos/apple_bundle.cmake
+@@ -14,27 +14,16 @@ set_target_properties(BanjoRecompiled PROPERTIES
+         XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS ${ENTITLEMENTS_FILE}
+ )
+ 
+-# Create icon files for macOS bundle
++# Create the icon file for the macOS bundle
+ set(ICON_SOURCE ${CMAKE_SOURCE_DIR}/icons/app.png)
+-set(ICONSET_DIR ${CMAKE_BINARY_DIR}/AppIcon.iconset)
+ set(ICNS_FILE ${CMAKE_BINARY_DIR}/resources/AppIcon.icns)
++find_library(SDL3_RUNTIME_LIBRARY NAMES SDL3)
+ 
+-# Create iconset directory and add PNG file
+-add_custom_command(
+-        OUTPUT ${ICONSET_DIR}
+-        COMMAND ${CMAKE_COMMAND} -E make_directory ${ICONSET_DIR}
+-        COMMAND ${CMAKE_COMMAND} -E copy ${ICON_SOURCE} ${ICONSET_DIR}/icon_512x512.png
+-        COMMAND ${CMAKE_COMMAND} -E copy ${ICON_SOURCE} ${ICONSET_DIR}/icon_512x512@2x.png
+-        COMMAND touch ${ICONSET_DIR}
+-        COMMENT "Creating iconset directory and copying PNG file"
+-)
+-
+-# Convert iconset to icns
+ add_custom_command(
+         OUTPUT ${ICNS_FILE}
+-        DEPENDS ${ICONSET_DIR}
+-        COMMAND iconutil -c icns ${ICONSET_DIR} -o ${ICNS_FILE}
+-        COMMENT "Converting iconset to icns"
++        DEPENDS ${ICON_SOURCE}
++        COMMAND sips -s format icns ${ICON_SOURCE} --out ${ICNS_FILE}
++        COMMENT "Converting app icon to icns"
+ )
+ 
+ # Custom target to ensure icns creation
+@@ -62,6 +51,15 @@ if(NOT EXISTS ${ENTITLEMENTS_FILE})
+     message(FATAL_ERROR "Entitlements file not found at ${ENTITLEMENTS_FILE}")
+ endif()
+ 
++# Homebrew's SDL2 compatibility library loads SDL3 dynamically, so it is not
++# visible to BundleUtilities as a normal link dependency.
++if(SDL3_RUNTIME_LIBRARY)
++    add_custom_command(TARGET BanjoRecompiled POST_BUILD
++        COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_BUNDLE_DIR:BanjoRecompiled>/Contents/Frameworks
++        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SDL3_RUNTIME_LIBRARY} $<TARGET_BUNDLE_DIR:BanjoRecompiled>/Contents/Frameworks/libSDL3.dylib
++    )
++endif()
++
+ # Post-build steps for macOS bundle
+ add_custom_command(TARGET BanjoRecompiled POST_BUILD
+     # Copy and fix frameworks first
