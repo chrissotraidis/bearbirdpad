@@ -80,8 +80,11 @@ git -C "$source_root" submodule foreach --quiet --recursive \
 
 apply_series banjo "$source_root"
 apply_series nmr "$source_root/lib/N64ModernRuntime"
+apply_series sljit "$source_root/lib/N64ModernRuntime/N64Recomp/lib/sljit"
 apply_series rt64 "$source_root/lib/rt64"
+apply_series hlslpp "$source_root/lib/rt64/src/contrib/hlslpp"
 apply_series plume "$source_root/lib/rt64/src/contrib/plume"
+apply_series nfd "$source_root/lib/rt64/src/contrib/nativefiledialog-extended"
 apply_series frontend "$source_root/lib/RecompFrontend"
 
 echo "Pinned sources are ready at $source_root"

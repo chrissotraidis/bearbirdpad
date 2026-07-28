@@ -3,7 +3,9 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-MODE="${1:---simulator}"
+MODE="--simulator"
+PRODUCT="smoke"
+CONFIG="Release"
 SDL_VERSION="2.32.10"
 SDL_SHA256="5f5993c530f084535c65a6879e9b26ad441169b3e25d789d83287040a9ca5165"
 FREETYPE_VERSION="2.13.3"
@@ -11,6 +13,31 @@ FREETYPE_SHA256="0550350666d427c74daeb85d5ac7bb353acba5f76956395995311a9c6f06328
 DEPS_ROOT="$ROOT/build-ios-deps"
 DOWNLOAD_ROOT="$DEPS_ROOT/downloads"
 SOURCE_ROOT="$DEPS_ROOT/sources"
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --device|--simulator)
+            MODE="$1"
+            shift
+            ;;
+        --stub)
+            PRODUCT="stub"
+            shift
+            ;;
+        --config)
+            CONFIG="${2:-}"
+            if [[ "$CONFIG" != "Debug" && "$CONFIG" != "Release" ]]; then
+                echo "--config must be Debug or Release" >&2
+                exit 2
+            fi
+            shift 2
+            ;;
+        *)
+            echo "Usage: scripts/build-ios.sh [--device|--simulator] [--stub] [--config Debug|Release]" >&2
+            exit 2
+            ;;
+    esac
+done
 
 case "$MODE" in
     --device)
@@ -23,16 +50,13 @@ case "$MODE" in
         SDK="iphonesimulator"
         DESTINATION="generic/platform=iOS Simulator"
         ;;
-    *)
-        echo "Usage: scripts/build-ios.sh [--device|--simulator]" >&2
-        exit 2
-        ;;
 esac
 
 PREFIX_ROOT="$DEPS_ROOT/$PLATFORM"
 SDL_PREFIX="$PREFIX_ROOT/sdl2"
 FREETYPE_PREFIX="$PREFIX_ROOT/freetype"
 SMOKE_BUILD="$ROOT/build-ios-smoke-$PLATFORM"
+APP_BUILD="$ROOT/build-ios-app-$PLATFORM"
 
 fetch_archive() {
     local url="$1"
@@ -126,6 +150,44 @@ if [[ ! -f "$FREETYPE_PREFIX/lib/libfreetype.a" ]]; then
         --config Release \
         --target install \
         -- -destination "$DESTINATION" CODE_SIGNING_ALLOWED=NO
+fi
+
+if [[ "$PRODUCT" == "stub" ]]; then
+    METAL_COMPILER="$(xcrun -f metal)"
+    METALLIB_COMPILER="$(dirname "$METAL_COMPILER")/metallib"
+
+    cmake \
+        -S "$ROOT/sources/banjo" \
+        -B "$APP_BUILD" \
+        -G Xcode \
+        -DCMAKE_SYSTEM_NAME=iOS \
+        -DCMAKE_OSX_SYSROOT="$SDK" \
+        -DCMAKE_OSX_DEPLOYMENT_TARGET=16.0 \
+        -DCMAKE_OSX_ARCHITECTURES=arm64 \
+        -DCMAKE_PREFIX_PATH="$SDL_PREFIX;$FREETYPE_PREFIX" \
+        -DSDL2_DIR="$SDL_PREFIX/lib/cmake/SDL2" \
+        -DFreetype_DIR="$FREETYPE_PREFIX/lib/cmake/freetype" \
+        -DBANJOPAD_IOS_DIR="$ROOT/ios/app" \
+        -DBANJO_MOBILE_RENDERER_STUB=ON \
+        -DDXC_PATH="$ROOT/sources/banjo/lib/rt64/src/contrib/dxc/bin/arm64/dxc-macos" \
+        -DSPIRV_CROSS_MSL_PATH="$ROOT/build-host/bin/spirv_cross_msl" \
+        -DFILE_TO_C_PATH="$ROOT/build-host/bin/file_to_c" \
+        -DRT64_METAL_COMPILER_COMMAND="$METAL_COMPILER" \
+        -DRT64_METALLIB_COMMAND="$METALLIB_COMPILER"
+
+    set -- cmake --build "$APP_BUILD" \
+        --config "$CONFIG" \
+        --target BanjoRecompiled \
+        -- -destination "$DESTINATION"
+    if [[ -z "${DEVELOPMENT_TEAM:-}" ]]; then
+        set -- "$@" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+    fi
+    "$@"
+
+    echo
+    echo "Built Phase 3 stub app:"
+    echo "  $APP_BUILD/$CONFIG/BanjoRecompiled.app"
+    exit
 fi
 
 if [[ "$PLATFORM" == "device" ]]; then

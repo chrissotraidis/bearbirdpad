@@ -1,0 +1,95 @@
+diff --git a/recompui/src/composites/ui_mod_menu.cpp b/recompui/src/composites/ui_mod_menu.cpp
+index 02455fd..7ffecf0 100644
+--- a/recompui/src/composites/ui_mod_menu.cpp
++++ b/recompui/src/composites/ui_mod_menu.cpp
+@@ -15,6 +15,9 @@
+ #ifdef WIN32
+ #include <shellapi.h>
+ #endif
++#ifdef __APPLE__
++#include <TargetConditionals.h>
++#endif
+ 
+ // TODO:
+ // - Set up navigation.
+@@ -30,6 +33,15 @@ static bool is_mod_enabled_or_auto(const std::string &mod_id) {
+     return recomp::mods::is_mod_enabled(mod_id) || recomp::mods::is_mod_auto_enabled(mod_id);
+ }
+ 
++static bool platform_allows_mod_toggle(const recomp::mods::ModDetails &details) {
++#ifdef BANJO_IOS_NO_CODE_MODS
++    return !details.contains_code;
++#else
++    (void)details;
++    return true;
++#endif
++}
++
+ Modal *mod_config_modal = nullptr;
+ void create_mod_config_modal() {
+     if (mod_config_modal == nullptr) {
+@@ -295,9 +307,11 @@ void ModMenu::open_mods_folder() {
+ #elif defined(__linux__)
+     std::string command = "xdg-open \"" + mods_directory.string() + "\" &";
+     std::system(command.c_str());
+-#elif defined(__APPLE__)
++#elif defined(__APPLE__) && !TARGET_OS_IPHONE
+     std::string command = "open \"" + mods_directory.string() + "\"";
+     std::system(command.c_str());
++#elif defined(__APPLE__) && TARGET_OS_IPHONE
++    (void)mods_directory;
+ #else
+     static_assert(false, "Not implemented for this platform.");
+ #endif
+@@ -318,7 +332,7 @@ void ModMenu::open_install_dialog() {
+ }
+ 
+ void ModMenu::mod_toggled(bool enabled) {
+-    if (active_mod_index >= 0) {
++    if (active_mod_index >= 0 && platform_allows_mod_toggle(mod_details[active_mod_index])) {
+         recomp::mods::enable_mod(mod_details[active_mod_index].mod_id, enabled);
+         
+         // Refresh enabled status for all mods in case one of them got auto-enabled due to being a dependency.
+@@ -342,7 +356,7 @@ void ModMenu::mod_selected(uint32_t mod_index) {
+         bool auto_enabled = recomp::mods::is_mod_auto_enabled(mod_details[mod_index].mod_id);
+         recomp::mods::DeprecationStatus deprecation_status = recomp::mods::get_mod_deprecation_status(mod_details[mod_index].mod_id);
+         bool deprecated = recomp::mods::is_mod_deprecated(mod_details[mod_index].mod_id, mod_details[mod_index].version);
+-        bool toggle_enabled = !auto_enabled && !deprecated && (mod_details[mod_index].runtime_toggleable || !ultramodern::is_game_started());
++        bool toggle_enabled = platform_allows_mod_toggle(mod_details[mod_index]) && !auto_enabled && !deprecated && (mod_details[mod_index].runtime_toggleable || !ultramodern::is_game_started());
+         bool configure_enabled = !config_schema.options.empty();
+         mod_details_panel->set_mod_details(mod_details[mod_index], thumbnail_src, toggle_checked, toggle_enabled, auto_enabled || deprecated, configure_enabled, deprecation_status);
+         mod_entry_buttons[active_mod_index]->set_selected(true);
+@@ -646,7 +660,7 @@ void ModMenu::process_event(const Event &e) {
+         if (active_mod_index != -1) {        
+             bool auto_enabled = recomp::mods::is_mod_auto_enabled(mod_details[active_mod_index].mod_id);
+             bool deprecated = recomp::mods::is_mod_deprecated(mod_details[active_mod_index].mod_id, mod_details[active_mod_index].version);
+-            bool toggle_enabled = !auto_enabled && !deprecated && (mod_details[active_mod_index].runtime_toggleable || !ultramodern::is_game_started());
++            bool toggle_enabled = platform_allows_mod_toggle(mod_details[active_mod_index]) && !auto_enabled && !deprecated && (mod_details[active_mod_index].runtime_toggleable || !ultramodern::is_game_started());
+             if (!toggle_enabled) {
+                 mod_details_panel->disable_toggle();
+             }
+diff --git a/recompui/src/util/support_apple.mm b/recompui/src/util/support_apple.mm
+index 5160801..651b179 100644
+--- a/recompui/src/util/support_apple.mm
++++ b/recompui/src/util/support_apple.mm
+@@ -1,5 +1,6 @@
+ #include "./file.h"
+ #import <Foundation/Foundation.h>
++#import <TargetConditionals.h>
+ #import <objc/runtime.h>
+ #import <objc/message.h>
+ #include <SDL.h>
+@@ -13,7 +14,12 @@ namespace recompui::file {
+     }
+ 
+     std::optional<std::filesystem::path> apple::get_application_support_directory() {
+-        NSArray *dirs = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
++#if TARGET_OS_IPHONE
++        NSSearchPathDirectory directory = NSDocumentDirectory;
++#else
++        NSSearchPathDirectory directory = NSApplicationSupportDirectory;
++#endif
++        NSArray *dirs = NSSearchPathForDirectoriesInDomains(directory, NSUserDomainMask, YES);
+         if ([dirs count] > 0) {
+             NSString *dir = [dirs firstObject];
+             return std::filesystem::path([dir UTF8String]);

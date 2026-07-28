@@ -1,0 +1,384 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index f868b10..e5f5d15 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -42,7 +42,23 @@ if (WIN32)
+ endif()
+ 
+ set(RT64_STATIC TRUE)
+-set(RT64_SDL_WINDOW_VULKAN TRUE)
++if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
++    set(RT64_SDL_WINDOW_VULKAN FALSE)
++    find_package(SDL2 REQUIRED CONFIG)
++    find_package(Freetype REQUIRED CONFIG)
++    get_target_property(SDL2_INCLUDE_DIRS SDL2::SDL2-static INTERFACE_INCLUDE_DIRECTORIES)
++    option(BANJO_MOBILE_RENDERER_STUB "Use a no-op renderer for mobile bring-up." OFF)
++    set(BANJOPAD_IOS_DIR "" CACHE PATH "Path to BanjoPad's tracked iOS sources")
++    if (NOT EXISTS "${BANJOPAD_IOS_DIR}/ios_main.mm")
++        message(FATAL_ERROR "BANJOPAD_IOS_DIR must contain ios_main.mm")
++    endif()
++    add_compile_definitions(BANJO_IOS_NO_CODE_MODS=1)
++    if (BANJO_MOBILE_RENDERER_STUB)
++        add_compile_definitions(BANJO_MOBILE_RENDERER_STUB=1)
++    endif()
++else()
++    set(RT64_SDL_WINDOW_VULKAN TRUE)
++endif()
+ add_compile_definitions(
+     HLSL_CPU
+     __PRFCHWINTRIN_H
+@@ -108,41 +124,49 @@ target_sources(PatchesLib PRIVATE
+ 
+ set_source_files_properties(${CMAKE_SOURCE_DIR}/RecompiledPatches/patches.c PROPERTIES COMPILE_FLAGS -fno-strict-aliasing)
+ 
+-# Build patches elf
+-if(NOT DEFINED PATCHES_C_COMPILER)
+-    set(PATCHES_C_COMPILER clang)
+-endif()
++# Cross-compiles consume the prepared Phase 0 generated sources. Target-side
++# custom commands cannot run the host N64Recomp and patch toolchain.
++if (NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
++    # Build patches elf
++    if(NOT DEFINED PATCHES_C_COMPILER)
++        set(PATCHES_C_COMPILER clang)
++    endif()
+ 
+-if(NOT DEFINED PATCHES_LD)
+-    set(PATCHES_LD ld.lld)
+-endif()
++    if(NOT DEFINED PATCHES_LD)
++        set(PATCHES_LD ld.lld)
++    endif()
+ 
+-add_custom_target(PatchesBin
+-    COMMAND ${CMAKE_COMMAND} -E env CC=${PATCHES_C_COMPILER} LD=${PATCHES_LD} make
+-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/patches
+-    BYPRODUCTS ${CMAKE_SOURCE_DIR}/patches/patches.elf
+-)
++    add_custom_target(PatchesBin
++        COMMAND ${CMAKE_COMMAND} -E env CC=${PATCHES_C_COMPILER} LD=${PATCHES_LD} make
++        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/patches
++        BYPRODUCTS ${CMAKE_SOURCE_DIR}/patches/patches.elf
++    )
+ 
+-# Generate patches_bin.c from patches.bin
+-add_custom_command(OUTPUT ${CMAKE_SOURCE_DIR}/RecompiledPatches/patches_bin.c
+-    COMMAND file_to_c ${CMAKE_SOURCE_DIR}/patches/patches.bin bk_patches_bin ${CMAKE_SOURCE_DIR}/RecompiledPatches/patches_bin.c ${CMAKE_SOURCE_DIR}/RecompiledPatches/patches_bin.h
+-    DEPENDS ${CMAKE_SOURCE_DIR}/patches/patches.bin
+-)
++    # Generate patches_bin.c from patches.bin
++    add_custom_command(OUTPUT ${CMAKE_SOURCE_DIR}/RecompiledPatches/patches_bin.c
++        COMMAND file_to_c ${CMAKE_SOURCE_DIR}/patches/patches.bin bk_patches_bin ${CMAKE_SOURCE_DIR}/RecompiledPatches/patches_bin.c ${CMAKE_SOURCE_DIR}/RecompiledPatches/patches_bin.h
++        DEPENDS ${CMAKE_SOURCE_DIR}/patches/patches.bin
++    )
+ 
+-# Recompile patches elf into patches.c and patches.bin
+-add_custom_command(OUTPUT
+-                       ${CMAKE_SOURCE_DIR}/patches/patches.bin
+-                       ${CMAKE_SOURCE_DIR}/RecompiledPatches/patches.c
+-                       ${CMAKE_SOURCE_DIR}/RecompiledPatches/recomp_overlays.inl
+-                       ${CMAKE_SOURCE_DIR}/RecompiledPatches/funcs.h
+-                   # TODO: Look into why modifying patches requires two builds to take
+-                   COMMAND ./N64Recomp patches.toml
+-                   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+-                   DEPENDS ${CMAKE_SOURCE_DIR}/patches/patches.elf
+-)
++    # Recompile patches elf into patches.c and patches.bin
++    add_custom_command(OUTPUT
++                           ${CMAKE_SOURCE_DIR}/patches/patches.bin
++                           ${CMAKE_SOURCE_DIR}/RecompiledPatches/patches.c
++                           ${CMAKE_SOURCE_DIR}/RecompiledPatches/recomp_overlays.inl
++                           ${CMAKE_SOURCE_DIR}/RecompiledPatches/funcs.h
++                       # TODO: Look into why modifying patches requires two builds to take
++                       COMMAND ./N64Recomp patches.toml
++                       WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
++                       DEPENDS ${CMAKE_SOURCE_DIR}/patches/patches.elf
++    )
++endif()
+ 
+ # Main executable
+-add_executable(BanjoRecompiled)
++if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
++    add_executable(BanjoRecompiled MACOSX_BUNDLE)
++else()
++    add_executable(BanjoRecompiled)
++endif()
+ 
+ set (SOURCES
+     ${CMAKE_SOURCE_DIR}/src/main/launcher_animation.cpp
+@@ -161,6 +185,13 @@ set (SOURCES
+     ${CMAKE_SOURCE_DIR}/rsp/n_aspMain.cpp
+ )
+ 
++if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
++    list(APPEND SOURCES
++        ${BANJOPAD_IOS_DIR}/ios_main.mm
++        ${BANJOPAD_IOS_DIR}/NullRendererContext.cpp
++    )
++endif()
++
+ target_include_directories(BanjoRecompiled PRIVATE
+     ${CMAKE_SOURCE_DIR}/include
+     ${CMAKE_SOURCE_DIR}/lib/N64ModernRuntime/N64Recomp/include
+@@ -179,9 +210,22 @@ target_include_directories(BanjoRecompiled PRIVATE
+     ${CMAKE_CURRENT_BINARY_DIR}
+ )
+ 
+-# Generate icon_bytes.c from the app icon PNG.
++if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
++    target_include_directories(BanjoRecompiled PRIVATE ${BANJOPAD_IOS_DIR})
++endif()
++
++# Generate icon_bytes.c from the app icon PNG with a host executable.
++if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
++    if (NOT FILE_TO_C_PATH OR NOT EXISTS "${FILE_TO_C_PATH}")
++        message(FATAL_ERROR "FILE_TO_C_PATH must name the macOS host file_to_c executable")
++    endif()
++    set(BANJO_FILE_TO_C "${FILE_TO_C_PATH}")
++else()
++    set(BANJO_FILE_TO_C file_to_c)
++endif()
++
+ add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/icon_bytes.c ${CMAKE_CURRENT_BINARY_DIR}/icon_bytes.h
+-    COMMAND file_to_c ${CMAKE_SOURCE_DIR}/icons/app.png icon_bytes ${CMAKE_CURRENT_BINARY_DIR}/icon_bytes.c ${CMAKE_CURRENT_BINARY_DIR}/icon_bytes.h
++    COMMAND ${BANJO_FILE_TO_C} ${CMAKE_SOURCE_DIR}/icons/app.png icon_bytes ${CMAKE_CURRENT_BINARY_DIR}/icon_bytes.c ${CMAKE_CURRENT_BINARY_DIR}/icon_bytes.h
+     DEPENDS ${CMAKE_SOURCE_DIR}/icons/app.png
+ )
+ 
+@@ -203,7 +247,7 @@ endif()
+ if (MSVC)
+     # Disable identical code folding, since this breaks mod function patching as multiple functions can get merged into one.
+     target_link_options(BanjoRecompiled PRIVATE /OPT:NOICF)
+-elseif (APPLE)
++elseif (APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
+     # Use a wrapper around ld64 that respects segprot's `max_prot` value in order
+     # to make our executable memory writable (required for mod function patching)
+     target_link_options(BanjoRecompiled PRIVATE
+@@ -254,7 +298,46 @@ if (WIN32)
+     target_link_libraries(BanjoRecompiled PRIVATE SDL2 Winmm.lib)
+ endif()
+ 
+-if (APPLE)
++if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
++    target_include_directories(BanjoRecompiled PRIVATE ${SDL2_INCLUDE_DIRS})
++
++    set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
++    set(THREADS_PREFER_PTHREAD_FLAG TRUE)
++    find_package(Threads REQUIRED)
++
++    target_link_libraries(BanjoRecompiled PRIVATE
++        ${CMAKE_DL_LIBS}
++        Threads::Threads
++        SDL2::SDL2main
++        SDL2::SDL2-static
++        Freetype::Freetype
++        "-framework Foundation"
++        "-framework UIKit"
++        "-framework Metal"
++        "-framework QuartzCore"
++        "-framework CoreGraphics"
++    )
++
++    set_target_properties(BanjoRecompiled PROPERTIES
++        MACOSX_BUNDLE_INFO_PLIST "${BANJOPAD_IOS_DIR}/Info.plist.in"
++        XCODE_ATTRIBUTE_CODE_SIGN_STYLE Automatic
++        XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${DEVELOPMENT_TEAM}"
++        XCODE_ATTRIBUTE_OTHER_LDFLAGS "-ObjC"
++        XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.chrissotraidis.banjopad"
++        XCODE_ATTRIBUTE_SUPPORTED_PLATFORMS "iphoneos iphonesimulator"
++        XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2"
++    )
++
++    add_custom_command(TARGET BanjoRecompiled POST_BUILD
++        COMMAND ${CMAKE_COMMAND} -E copy_directory
++            "${CMAKE_SOURCE_DIR}/assets"
++            "$<TARGET_BUNDLE_DIR:BanjoRecompiled>/assets"
++        COMMAND ${CMAKE_COMMAND} -E copy_if_different
++            "${CMAKE_SOURCE_DIR}/recompcontrollerdb.txt"
++            "$<TARGET_BUNDLE_DIR:BanjoRecompiled>/recompcontrollerdb.txt"
++        COMMENT "Copying BanjoPad iOS resources"
++    )
++elseif (APPLE)
+     find_package(SDL2 REQUIRED)
+     target_include_directories(BanjoRecompiled PRIVATE ${SDL2_INCLUDE_DIRS})
+ 
+@@ -354,7 +437,7 @@ foreach(NRM_FILE ${NRM_FILES})
+ 
+     add_custom_command(
+         OUTPUT ${OUT_C} ${OUT_H}
+-        COMMAND file_to_c ${NRM_FILE} ${NRM_NAME} ${OUT_C} ${OUT_H}
++        COMMAND ${BANJO_FILE_TO_C} ${NRM_FILE} ${NRM_NAME} ${OUT_C} ${OUT_H}
+         DEPENDS ${NRM_FILE}
+     )
+ 
+diff --git a/src/main/main.cpp b/src/main/main.cpp
+index 8913338..1a16aee 100644
+--- a/src/main/main.cpp
++++ b/src/main/main.cpp
+@@ -10,12 +10,18 @@
+ #include <stdexcept>
+ #include <cinttypes>
+ 
++#if defined(__APPLE__)
++#include <TargetConditionals.h>
++#endif
++
+ #include "nfd.h"
+ 
+ #include "ultramodern/ultra64.h"
+ #include "ultramodern/ultramodern.hpp"
+ #include "ultramodern/config.hpp"
++#if !defined(__APPLE__) || !TARGET_OS_IPHONE
+ #define SDL_MAIN_HANDLED
++#endif
+ #ifdef _WIN32
+ #include "SDL.h"
+ #else
+@@ -50,6 +56,10 @@
+ #include "librecomp/mods.hpp"
+ #include "librecomp/helpers.hpp"
+ 
++#if defined(BANJO_MOBILE_RENDERER_STUB)
++#include "NullRendererContext.hpp"
++#endif
++
+ #include "../../patches/graphics.h"
+ #include "../../patches/input.h"
+ #include "../../patches/sound.h"
+@@ -160,15 +170,23 @@ bool SetImageAsIcon(const char* filename, SDL_Window* window)
+ SDL_Window* window;
+ 
+ ultramodern::renderer::WindowHandle create_window(ultramodern::gfx_callbacks_t::gfx_data_t) {
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++    uint32_t flags = SDL_WINDOW_FULLSCREEN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_METAL;
++    const int width = 0;
++    const int height = 0;
++#else
+     uint32_t flags = SDL_WINDOW_RESIZABLE;
++    const int width = 1600;
++    const int height = 900;
+ 
+ #if defined(__APPLE__)
+     flags |= SDL_WINDOW_METAL;
+ #elif defined(RT64_SDL_WINDOW_VULKAN)
+     flags |= SDL_WINDOW_VULKAN;
++#endif
+ #endif
+ 
+-    window = SDL_CreateWindow("Banjo: Recompiled", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1600, 900,  flags);
++    window = SDL_CreateWindow("Banjo: Recompiled", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, flags);
+ 
+     if (window == nullptr) {
+         exit_error("Failed to create window: %s\n", SDL_GetError());
+@@ -193,7 +211,11 @@ ultramodern::renderer::WindowHandle create_window(ultramodern::gfx_callbacks_t::
+     return ultramodern::renderer::WindowHandle{ window };
+ #elif defined(__APPLE__)
+     SDL_MetalView view = SDL_Metal_CreateView(window);
++#if TARGET_OS_IPHONE
++    return ultramodern::renderer::WindowHandle{ wmInfo.info.uikit.window, SDL_Metal_GetLayer(view) };
++#else
+     return ultramodern::renderer::WindowHandle{ wmInfo.info.cocoa.window,  SDL_Metal_GetLayer(view) };
++#endif
+ #else
+     static_assert(false && "Unimplemented");
+ #endif
+@@ -617,7 +639,7 @@ void on_launcher_init(recompui::LauncherMenu *menu) {
+ 
+ #define REGISTER_FUNC(name) recomp::overlays::register_base_export(#name, name)
+ 
+-int main(int argc, char** argv) {
++int banjo_recomp_main(int argc, char** argv) {
+     std::optional<std::filesystem::path> launch_rom_path;
+     bool auto_start = false;
+ 
+@@ -638,7 +660,12 @@ int main(int argc, char** argv) {
+     // Map this executable into memory and lock it, which should keep it in physical memory. This ensures
+     // that there are no stutters from the OS having to load new pages of the executable whenever a new code page is run.
+     PreloadContext preload_context;
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++    bool preloaded = true;
++    fprintf(stdout, "BANJOPAD_IOS executable preload skipped\n");
++#else
+     bool preloaded = preload_executable(preload_context);
++#endif
+ 
+     if (!preloaded) {
+         fprintf(stderr, "Failed to preload executable!\n");
+@@ -696,8 +723,10 @@ int main(int argc, char** argv) {
+     std::filesystem::current_path("/var/data", ec);
+ #endif
+ 
+-    // Initialize native file dialogs.
++    // Native file dialogs are bridged to UIKit later in the iOS port.
++#if !defined(__APPLE__) || !TARGET_OS_IPHONE
+     NFD_Init();
++#endif
+ 
+     // Initialize program settings.
+     recompui::programconfig::set_program_name(banjo::program_name);
+@@ -705,10 +734,16 @@ int main(int argc, char** argv) {
+     
+     // Initialize SDL audio and set the output frequency.
+     SDL_InitSubSystem(SDL_INIT_AUDIO);
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++    fprintf(stdout, "BANJOPAD_IOS audio devices: %d\n", SDL_GetNumAudioDevices(0));
++#endif
+     if (!reset_audio(48000)) {
+         // It is not possible to initialize without an audio device.
+         return EXIT_FAILURE;
+     }
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++    fprintf(stdout, "BANJOPAD_IOS audio ready: 48000 Hz\n");
++#endif
+ 
+     // Source controller mappings file
+     std::u8string controller_db_path = (recompui::file::get_program_path() / "recompcontrollerdb.txt").u8string();
+@@ -721,7 +756,11 @@ int main(int argc, char** argv) {
+     recompui::register_extra_font("Suplexmentary Comic NC.ttf");
+ 
+     // Register configuration path.
+-    recomp::register_config_path(recompui::file::get_app_folder_path());
++    const std::filesystem::path app_folder_path = recompui::file::get_app_folder_path();
++    recomp::register_config_path(app_folder_path);
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++    fprintf(stdout, "BANJOPAD_IOS config path: %s\n", app_folder_path.c_str());
++#endif
+ 
+     // Register supported games and patches
+     for (const auto& game : supported_games) {
+@@ -781,8 +820,15 @@ int main(int argc, char** argv) {
+ 
+     ultramodern::renderer::callbacks_t renderer_callbacks{
+         .create_render_context = [](uint8_t* rdram, ultramodern::renderer::WindowHandle window_handle, bool developer_mode) {
++#if defined(BANJO_MOBILE_RENDERER_STUB)
++            (void)rdram;
++            (void)window_handle;
++            (void)developer_mode;
++            return banjo::mobile::create_null_renderer_context();
++#else
+             auto presentation_mode = ultramodern::renderer::PresentationMode::PresentEarly;
+             return recompui::renderer::create_render_context(rdram, window_handle, presentation_mode, developer_mode);
++#endif
+         },
+     };
+ 
+@@ -844,7 +890,9 @@ int main(int argc, char** argv) {
+         threads_callbacks
+     );
+ 
++#if !defined(__APPLE__) || !TARGET_OS_IPHONE
+     NFD_Quit();
++#endif
+ 
+     if (preloaded) {
+         release_preload(preload_context);
+@@ -857,3 +905,9 @@ int main(int argc, char** argv) {
+ 
+     return EXIT_SUCCESS;
+ }
++
++#if !defined(__APPLE__) || !TARGET_OS_IPHONE
++int main(int argc, char** argv) {
++    return banjo_recomp_main(argc, argv);
++}
++#endif

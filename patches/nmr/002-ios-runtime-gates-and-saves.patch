@@ -1,0 +1,540 @@
+diff --git a/librecomp/include/librecomp/mods.hpp b/librecomp/include/librecomp/mods.hpp
+index 37556bd..fd791a6 100644
+--- a/librecomp/include/librecomp/mods.hpp
++++ b/librecomp/include/librecomp/mods.hpp
+@@ -129,6 +129,7 @@ namespace recomp {
+             OfflineModHooked,
+             NoSpecifiedApiVersion,
+             UnsupportedApiVersion,
++            UnsupportedPlatform,
+         };
+ 
+         std::string error_to_string(CodeModLoadError);
+@@ -224,6 +225,7 @@ namespace recomp {
+             bool runtime_toggleable;
+             bool enabled_by_default;
+             bool custom_gamemode;
++            bool contains_code;
+         };
+ 
+         struct ModManifest {
+@@ -510,7 +512,8 @@ namespace recomp {
+                     .dependencies = manifest.dependencies,
+                     .runtime_toggleable = is_runtime_toggleable(),
+                     .enabled_by_default = manifest.enabled_by_default,
+-                    .custom_gamemode = manifest.custom_gamemode
++                    .custom_gamemode = manifest.custom_gamemode,
++                    .contains_code = contains_code
+                 };
+             }
+         private:
+@@ -526,6 +529,7 @@ namespace recomp {
+             std::vector<size_t> game_indices;
+             // Whether this mod can be toggled at runtime.
+             bool runtime_toggleable;
++            bool contains_code = false;
+         };
+         
+         struct ModCodeHandleInputs {
+diff --git a/librecomp/src/mod_manifest.cpp b/librecomp/src/mod_manifest.cpp
+index 71560eb..bb3e47b 100644
+--- a/librecomp/src/mod_manifest.cpp
++++ b/librecomp/src/mod_manifest.cpp
+@@ -1131,5 +1131,7 @@ std::string recomp::mods::error_to_string(CodeModLoadError error) {
+             return "Mod DLL does not specify an API version";
+         case CodeModLoadError::UnsupportedApiVersion:
+             return "Mod DLL has an unsupported API version";
++        case CodeModLoadError::UnsupportedPlatform:
++            return "Code mods are not supported on this platform";
+     }
+ }
+diff --git a/librecomp/src/mods.cpp b/librecomp/src/mods.cpp
+index 0f7de83..b526dad 100644
+--- a/librecomp/src/mods.cpp
++++ b/librecomp/src/mods.cpp
+@@ -277,6 +277,7 @@ recomp::mods::ModHandle::ModHandle(const ModContext& context, ModManifest&& mani
+     thumbnail{ std::move(thumbnail) },
+     game_indices{std::move(game_indices)}
+ {
++    contains_code = std::find(this->content_types.begin(), this->content_types.end(), context.get_code_content_type()) != this->content_types.end();
+     runtime_toggleable = true;
+     for (ModContentTypeId type : this->content_types) {
+         if (!context.is_content_runtime_toggleable(type)) {
+@@ -2322,6 +2323,14 @@ recomp::mods::CodeModLoadError recomp::mods::ModContext::init_mod_code(uint8_t*
+ }
+ 
+ recomp::mods::CodeModLoadError recomp::mods::ModContext::load_mod_code(uint8_t* rdram, recomp::mods::ModHandle& mod, uint32_t base_event_index, std::string& error_param) {
++#ifdef BANJO_IOS_NO_CODE_MODS
++    (void)rdram;
++    (void)mod;
++    (void)base_event_index;
++    error_param = "Executable-memory code generation is disabled on iOS";
++    return CodeModLoadError::UnsupportedPlatform;
++#endif
++
+     // Build the hook list for this mod. Maps function index within mod to hook slot index.
+     std::unordered_map<size_t, size_t> entry_func_hooks{};
+     std::unordered_map<size_t, size_t> return_func_hooks{};
+diff --git a/librecomp/src/pi.cpp b/librecomp/src/pi.cpp
+index 62656ad..5b6dd47 100644
+--- a/librecomp/src/pi.cpp
++++ b/librecomp/src/pi.cpp
+@@ -4,6 +4,8 @@
+ #include <cstring>
+ #include <string>
+ #include <mutex>
++#include <shared_mutex>
++#include <condition_variable>
+ #include "recomp.h"
+ #include "librecomp/addresses.hpp"
+ #include "librecomp/game.hpp"
+@@ -88,12 +90,20 @@ struct {
+     std::vector<char> save_buffer;
+     std::thread saving_thread;
+     std::filesystem::path save_file_path;
++    std::filesystem::path save_root_path;
+     moodycamel::LightweightSemaphore write_sempahore;
+-    // Used to tell the saving thread that a file swap is pending.
+-    moodycamel::LightweightSemaphore swap_file_pending_sempahore;
+-    // Used to tell the consumer thread that the saving thread is ready for a file swap.
+-    moodycamel::LightweightSemaphore swap_file_ready_sempahore;
+     std::mutex save_buffer_mutex;
++    std::mutex control_mutex;
++    std::mutex control_state_mutex;
++    std::condition_variable control_state_changed;
++    uint64_t control_requested_generation = 0;
++    uint64_t control_acknowledged_generation = 0;
++    uint64_t control_released_generation = 0;
++    bool worker_running = false;
++    std::shared_mutex operation_mutex;
++    std::mutex path_mutex;
++    std::atomic_bool initialized = false;
++    std::atomic_bool last_write_succeeded = true;
+ } save_context;
+ 
+ const std::u8string save_folder = u8"saves";
+@@ -101,21 +111,34 @@ const std::u8string save_folder = u8"saves";
+ extern std::filesystem::path config_path;
+ 
+ std::filesystem::path ultramodern::get_save_file_path() {
++    std::lock_guard lock{ save_context.path_mutex };
+     return save_context.save_file_path;
+ }
+ 
++std::filesystem::path ultramodern::get_save_root_path() {
++    std::lock_guard lock{ save_context.path_mutex };
++    return save_context.save_root_path;
++}
++
++size_t ultramodern::get_save_file_size() {
++    std::lock_guard lock{ save_context.save_buffer_mutex };
++    return save_context.save_buffer.size();
++}
++
+ void set_save_file_path(const std::u8string& subfolder, const std::u8string& name) {
+-    std::filesystem::path save_folder_path = config_path / save_folder;
++    std::lock_guard lock{ save_context.path_mutex };
++    std::filesystem::path save_folder_path = save_context.save_root_path;
+     if (!subfolder.empty()) {
+         save_folder_path = save_folder_path / subfolder;
+     }
+     save_context.save_file_path = save_folder_path / (name + u8".bin");
+ }
+ 
+-void update_save_file() {
++bool update_save_file() {
+     bool saving_failed = false;
++    const std::filesystem::path save_file_path = ultramodern::get_save_file_path();
+     {
+-        std::ofstream save_file = recomp::open_output_file_with_backup(ultramodern::get_save_file_path(), std::ios_base::binary);
++        std::ofstream save_file = recomp::open_output_file_with_backup(save_file_path, std::ios_base::binary);
+ 
+         if (save_file.good()) {
+             std::lock_guard lock{ save_context.save_buffer_mutex };
+@@ -126,17 +149,19 @@ void update_save_file() {
+         }
+     }
+     if (!saving_failed) {
+-        saving_failed = !recomp::finalize_output_file_with_backup(ultramodern::get_save_file_path());
++        saving_failed = !recomp::finalize_output_file_with_backup(save_file_path);
+     }
+     if (saving_failed) {
+         ultramodern::error_handling::message_box("Failed to write to the save file. Check your file permissions and whether the save folder has been moved to Dropbox or similar, as this can cause issues.");
+     }
++    save_context.last_write_succeeded = !saving_failed;
++    return !saving_failed;
+ }
+ 
+ extern std::atomic_bool exited;
+ 
+ void saving_thread_func(RDRAM_ARG1) {
+-    while (!exited) {
++    while (true) {
+         bool save_buffer_updated = false;
+         // Repeatedly wait for a new action to be sent.
+         constexpr int64_t wait_time_microseconds = 10000;
+@@ -156,8 +181,22 @@ void saving_thread_func(RDRAM_ARG1) {
+             update_save_file();
+         }
+ 
+-        if (save_context.swap_file_pending_sempahore.tryWait()) {
+-            save_context.swap_file_ready_sempahore.signal();
++        {
++            std::unique_lock control_lock{ save_context.control_state_mutex };
++            if (save_context.control_requested_generation > save_context.control_acknowledged_generation) {
++                const uint64_t generation = save_context.control_requested_generation;
++                save_context.control_acknowledged_generation = generation;
++                save_context.control_state_changed.notify_all();
++                save_context.control_state_changed.wait(control_lock, [generation] {
++                    return save_context.control_released_generation >= generation;
++                });
++            }
++            if (exited.load()) {
++                save_context.worker_running = false;
++                save_context.initialized = false;
++                save_context.control_state_changed.notify_all();
++                break;
++            }
+         }
+     }
+ }
+@@ -165,6 +204,7 @@ void saving_thread_func(RDRAM_ARG1) {
+ void save_write_ptr(const void* in, uint32_t offset, uint32_t count) {
+     assert(offset + count <= save_context.save_buffer.size());
+ 
++    std::shared_lock operation_lock{ save_context.operation_mutex };
+     {
+         std::lock_guard lock { save_context.save_buffer_mutex };
+         memcpy(&save_context.save_buffer[offset], in, count);
+@@ -176,6 +216,7 @@ void save_write_ptr(const void* in, uint32_t offset, uint32_t count) {
+ void save_write(RDRAM_ARG PTR(void) rdram_address, uint32_t offset, uint32_t count) {
+     assert(offset + count <= save_context.save_buffer.size());
+ 
++    std::shared_lock operation_lock{ save_context.operation_mutex };
+     {
+         std::lock_guard lock { save_context.save_buffer_mutex };
+         for (gpr i = 0; i < count; i++) {
+@@ -189,6 +230,7 @@ void save_write(RDRAM_ARG PTR(void) rdram_address, uint32_t offset, uint32_t cou
+ void save_read(RDRAM_ARG PTR(void) rdram_address, uint32_t offset, uint32_t count) {
+     assert(offset + count <= save_context.save_buffer.size());
+ 
++    std::shared_lock operation_lock{ save_context.operation_mutex };
+     std::lock_guard lock { save_context.save_buffer_mutex };
+     for (gpr i = 0; i < count; i++) {
+         MEM_B(i, rdram_address) = save_context.save_buffer[offset + i];
+@@ -198,6 +240,7 @@ void save_read(RDRAM_ARG PTR(void) rdram_address, uint32_t offset, uint32_t coun
+ void save_clear(uint32_t start, uint32_t size, char value) {
+     assert(start + size < save_context.save_buffer.size());
+ 
++    std::shared_lock operation_lock{ save_context.operation_mutex };
+     {
+         std::lock_guard lock { save_context.save_buffer_mutex };
+         std::fill_n(save_context.save_buffer.begin() + start, size, value);
+@@ -223,47 +266,196 @@ size_t get_save_size(recomp::SaveType save_type) {
+     return 0;
+ }
+ 
+-void read_save_file() {
+-    std::filesystem::path save_file_path = ultramodern::get_save_file_path();
+-
+-    // Ensure the save file directory exists.
+-    std::filesystem::create_directories(save_file_path.parent_path());
++bool read_save_file(const std::filesystem::path& save_file_path, bool allow_missing) {
++    if (allow_missing) {
++        std::error_code error;
++        std::filesystem::create_directories(save_file_path.parent_path(), error);
++        if (error) {
++            return false;
++        }
++    }
+ 
+-    // Read the save file if it exists.
++    std::vector<char> loaded_save(save_context.save_buffer.size(), 0);
+     std::ifstream save_file = recomp::open_input_file_with_backup(save_file_path, std::ios_base::binary);
+     if (save_file.good()) {
+-        save_file.read(save_context.save_buffer.data(), save_context.save_buffer.size());
++        save_file.read(loaded_save.data(), loaded_save.size());
++        if (static_cast<size_t>(save_file.gcount()) != loaded_save.size() || save_file.peek() != std::ifstream::traits_type::eof()) {
++            return false;
++        }
+     }
+-    else {
+-        // Otherwise clear the save file to all zeroes.
+-        std::fill(save_context.save_buffer.begin(), save_context.save_buffer.end(), 0);
++    else if (!allow_missing) {
++        return false;
+     }
++
++    std::lock_guard lock{ save_context.save_buffer_mutex };
++    save_context.save_buffer = std::move(loaded_save);
++    return true;
++}
++
++bool read_save_file(bool allow_missing) {
++    return read_save_file(ultramodern::get_save_file_path(), allow_missing);
+ }
+ 
+ void ultramodern::init_saving(RDRAM_ARG1) {
++    {
++        std::lock_guard lock{ save_context.path_mutex };
++        if (save_context.save_root_path.empty()) {
++            save_context.save_root_path = config_path / save_folder;
++        }
++    }
+     set_save_file_path(u8"", recomp::current_game_id());
+ 
+     save_context.save_buffer.resize(get_save_size(recomp::get_save_type()));
+ 
+-    read_save_file();
++    read_save_file(true);
+ 
++    {
++        std::lock_guard control_lock{ save_context.control_state_mutex };
++        save_context.worker_running = true;
++        save_context.initialized = true;
++    }
+     save_context.saving_thread = std::thread{saving_thread_func, PASS_RDRAM};
+ }
+ 
++namespace {
++class SaveControlTransaction {
++public:
++    SaveControlTransaction() : operation_lock{ save_context.operation_mutex }, control_lock{ save_context.control_mutex } {
++        std::unique_lock state_lock{ save_context.control_state_mutex };
++        if (!save_context.worker_running || exited.load()) {
++            return;
++        }
++        generation = ++save_context.control_requested_generation;
++        save_context.control_state_changed.wait(state_lock, [this] {
++            return save_context.control_acknowledged_generation >= generation || !save_context.worker_running;
++        });
++        paused = save_context.control_acknowledged_generation >= generation;
++    }
++    bool ready() const { return paused; }
++    ~SaveControlTransaction() {
++        if (paused) {
++            std::lock_guard state_lock{ save_context.control_state_mutex };
++            save_context.control_released_generation = generation;
++            save_context.control_state_changed.notify_all();
++        }
++    }
++private:
++    std::unique_lock<std::shared_mutex> operation_lock;
++    std::unique_lock<std::mutex> control_lock;
++    bool paused = false;
++    uint64_t generation = 0;
++};
++}
++
++bool ultramodern::flush_save_file() {
++    SaveControlTransaction transaction;
++    return transaction.ready() && save_context.last_write_succeeded.load();
++}
++
++bool ultramodern::snapshot_save_file(std::vector<uint8_t>& snapshot) {
++    SaveControlTransaction transaction;
++    if (!transaction.ready() || !save_context.last_write_succeeded.load()) {
++        return false;
++    }
++    std::lock_guard lock{ save_context.save_buffer_mutex };
++    snapshot.assign(save_context.save_buffer.begin(), save_context.save_buffer.end());
++    return true;
++}
++
++bool ultramodern::import_save_file(std::span<const uint8_t> data) {
++    SaveControlTransaction transaction;
++    if (!transaction.ready() || data.size() != save_context.save_buffer.size()) {
++        return false;
++    }
++    std::vector<char> old_save;
++    {
++        std::lock_guard lock{ save_context.save_buffer_mutex };
++        old_save = save_context.save_buffer;
++        std::memcpy(save_context.save_buffer.data(), data.data(), data.size());
++    }
++    if (update_save_file()) {
++        return true;
++    }
++    {
++        std::lock_guard lock{ save_context.save_buffer_mutex };
++        save_context.save_buffer = std::move(old_save);
++    }
++    return false;
++}
++
++bool ultramodern::reload_save_file() {
++    SaveControlTransaction transaction;
++    return transaction.ready() && read_save_file(false);
++}
++
++bool ultramodern::set_save_root_path(const std::filesystem::path& root, bool load_existing) {
++    if (root.empty()) {
++        return false;
++    }
++    SaveControlTransaction transaction;
++    if (!transaction.ready()) {
++        return false;
++    }
++    std::filesystem::path relative_path;
++    std::filesystem::path old_root;
++    std::filesystem::path old_file;
++    {
++        std::lock_guard lock{ save_context.path_mutex };
++        old_root = save_context.save_root_path;
++        old_file = save_context.save_file_path;
++        relative_path = save_context.save_file_path.lexically_relative(save_context.save_root_path);
++        if (relative_path.empty() || *relative_path.begin() == "..") {
++            return false;
++        }
++    }
++    const std::filesystem::path new_file = root / relative_path;
++    if (load_existing) {
++        if (!read_save_file(new_file, false)) {
++            return false;
++        }
++        std::lock_guard path_lock{ save_context.path_mutex };
++        save_context.save_root_path = root;
++        save_context.save_file_path = new_file;
++        return true;
++    }
++    {
++        std::lock_guard path_lock{ save_context.path_mutex };
++        save_context.save_root_path = root;
++        save_context.save_file_path = new_file;
++    }
++    if (update_save_file()) {
++        return true;
++    }
++    {
++        std::lock_guard lock{ save_context.path_mutex };
++        save_context.save_root_path = std::move(old_root);
++        save_context.save_file_path = std::move(old_file);
++    }
++    return false;
++}
++
+ void ultramodern::change_save_file(const std::u8string& subfolder, const std::u8string& name) {
+-    // Tell the saving thread that a file swap is pending.
+-    save_context.swap_file_pending_sempahore.signal();
+-    // Wait until the saving thread indicates it's ready to swap files.
+-    save_context.swap_file_ready_sempahore.wait();
+-    // Perform the save file swap.
+-    set_save_file_path(subfolder, name);
+-    read_save_file();
++    SaveControlTransaction transaction;
++    if (!transaction.ready()) {
++        return;
++    }
++    std::filesystem::path save_folder_path = ultramodern::get_save_root_path();
++    if (!subfolder.empty()) {
++        save_folder_path /= subfolder;
++    }
++    const std::filesystem::path new_file = save_folder_path / (name + u8".bin");
++    if (!read_save_file(new_file, true)) {
++        return;
++    }
++    std::lock_guard path_lock{ save_context.path_mutex };
++    save_context.save_file_path = new_file;
+ }
+ 
+ void ultramodern::join_saving_thread() {
+     if (save_context.saving_thread.joinable()) {
+         save_context.saving_thread.join();
+     }
++    save_context.initialized = false;
+ }
+ 
+ void do_dma(RDRAM_ARG PTR(OSMesgQueue) mq, gpr rdram_address, uint32_t physical_addr, uint32_t size, uint32_t direction) {
+diff --git a/ultramodern/include/ultramodern/ultramodern.hpp b/ultramodern/include/ultramodern/ultramodern.hpp
+index 3b28af3..b96be75 100644
+--- a/ultramodern/include/ultramodern/ultramodern.hpp
++++ b/ultramodern/include/ultramodern/ultramodern.hpp
+@@ -7,6 +7,7 @@
+ #include <span>
+ #include <chrono>
+ #include <filesystem>
++#include <vector>
+ 
+ #undef MOODYCAMEL_DELETE_FUNCTION
+ #define MOODYCAMEL_DELETE_FUNCTION = delete
+@@ -41,6 +42,22 @@ void init_thread_cleanup();
+ // Saving
+ void change_save_file(const std::u8string& subfolder, const std::u8string& name);
+ std::filesystem::path get_save_file_path();
++// Returns the directory under which save subfolders and files are stored.
++std::filesystem::path get_save_root_path();
++// Returns the exact byte count accepted by import_save_file.
++size_t get_save_file_size();
++// Changes the save root. When load_existing is true, the active save is loaded
++// from the new root; otherwise the current in-memory save is written there.
++bool set_save_root_path(const std::filesystem::path& root, bool load_existing);
++// Flushes pending writes and reports whether the active save reached storage.
++bool flush_save_file();
++// Produces a consistent snapshot after flushing pending writes.
++bool snapshot_save_file(std::vector<uint8_t>& snapshot);
++// Replaces the active save atomically, preserving the existing backup behavior.
++// The data size must exactly match the configured save type.
++bool import_save_file(std::span<const uint8_t> data);
++// Reloads the active save from storage (including backup recovery).
++bool reload_save_file();
+ 
+ // Thread queues.
+ constexpr PTR(PTR(OSThread)) running_queue = (PTR(PTR(OSThread)))-1;
+diff --git a/ultramodern/src/timer.cpp b/ultramodern/src/timer.cpp
+index 276301b..8c54e88 100644
+--- a/ultramodern/src/timer.cpp
++++ b/ultramodern/src/timer.cpp
+@@ -87,13 +87,29 @@ void timer_thread(RDRAM_ARG1) {
+     // Ordered set of timers that are currently active
+     std::set<PTR(OSTimer), decltype(timer_sort)> active_timers{timer_sort};
+     
++    auto erase_timer_by_pointer = [&](PTR(OSTimer) timer) {
++        for (auto it = active_timers.begin(); it != active_timers.end();) {
++            if (*it == timer) {
++                it = active_timers.erase(it);
++            }
++            else {
++                ++it;
++            }
++        }
++    };
++
+     // Lambda to process a timer action to handle adding and removing timers
+     auto process_timer_action = [&](const Action& action) {
+         // Determine the action type and act on it
+         if (const auto* add_action = std::get_if<AddTimerAction>(&action)) {
++            // The set comparator depends on OSTimer::timestamp, and osSetTimer mutates
++            // the timer before the timer thread sees the AddTimerAction. Remove any
++            // existing entry by pointer identity first; using active_timers.erase(timer)
++            // can miss entries once the pointed-to timestamp has changed.
++            erase_timer_by_pointer(add_action->timer);
+             active_timers.insert(add_action->timer);
+         } else if (const auto* remove_action = std::get_if<RemoveTimerAction>(&action)) {
+-            active_timers.erase(remove_action->timer);
++            erase_timer_by_pointer(remove_action->timer);
+         }
+     };
+ 
+@@ -115,7 +131,7 @@ void timer_thread(RDRAM_ARG1) {
+         OSTimer* cur_timer = TO_PTR(OSTimer, cur_timer_);
+ 
+         // Remove the timer from the queue (it may get readded if waiting is interrupted)
+-        active_timers.erase(cur_timer_);
++        active_timers.erase(active_timers.begin());
+ 
+         // Determine how long to wait to reach the timer's timestamp
+         auto wait_duration = ticks_to_timepoint(cur_timer->timestamp) - std::chrono::high_resolution_clock::now();
+@@ -134,8 +150,13 @@ void timer_thread(RDRAM_ARG1) {
+             // If the timer has a specified interval then reload it with that value
+             if (cur_timer->interval != 0) {
+                 cur_timer->timestamp = cur_timer->interval + time_now();
++                erase_timer_by_pointer(cur_timer_);
+                 active_timers.insert(cur_timer_);
+             }
++            else {
++                // Defensive cleanup for stale duplicate entries from timer rescheduling.
++                erase_timer_by_pointer(cur_timer_);
++            }
+         }
+     }
+ }

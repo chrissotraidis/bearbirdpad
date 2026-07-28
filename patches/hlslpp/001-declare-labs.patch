@@ -1,0 +1,19 @@
+diff --git a/include/hlsl++/platforms/scalar.h b/include/hlsl++/platforms/scalar.h
+index f2db5ee..17a896b 100644
+--- a/include/hlsl++/platforms/scalar.h
++++ b/include/hlsl++/platforms/scalar.h
+@@ -2,6 +2,7 @@
+ 
+ #include <math.h>
+ #include <stdint.h>
++#include <stdlib.h>
+ 
+ namespace hlslpp
+ {
+@@ -1017,4 +1018,4 @@ HLSLPP_WARNING_POTENTIAL_DIVIDE_BY_0_END
+ 		detail::packed_union packed(p);
+ 		return vector_float4(packed._c[0] / 127.0f, packed._c[1] / 127.0f, packed._c[2] / 127.0f, packed._c[3] / 127.0f);
+ 	}
+-}
+\ No newline at end of file
++}
