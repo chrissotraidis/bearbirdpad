@@ -48,11 +48,13 @@ case "$MODE" in
         PLATFORM="device"
         SDK="iphoneos"
         DESTINATION="generic/platform=iOS"
+        XCODE_OUTPUT_SUFFIX="iphoneos"
         ;;
     --simulator)
         PLATFORM="simulator"
         SDK="iphonesimulator"
         DESTINATION="generic/platform=iOS Simulator"
+        XCODE_OUTPUT_SUFFIX="iphonesimulator"
         ;;
 esac
 
@@ -60,6 +62,7 @@ PREFIX_ROOT="$DEPS_ROOT/$PLATFORM"
 SDL_PREFIX="$PREFIX_ROOT/sdl2"
 FREETYPE_PREFIX="$PREFIX_ROOT/freetype"
 SMOKE_BUILD="$ROOT/build-ios-smoke-$PLATFORM"
+CI_STUB_BUILD="$ROOT/build-ios-ci-stub-$PLATFORM"
 APP_BUILD="$ROOT/build-ios-app-$PLATFORM"
 
 fetch_archive() {
@@ -156,15 +159,38 @@ if [[ ! -f "$FREETYPE_PREFIX/lib/libfreetype.a" ]]; then
         -- -destination "$DESTINATION" CODE_SIGNING_ALLOWED=NO
 fi
 
-if [[ "$PRODUCT" != "smoke" ]]; then
+if [[ "$PRODUCT" == "stub" ]]; then
+    cmake \
+        -S "$ROOT/ios/ci-stub" \
+        -B "$CI_STUB_BUILD" \
+        -G Xcode \
+        -DCMAKE_SYSTEM_NAME=iOS \
+        -DCMAKE_OSX_SYSROOT="$SDK" \
+        -DCMAKE_OSX_DEPLOYMENT_TARGET=16.0 \
+        -DCMAKE_OSX_ARCHITECTURES=arm64 \
+        -DCMAKE_PREFIX_PATH="$SDL_PREFIX" \
+        -DSDL2_DIR="$SDL_PREFIX/lib/cmake/SDL2" \
+        -DDEVELOPMENT_TEAM="${DEVELOPMENT_TEAM:-}"
+
+    set -- cmake --build "$CI_STUB_BUILD" \
+        --config "$CONFIG" \
+        --target BanjoPadCIStub \
+        -- -destination "$DESTINATION"
+    if [[ -z "${DEVELOPMENT_TEAM:-}" ]]; then
+        set -- "$@" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+    fi
+    "$@"
+
+    echo
+    echo "Built ROM-free CI stub:"
+    echo "  $CI_STUB_BUILD/$CONFIG-$XCODE_OUTPUT_SUFFIX/BanjoPadCIStub.app"
+    exit
+fi
+
+if [[ "$PRODUCT" == "app" ]]; then
     METAL_COMPILER="$(xcrun -f metal)"
     METALLIB_COMPILER="$(dirname "$METAL_COMPILER")/metallib"
-    STUB_RENDERER="OFF"
     PRODUCT_LABEL="full app"
-    if [[ "$PRODUCT" == "stub" ]]; then
-        STUB_RENDERER="ON"
-        PRODUCT_LABEL="Phase 3 stub app"
-    fi
 
     cmake \
         -S "$ROOT/sources/banjo" \
@@ -178,7 +204,8 @@ if [[ "$PRODUCT" != "smoke" ]]; then
         -DSDL2_DIR="$SDL_PREFIX/lib/cmake/SDL2" \
         -DFreetype_DIR="$FREETYPE_PREFIX/lib/cmake/freetype" \
         -DBANJOPAD_IOS_DIR="$ROOT/ios/app" \
-        -DBANJO_MOBILE_RENDERER_STUB="$STUB_RENDERER" \
+        -DBANJO_MOBILE_RENDERER_STUB=OFF \
+        -DDEVELOPMENT_TEAM="${DEVELOPMENT_TEAM:-}" \
         -DDXC_PATH="$ROOT/sources/banjo/lib/rt64/src/contrib/dxc/bin/arm64/dxc-macos" \
         -DSPIRV_CROSS_MSL_PATH="$ROOT/build-host/bin/spirv_cross_msl" \
         -DFILE_TO_C_PATH="$ROOT/build-host/bin/file_to_c" \

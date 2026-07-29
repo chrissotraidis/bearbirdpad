@@ -1,0 +1,54 @@
+name: iOS ROM-free
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-rom-free-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  simulator-stub:
+    runs-on: macos-15
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out BanjoPad
+        uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: brew install ninja
+
+      - name: Reject tracked ROM and generated inputs
+        run: |
+          if git ls-files | grep -Ei '\.(z64|v64|n64)$|(^|/)RecompiledFuncs|(^|/)RecompiledPatches|(^|/)rsp/n_aspMain\.cpp'; then
+            echo "Tracked ROM or generated source detected" >&2
+            exit 1
+          fi
+
+      - name: Fetch pinned upstream trees and apply patches
+        run: scripts/fetch-sources.sh
+
+      - name: Build pinned host tools
+        run: scripts/build-host-tools.sh
+
+      - name: Build ROM-free iOS Simulator stub
+        run: scripts/build-ios.sh --simulator --stub --config Release
+
+      - name: Audit and package stub
+        run: |
+          app="build-ios-ci-stub-simulator/Release-iphonesimulator/BanjoPadCIStub.app"
+          scripts/package-audit.sh "$app"
+          scripts/package-ios.sh "$app" build/ci/BanjoPad-CIStub-simulator.ipa
+
+      - name: Upload ROM-free proof artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BanjoPad-CIStub-simulator
+          path: build/ci/BanjoPad-CIStub-simulator.ipa
+          if-no-files-found: error

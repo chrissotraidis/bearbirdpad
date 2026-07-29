@@ -6,6 +6,8 @@ repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 source_root="$repo_root/sources/banjo"
 banjo_url="https://github.com/BanjoRecomp/BanjoRecomp.git"
 banjo_revision="c20314cd1bcaefff7bdbce257a25ebcc30cc1cdc"
+patch_state="$source_root/.banjopad-patch-state"
+using_patch_state=false
 
 assert_revision() {
     checkout=$1
@@ -44,12 +46,28 @@ apply_series() {
     find "$patch_dir" -maxdepth 1 -type f -name '*.patch' -print |
         LC_ALL=C sort |
         while IFS= read -r patch; do
+            relative_patch=${patch#"$repo_root/"}
+            patch_sha=$(shasum -a 256 "$patch" | awk '{print $1}')
+            state_line="$patch_sha  $relative_patch"
+
+            if [ "$using_patch_state" = true ]; then
+                if grep -Fqx "$state_line" "$patch_state"; then
+                    echo "Already applied (state): $relative_patch"
+                    continue
+                fi
+                if grep -Fq "  $relative_patch" "$patch_state"; then
+                    echo "Applied patch changed in place: $relative_patch" >&2
+                    echo "Patch files are append-only; recreate sources/ to replay a changed patch." >&2
+                    exit 1
+                fi
+            fi
+
             if git -C "$checkout" apply --reverse --check "$patch" >/dev/null 2>&1; then
-                echo "Already applied: ${patch#"$repo_root/"}"
+                echo "Already applied: $relative_patch"
             else
                 git -C "$checkout" apply --check "$patch"
                 git -C "$checkout" apply "$patch"
-                echo "Applied: ${patch#"$repo_root/"}"
+                echo "Applied: $relative_patch"
             fi
         done
 }
@@ -60,10 +78,21 @@ if [ ! -d "$source_root/.git" ]; then
     git clone --filter=blob:none --no-checkout "$banjo_url" "$source_root"
 fi
 
-git -C "$source_root" fetch --depth=1 origin "$banjo_revision"
-git -C "$source_root" checkout --detach "$banjo_revision"
-git -C "$source_root" submodule sync --recursive
-git -C "$source_root" submodule update --init --recursive
+if [ -f "$patch_state" ]; then
+    if grep -Fqx "banjo_revision $banjo_revision" "$patch_state"; then
+        using_patch_state=true
+        echo "Using verified cached patch state: ${patch_state#"$repo_root/"}"
+    else
+        echo "Pinned revision changed for an existing patched source cache." >&2
+        echo "Recreate sources/ to replay the new revision from a clean tree." >&2
+        exit 1
+    fi
+else
+    git -C "$source_root" fetch --depth=1 origin "$banjo_revision"
+    git -C "$source_root" checkout --detach "$banjo_revision"
+    git -C "$source_root" submodule sync --recursive
+    git -C "$source_root" submodule update --init --recursive
+fi
 
 assert_revision "$source_root" "$banjo_revision" "BanjoRecomp"
 assert_revision "$source_root/lib/N64ModernRuntime" "ca568b6" "N64ModernRuntime"
@@ -86,5 +115,16 @@ apply_series hlslpp "$source_root/lib/rt64/src/contrib/hlslpp"
 apply_series plume "$source_root/lib/rt64/src/contrib/plume"
 apply_series nfd "$source_root/lib/rt64/src/contrib/nativefiledialog-extended"
 apply_series frontend "$source_root/lib/RecompFrontend"
+
+{
+    echo "banjo_revision $banjo_revision"
+    find "$repo_root/patches" -type f -name '*.patch' -print |
+        LC_ALL=C sort |
+        while IFS= read -r patch; do
+            relative_patch=${patch#"$repo_root/"}
+            patch_sha=$(shasum -a 256 "$patch" | awk '{print $1}')
+            echo "$patch_sha  $relative_patch"
+        done
+} > "$patch_state"
 
 echo "Pinned sources are ready at $source_root"
