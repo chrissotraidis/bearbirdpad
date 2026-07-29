@@ -1,17 +1,16 @@
-# Status — updated 2026-07-29, iteration 67
+# Status — updated 2026-07-29, iteration 68
 
-Phase: 10+ — touch-control polish; dual-tone contrast edge added
+Phase: 10+ — touch-control polish; iPhone 0.85-scale layout accepted
 
-Done this iteration: improved touch-control visibility across bright and dark gameplay without changing the documented 33% fill, 2 pt light border, geometry, hit targets, or controller-fade behavior. Evidence:
+Done this iteration: replayed the retail-ROM touch matrix on an iPhone 16 Pro, iOS 18.5 Simulator and accepted the existing 0.85-scale geometry without a speculative layout change. Evidence:
 
-- `ios/app/TouchOverlay.mm` now gives every button and the stick a zero-offset black outer shadow and each label a one-point black text shadow. Rounded `shadowPath` values are updated with layout so the edge follows each pill/circle and avoids an unconstrained per-frame shadow raster.
-- Before the change, the single light border nearly disappeared over the retail-ROM boot sequence's pale-blue sky. The rebuilt Release app retained a clear dark silhouette on a full-white transition frame and kept its light border readable over the forest/title sequence.
-- The live iPad Pro 11-inch (M4) run still exposed the complete 12-element touch accessibility tree. Opening the BanjoPad menu removed every gameplay control except the menu button; closing it restored the same tree, proving the visual layer did not alter hit behavior or overlay state.
-- `scripts/build-ios.sh --simulator --app --config Release` and `scripts/build-ios.sh --device --app --config Release` both passed touch tests, compiled the Objective-C++ overlay with the iOS 16.0 SDK targets, linked, and completed with `** BUILD SUCCEEDED **`.
-- `cmake --build build-macos --target BanjoRecompiled -j 4` completed bundle fixup with `valid='1'` and `verified='1'`; `scripts/fetch-sources.sh` recognized the complete pinned patch graph from its digest ledger.
-- Package audit passed with no ROM or generated-source marker in the app. Two fresh unsigned IPAs were byte-for-byte identical: 54 entries, 7,544,887 bytes, SHA-256 `56cacea4fb72cc2e8284ca1960e77c6d4ad28bccbf9dc1c091770741ef140013`; `unzip -tq` passed.
+- The iteration 67 Release Simulator app installed on the isolated iPhone 16 Pro and auto-started from a retail `.n64` copied only into that Simulator's private app container. Runtime normalization produced `bk.n64.us.1.0.z64`; the temporary import duplicate was deleted after confirming both the normalized copy and the owner's original Downloads file remained.
+- In landscape, the stick, left Z pill, A/B/R cluster, right Z, Start, and C diamond stayed inside the safe-area canvas with visible separation between every control. The Dynamic Island/right inset and left sensor housing did not intersect a visual or expanded hit target.
+- The complete 12-element accessibility tree was present at the 0.85 scale. Activating Start advanced the intro, the control-stick `Move up` action dispatched successfully, opening the BanjoPad menu removed all gameplay controls except the menu button, and closing it restored the same tree.
+- The dual-tone contrast edge remained legible over both the forest intro and the pale-blue boot frame at iPhone scale; no geometry or opacity adjustment was justified by the live evidence.
+- No source changed after the already-green iteration 67 Simulator/device builds, macOS canary, patch-ledger replay, and deterministic package audit. The current unsigned IPA remains 54 entries, 7,544,887 bytes, SHA-256 `56cacea4fb72cc2e8284ca1960e77c6d4ad28bccbf9dc1c091770741ef140013`.
 
-Next goal: replay the 0.85-scale touch layout on an iPhone 16 Pro Simulator with the private retail ROM kept inside Simulator storage; verify no overlaps, bright/dark contrast, Start, stick, and menu hide/restore before any geometry tuning.
+Next goal: verify the Touch Controls off/on and Hide With Controller settings on iPhone, including held-input release and persistence across relaunch, while keeping the always-available menu button reachable.
 
 Blockers: no local source, build, or package blocker. The owner confirmed that no iPad is attached to this Mac and physical-device testing will happen on another machine, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, deterministic IPA generation, and the macOS canary are green.
 
