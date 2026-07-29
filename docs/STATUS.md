@@ -1,23 +1,24 @@
-# Status — updated 2026-07-29, iteration 49
+# Status — updated 2026-07-29, iteration 50
 
-Phase: 10+ — polish backlog; five-cycle background/force-close/relaunch soak preserves state
+Phase: 10+ — polish backlog; 30-minute Home suspend resumes in place without state loss
 
-Done this iteration: ran five consecutive real Home background → App Switcher `Close BanjoPad` → launcher → stored-ROM gameplay cycles while auditing process death, fresh-process recovery, input release, rendering, accessibility, settings, and save atomicity. No app-source correction was needed. Evidence:
+Done this iteration: ran one uninterrupted real 30-minute Home suspend in the production Simulator process while auditing input release, process continuity, rendering, accessibility, settings, crash reports, and save atomicity. No app-source correction was needed. Evidence:
 
-- Before every background, the fresh production process simultaneously staged and read back A `32768`, stick `(0.75, -0.5)`, and camera `(0.625, -0.375)`.
-- Every Home transition reported `UIApplicationStateBackground` (`2`) and cleared production merged buttons, both stick axes, and both camera axes to exactly zero before force-close.
-- The real App Switcher card disappeared after every `Close BanjoPad` action, and host process inspection confirmed each old PID exited: `76948`, `84841`, `85772`, `86211`, then `86685`.
-- Every fresh process opened the normal BanjoRecompiled launcher without a document picker, started the already stored retail ROM, exposed the complete 10-button/centered-stick accessibility tree, reported `UIApplicationStateActive` (`0`), returned `BanjoPadTouch_Enabled() == 1`, and began with all production inputs neutral.
-- The fresh process sequence was `84841`, `85772`, `86211`, `86685`, then final PID `87197`; Simulator launchd reported final unique PID `8341827`, one initialized execution, no prior exit, and a running job.
-- Two final post-soak captures showed the retail-ROM attract sequence advance between different scenes after a normal black startup interval; no persistent blank frame or renderer-resume failure appeared.
-- After every force-close, the primary save and `.bak` remained exactly 2,048 bytes with SHA-256 `3766157740b5946d1e62cecd9b60767d411fee76bc55e6c9df7df269de7fb8c2`. Their write mtimes advanced together during synchronous lifecycle flushes, ending at `1785335807`; no `.temp`, `.tmp`, or partial file appeared.
+- Before Home, production input was neutral, then the touch functions simultaneously staged and read back A `32768`, stick `(0.75, -0.5)`, and camera `(0.625, -0.375)`.
+- Home occurred at `2026-07-29T14:43:03.945Z`. UIKit reported `UIApplicationStateBackground` (`2`) and production merged buttons, both stick axes, and both camera axes read exactly zero before the process was left untouched.
+- No Simulator, process, debugger, or save interaction occurred during the hold. Foreground validation began after `1,817.145` seconds (`30:17.145`), exceeding the required 30 minutes.
+- PID `87197` and unique PID `8341827` survived. Simulator launchd still reported one initialized execution, no prior exit, and a running job.
+- Foregrounding returned the complete menu, 10 gameplay buttons, and centered stick with all four direction actions. UIKit reported `UIApplicationStateActive` (`0`), `BanjoPadTouch_Enabled() == 1`, and all production input channels remained exactly zero.
+- Two resumed captures showed the retail-ROM attract sequence advance between different scenes; no persistent blank frame or renderer-resume failure appeared.
+- The primary save and `.bak` remained exactly 2,048 bytes with SHA-256 `3766157740b5946d1e62cecd9b60767d411fee76bc55e6c9df7df269de7fb8c2` and unchanged synchronized mtime `1785335807`. No `.temp`, `.tmp`, or partial file appeared.
+- No BanjoPad, watchdog, or jetsam report appeared in the host or Simulator diagnostic-report locations during the soak window.
 - `Documents/BanjoRecompiled/ios-controls.json` remained `touch_controls: true` with SHA-256 `f9417c1ac93f257c45249aad6252877e5768cf1f562048c99c71f34f917b9bcb`.
 - Because app source remained identical to iteration 36, this verification-only iteration reused the exact installed Simulator Release build and existing device/IPA artifacts instead of rebuilding identical binaries.
 - The touch-state regression and device-app package audit passed again.
 - `scripts/package-audit.sh` found no ROM, ROM digest, or generated-source marker.
 - Existing `build/release/BanjoPad-0.1.0-unsigned.ipa`: 7.2 MB allocated size, SHA-256 `9992b326d9fb8e346fb8ca059d1ff80d04bda61dd86d7039c13bb01e8f6bd9e2`.
 
-Next goal: run one real 30-minute Home suspend with staged production input, then prove PID continuity, active neutral controls, resumed advancing rendering, complete accessibility, unchanged settings/save hashes, and no orphaned temporary file.
+Next goal: execute the DD3 Stage Manager/multitasking decision gate with an iPad Simulator resize matrix, then either retain the documented full-screen posture with evidence or implement and verify safe resizable-window support.
 
 Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 
