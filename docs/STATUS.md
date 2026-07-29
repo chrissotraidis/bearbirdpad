@@ -1,19 +1,19 @@
-# Status — updated 2026-07-29, iteration 20
+# Status — updated 2026-07-29, iteration 21
 
-Phase: 10+ — polish backlog; known-good retail ROM now reproven from validation through live Simulator title rendering
+Phase: 10+ — polish backlog; iPhone scale pass complete on launcher and live gameplay
 
-Done this iteration: exercised the supplied NTSC-U 1.0 ROM through the real iOS validation, storage, mod-loading, renderer, and game-start path without changing or publishing the ROM. Evidence:
+Done this iteration: audited the current Release build on a fresh iPhone 16 Pro Simulator from first launch through live gameplay and found no layout change warranted. Evidence:
 
-- Revalidated `/Users/chrissotraidis/Downloads/Banjo-Kazooie (USA).n64`: exactly 16 MiB and runtime XXH3-64 `1B67585D56E07F8C`.
-- Preserved the existing Simulator container, including its normalized ROM, save files, settings, and BK-Reloaded `.rtz`. A separate temporary in-container copy reported the same retail hash and was passed to the existing `--rom ... --auto-start` diagnostic seam.
-- Console proof: `Imported launch ROM`, `SDL Video Driver: uikit`, `audio ready: 48000 Hz`, Apple iOS simulator GPU selected, BK-Reloaded opened and loaded, and the recomp heap initialized. No validation, renderer, or game-thread failure appeared.
-- Captured a live iPad Pro 11-inch (M4), iOS 18.5 Simulator window showing the app correctly landscape, the animated Banjo-Kazooie title sequence rendered through Metal, and the full touch overlay visible. A direct framebuffer also captured rendered Spiral Mountain gameplay.
-- The process remained alive throughout the observation. The run emitted two UIKit `Unbalanced calls to begin/end appearance transitions` warnings during startup; they did not prevent launch or gameplay and remain a non-blocking polish observation.
-- Mac UI automation clicks are mouse events rather than true simulated fingers, so this run does not close the existing physical touch-input `HUMAN-VERIFY` items.
+- Booted a clean iPhone 16 Pro, iOS 18.5 Simulator, installed `build-ios-app-simulator/Release/BanjoRecompiled.app`, and launched with an empty app container.
+- After normal renderer initialization, the no-ROM launcher rendered correctly in landscape. The Banjo/Kazooie art, five actions, version, menu button, Dynamic Island, and home-indicator safe areas are visible with no clipping or overlap; action text remains readable at native resolution.
+- Copied the user-supplied ROM only to the Simulator's temporary container, reverified runtime XXH3-64 `1B67585D56E07F8C`, and launched through `--rom ... --auto-start`.
+- Console proof repeated: ROM imported, UIKit video and 48 kHz audio initialized, Apple iOS simulator GPU selected, recomp heap initialized, and no validation, renderer, or game-thread failure appeared.
+- Captured native 2622×1206 landscape launcher and gameplay frames plus the visible Simulator window. The 0.85 compact scale keeps the stick, dual Z, A/B, R, Start, and four C buttons within safe areas without control-to-control overlap. An initially downscaled preview looked denser than the native frame; the native evidence does not justify a speculative layout rewrite.
+- The two startup appearance-transition warnings reproduced exactly as on iPad, making them the next concrete cross-idiom polish issue.
 
-Next goal: execute the explicit Phase 10 iPhone scale pass on an iPhone 16 Pro Simulator; capture launcher and gameplay layouts, identify the first concrete overlap/readability defect, and make the narrowest layout fix.
+Next goal: isolate the repeated UIKit `Unbalanced calls to begin/end appearance transitions` startup warning, determine whether BanjoPad's overlay/launch timing causes it, and make the narrowest fix if the warning is under app control.
 
-Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, retail-ROM validation, Simulator title rendering, package audit, IPA generation, and macOS canary are green.
+Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 
 ref/ additions: none this iteration.
 
