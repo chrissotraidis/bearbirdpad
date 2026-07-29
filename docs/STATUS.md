@@ -1,16 +1,17 @@
-# Status — updated 2026-07-29, iteration 56
+# Status — updated 2026-07-29, iteration 57
 
-Phase: 10+ — polish backlog; current-upstream pin inventory complete with no valid bump
+Phase: 10+ — polish backlog; DD2 remains gated by the current mod architecture
 
-Done this iteration: finished the current-upstream pin inventory by distinguishing N64ModernRuntime's parent-selected `gamemodes` line from its incompatible standalone `main` line. No production app behavior changed. Evidence:
+Done this iteration: audited DD2's text-patch-free replacement requirement against current N64ModernRuntime `main` and current standalone N64Recomp, then retained the existing iOS code-mod gate. No production app behavior changed. Evidence:
 
-- Read-only `git ls-remote --heads origin` confirmed `gamemodes` still points exactly to pinned `ca568b6ad79b9029d14077f0c3ffa757727c5559`; there is no same-branch advance.
-- Current remote BanjoRecomp HEAD still selects that same `ca568b6` revision, matching `scripts/fetch-sources.sh` and the local build input.
-- Standalone N64ModernRuntime `main` is `ae1ffbb909d9f93c88c41830deb539f7feef5ed2`, but moving to it would be a branch migration: `27 files changed, 11105 insertions(+), 12426 deletions(-)`, including deleted config APIs and an N64Recomp submodule move from `2b6f056` to `81213c1`.
-- Together with iterations 53-55, every audited upstream boundary is current for its intended line: BanjoRecomp `c20314c`, RecompFrontend `include-order-fix` `d0d90ba`, N64ModernRuntime `gamemodes` `ca568b6`, RT64 `6f1c2d9`, and plume `d890ac8`.
-- No pin, branch, patch, source, submodule, build product, production app, IPA, ROM, save, or generated artifact changed. A rebuild was not run because every authoritative build input remains identical.
+- Read-only current-upstream checks used N64ModernRuntime `ae1ffbb909d9f93c88c41830deb539f7feef5ed2`, its nested N64Recomp `81213c1831fab2521a6a5459c67b63437d67e253`, and standalone N64Recomp `ffb39cdad1da5de07eaaa48bd1db4a89a7986771`.
+- Standalone N64Recomp contains only three `use_lookup_for_all_function_calls` references: the context field and two generator decisions. There is no runtime replacement-table API or base-recomp configuration exposure.
+- Current N64ModernRuntime sets that flag only on the live-regenerated hook context, then redirects the original functions with `patch_func`.
+- Current replacement loading still copies the base function's native bytes, calls `patch_func(to_replace, ...)`, and later restores those bytes with `unpatch_func`.
+- Banjo's base recompiler config does not enable the all-call lookup flag. Its generated base has `36132` direct named calls and only `198` `LOOKUP_FUNC` calls, so a replacement table cannot intercept the general call graph.
+- DD2 therefore remains correctly deferred: enabling code mods would still require JIT-produced replacement code plus writes to signed executable text. No code-mod gate, source, pin, patch, build product, ROM, save, or generated artifact changed.
 
-Next goal: audit DD2 against current N64ModernRuntime/N64Recomp code for a text-patch-free base-function replacement seam; keep iOS code mods gated unless the required lookup path now exists.
+Next goal: run a full local release reproducibility gate over the final pinned patch state: verified patch replay, Release Simulator build, macOS canary, touch tests, package audit, and unsigned IPA verification.
 
 Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 
