@@ -1,0 +1,156 @@
+diff --git a/recompinput/src/input_events.cpp b/recompinput/src/input_events.cpp
+index c76a1dc..16a5f0d 100644
+--- a/recompinput/src/input_events.cpp
++++ b/recompinput/src/input_events.cpp
+@@ -3,8 +3,13 @@
+ #include "recompinput/input_events.h"
+ #include "recompinput/profiles.h"
+ #include "recompui/config.h"
++#include "recompui/recompui.h"
+ #include "ultramodern/ultramodern.hpp"
+
++#ifdef __APPLE__
++#include <TargetConditionals.h>
++#endif
++
+ static struct {
+     std::list<std::filesystem::path> files_dropped;
+ } DropState;
+@@ -234,6 +239,13 @@ bool sdl_event_filter(void* userdata, SDL_Event* event) {
+     case SDL_EventType::SDL_DROPCOMPLETE:
+         recompui::drop_files(DropState.files_dropped);
+         break;
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++    case SDL_EventType::SDL_APP_DIDENTERFOREGROUND:
++        if (!ultramodern::is_game_started()) {
++            recompui::update_mod_list(true);
++        }
++        break;
++#endif
+     case SDL_EventType::SDL_CONTROLLERBUTTONUP:
+         // Always queue button up events to avoid missing them during binding.
+         recompui::queue_event(*event);
+diff --git a/recompui/src/util/file.cpp b/recompui/src/util/file.cpp
+index 7ee84ed..8966e9d 100644
+--- a/recompui/src/util/file.cpp
++++ b/recompui/src/util/file.cpp
+@@ -9,6 +9,7 @@
+ #include <filesystem>
+ #include <fstream>
+ #include <iomanip>
++#include <mutex>
+
+ #if defined(_WIN32)
+ #include <Shlobj.h>
+@@ -16,10 +17,21 @@
+ #include <unistd.h>
+ #include <pwd.h>
+ #elif defined(__APPLE__)
++#include <TargetConditionals.h>
+ #include "apple/rt64_apple.h"
+ #endif
+
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++extern "C" void banjopad_present_ios_file_dialog(bool multiple);
++#endif
++
+ namespace recompui {
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++    static std::mutex ios_file_dialog_mutex;
++    static std::function<void(bool, const std::filesystem::path&)> ios_file_dialog_callback;
++    static std::function<void(bool, const std::list<std::filesystem::path>&)> ios_file_dialog_multiple_callback;
++#endif
++
+     static void perform_file_dialog_operation(const std::function<void(bool, const std::filesystem::path&)>& callback) {
+         nfdnchar_t* native_path = nullptr;
+         nfdresult_t result = NFD_OpenDialogN(&native_path, nullptr, 0, nullptr);
+@@ -129,7 +141,21 @@ namespace recompui {
+     }
+
+     void file::open_file_dialog(std::function<void(bool success, const std::filesystem::path& path)> callback) {
+-#ifdef __APPLE__
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++        bool dialog_busy = false;
++        {
++            std::lock_guard lock(ios_file_dialog_mutex);
++            dialog_busy = ios_file_dialog_callback || ios_file_dialog_multiple_callback;
++            if (!dialog_busy) {
++                ios_file_dialog_callback = std::move(callback);
++            }
++        }
++        if (dialog_busy) {
++            callback(false, {});
++            return;
++        }
++        banjopad_present_ios_file_dialog(false);
++#elif defined(__APPLE__)
+         file::apple::dispatch_on_ui_thread([callback]() {
+             perform_file_dialog_operation(callback);
+         });
+@@ -139,7 +165,21 @@ namespace recompui {
+     }
+
+     void file::open_file_dialog_multiple(std::function<void(bool success, const std::list<std::filesystem::path>& paths)> callback) {
+-#ifdef __APPLE__
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++        bool dialog_busy = false;
++        {
++            std::lock_guard lock(ios_file_dialog_mutex);
++            dialog_busy = ios_file_dialog_callback || ios_file_dialog_multiple_callback;
++            if (!dialog_busy) {
++                ios_file_dialog_multiple_callback = std::move(callback);
++            }
++        }
++        if (dialog_busy) {
++            callback(false, {});
++            return;
++        }
++        banjopad_present_ios_file_dialog(true);
++#elif defined(__APPLE__)
+         file::apple::dispatch_on_ui_thread([callback]() {
+             perform_file_dialog_operation_multiple(callback);
+         });
+@@ -161,3 +201,43 @@ namespace recompui {
+ #endif
+     }
+ }
++
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++extern "C" void banjopad_complete_ios_file_dialog(bool success, const char *path) {
++    std::function<void(bool, const std::filesystem::path&)> callback;
++    {
++        std::lock_guard lock(recompui::ios_file_dialog_mutex);
++        callback = std::move(recompui::ios_file_dialog_callback);
++        recompui::ios_file_dialog_callback = nullptr;
++    }
++
++    if (callback) {
++        const bool has_path = success && path != nullptr;
++        callback(has_path, has_path ? std::filesystem::path(path) : std::filesystem::path{});
++    }
++}
++
++extern "C" void banjopad_complete_ios_file_dialog_multiple(
++        bool success,
++        const char *const *paths,
++        size_t path_count) {
++    std::function<void(bool, const std::list<std::filesystem::path>&)> callback;
++    {
++        std::lock_guard lock(recompui::ios_file_dialog_mutex);
++        callback = std::move(recompui::ios_file_dialog_multiple_callback);
++        recompui::ios_file_dialog_multiple_callback = nullptr;
++    }
++
++    if (callback) {
++        std::list<std::filesystem::path> selected_paths;
++        if (success && paths != nullptr) {
++            for (size_t i = 0; i < path_count; i++) {
++                if (paths[i] != nullptr) {
++                    selected_paths.emplace_back(paths[i]);
++                }
++            }
++        }
++        callback(!selected_paths.empty(), selected_paths);
++    }
++}
++#endif

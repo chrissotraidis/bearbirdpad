@@ -1,0 +1,90 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 17a847a..21df78f 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -135,7 +135,7 @@ set (DXC_RT_OPTS "${DXC_COMMON_OPTS}" "-D" "RT_SHADER" "-T" "lib_6_3" "-fspv-tar
+
+ function(build_shader_spirv_impl TARGETOBJ FILENAME TARGET_NAME OUTNAME)
+     add_custom_command(OUTPUT ${OUTNAME}.spv
+-        COMMAND ${DXC} ${DXC_SPV_OPTS} ${ARGN} ${FILENAME} /Fo ${OUTNAME}.spv
++        COMMAND ${DXC} ${DXC_SPV_OPTS} ${RT64_SIMULATOR_DXC_EXTRA_OPTS} ${ARGN} ${FILENAME} /Fo ${OUTNAME}.spv
+         DEPENDS ${FILENAME})
+     add_custom_command(OUTPUT ${OUTNAME}.spirv.c
+         COMMAND file_to_c ${OUTNAME}.spv ${TARGET_NAME}BlobSPIRV ${OUTNAME}.spirv.c ${OUTNAME}.spirv.h
+@@ -159,13 +159,16 @@ if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+     if(CMAKE_OSX_SYSROOT MATCHES "iphonesimulator")
+         set(RT64_APPLE_METAL_SDK "iphonesimulator")
+         set(RT64_APPLE_METAL_MIN_FLAG "-mios-simulator-version-min=${CMAKE_OSX_DEPLOYMENT_TARGET}")
++        set(RT64_SIMULATOR_DXC_EXTRA_OPTS "-D" "RT64_DISABLE_NATIVE_SAMPLERS")
+     else()
+         set(RT64_APPLE_METAL_SDK "iphoneos")
+         set(RT64_APPLE_METAL_MIN_FLAG "-mios-version-min=${CMAKE_OSX_DEPLOYMENT_TARGET}")
++        set(RT64_SIMULATOR_DXC_EXTRA_OPTS "")
+     endif()
+ else()
+     set(RT64_APPLE_METAL_SDK "macosx")
+     set(RT64_APPLE_METAL_MIN_FLAG "")
++    set(RT64_SIMULATOR_DXC_EXTRA_OPTS "")
+ endif()
+
+ set(RT64_METAL_COMPILER_COMMAND
+@@ -180,7 +183,7 @@ set(RT64_METAL_COMPILER_FLAGS
+
+ function(build_shader_msl_impl TARGETOBJ FILENAME TARGET_NAME OUTNAME)
+     add_custom_command(OUTPUT ${OUTNAME}.spv
+-            COMMAND ${DXC} ${DXC_SPV_OPTS} ${ARGN} ${FILENAME} /Fo ${OUTNAME}.spv
++            COMMAND ${DXC} ${DXC_SPV_OPTS} ${RT64_SIMULATOR_DXC_EXTRA_OPTS} ${ARGN} ${FILENAME} /Fo ${OUTNAME}.spv
+             DEPENDS ${FILENAME})
+     add_custom_command(OUTPUT ${OUTNAME}.metal
+             COMMAND spirv_cross_msl ${OUTNAME}.spv ${OUTNAME}.metal
+diff --git a/src/shaders/TextureSampler.hlsli b/src/shaders/TextureSampler.hlsli
+index 1ceb2ce..dccaf08 100644
+--- a/src/shaders/TextureSampler.hlsli
++++ b/src/shaders/TextureSampler.hlsli
+@@ -148,7 +148,11 @@ float4 sampleTextureLevel(const RDPTile rdpTile, const GPUTile gpuTile, bool fil
+     int2 texelBaseInt = floor(uvCoord);
+     bool filtering = or(filterBilerp, linearFiltering);
+     float4 samples[4];
++#ifdef RT64_DISABLE_NATIVE_SAMPLERS
++    const uint nativeSampler = NATIVE_SAMPLER_NONE;
++#else
+     const uint nativeSampler = rdpTile.nativeSampler;
++#endif
+     bool gpuTileUsesTMEM = canDecodeTMEM && gpuTileFlagRawTMEM(gpuTile.flags);
+     if ((nativeSampler == NATIVE_SAMPLER_NONE) || gpuTileUsesTMEM) {
+ #if USE_FOR_LOOPS
+@@ -262,7 +266,11 @@ float4 sampleTexture(OtherMode otherMode, RenderFlags renderFlags, float2 inputU
+     const uint tlut = otherMode.textLUT();
+     const bool canDecodeTMEM = renderFlagCanDecodeTMEM(renderFlags);
+     const bool usesHDR = renderFlagUsesHDR(renderFlags);
++#ifdef RT64_DISABLE_NATIVE_SAMPLERS
++    const uint nativeSampler = NATIVE_SAMPLER_NONE;
++#else
+     const uint nativeSampler = rdpTile.nativeSampler;
++#endif
+     const bool flagHasMipmaps = gpuTileFlagHasMipmaps(gpuTile.flags);
+     uint numRDPSamples = 0;
+     uint RDPMipLevels[2];
+@@ -356,4 +364,4 @@ float4 sampleTexture(OtherMode otherMode, RenderFlags renderFlags, float2 inputU
+     }
+
+     return textureColor;
+-}
+\ No newline at end of file
++}
+diff --git a/src/render/rt64_shader_library.cpp b/src/render/rt64_shader_library.cpp
+index d1c5273..6407095 100644
+--- a/src/render/rt64_shader_library.cpp
++++ b/src/render/rt64_shader_library.cpp
+@@ -852,8 +852,9 @@ namespace RT64 {
+             postProcess.pipeline = device->createGraphicsPipeline(pipelineDesc);
+         }
+
+-        // Raytracing debug.
+-        {
++        // Raytracing debug. Avoid creating its oversized descriptor layout on
++        // backends that do not expose raytracing (including iOS Simulator).
++        if (deviceCapabilities.raytracing) {
+             FramebufferRendererDescriptorCommonSet descriptorCommonSet(samplerLibrary, deviceCapabilities.raytracing);
+             FramebufferRendererDescriptorTextureSet descriptorTextureSet;
+             FramebufferRendererDescriptorFramebufferSet descriptorFramebufferSet;

@@ -160,7 +160,7 @@ if [[ "$PRODUCT" != "smoke" ]]; then
     METAL_COMPILER="$(xcrun -f metal)"
     METALLIB_COMPILER="$(dirname "$METAL_COMPILER")/metallib"
     STUB_RENDERER="OFF"
-    PRODUCT_LABEL="Phase 4 app"
+    PRODUCT_LABEL="full app"
     if [[ "$PRODUCT" == "stub" ]]; then
         STUB_RENDERER="ON"
         PRODUCT_LABEL="Phase 3 stub app"

@@ -1,0 +1,69 @@
+diff --git a/plume_uikit.mm b/plume_uikit.mm
+index f596404..c51abcd 100644
+--- a/plume_uikit.mm
++++ b/plume_uikit.mm
+@@ -17,11 +17,16 @@ namespace plume {
+     }
+
+     static void readWindowState(void *windowHandle, void *viewHandle, CocoaWindowAttributes &attributes, int &refreshRate) {
+-        UIWindow *window = (__bridge UIWindow *)windowHandle;
++        (void)windowHandle;
+         CAMetalLayer *metalLayer = (__bridge CAMetalLayer *)viewHandle;
+-        CGRect bounds = metalLayer != nil ? metalLayer.bounds : window.bounds;
+-        CGFloat scale = metalLayer != nil ? metalLayer.contentsScale : window.screen.scale;
+-        UIScreen *screen = window.windowScene.screen ?: window.screen;
++        UIScreen *screen = UIScreen.mainScreen;
++        CGRect bounds = metalLayer != nil ? metalLayer.bounds : screen.bounds;
++        CGFloat scale = metalLayer != nil ? metalLayer.contentsScale : screen.scale;
++
++        if ([metalLayer.delegate isKindOfClass:UIView.class]) {
++            UIView *view = (UIView *)metalLayer.delegate;
++            screen = view.window.windowScene.screen ?: screen;
++        }
+
+         attributes.x = 0;
+         attributes.y = 0;
+@@ -47,6 +52,10 @@ namespace plume {
+     CocoaWindow::~CocoaWindow() {}
+
+     void CocoaWindow::updateWindowAttributesInternal(bool forceSync) {
++        if (!forceSync) {
++            return;
++        }
++
+         auto updateBlock = ^{
+             CocoaWindowAttributes freshAttributes{};
+             int refreshRate = 60;
+@@ -56,14 +65,14 @@ namespace plume {
+             cachedAttributes = freshAttributes;
+         };
+
+-        if (forceSync) {
+-            dispatch_sync(dispatch_get_main_queue(), updateBlock);
+-        } else {
+-            dispatch_async(dispatch_get_main_queue(), updateBlock);
+-        }
++        dispatch_sync(dispatch_get_main_queue(), updateBlock);
+     }
+
+     void CocoaWindow::updateRefreshRateInternal(bool forceSync) {
++        if (!forceSync) {
++            return;
++        }
++
+         auto updateBlock = ^{
+             CocoaWindowAttributes attributes{};
+             int refreshRate = 60;
+@@ -71,11 +80,7 @@ namespace plume {
+             cachedRefreshRate.store(refreshRate);
+         };
+
+-        if (forceSync) {
+-            dispatch_sync(dispatch_get_main_queue(), updateBlock);
+-        } else {
+-            dispatch_async(dispatch_get_main_queue(), updateBlock);
+-        }
++        dispatch_sync(dispatch_get_main_queue(), updateBlock);
+     }
+
+     void CocoaWindow::getWindowAttributes(CocoaWindowAttributes *attributes) const {

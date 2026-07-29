@@ -1,0 +1,26 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index e5f5d15..38fdd69 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -188,8 +188,13 @@ set (SOURCES
+ if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
+     list(APPEND SOURCES
+         ${BANJOPAD_IOS_DIR}/ios_main.mm
++        ${BANJOPAD_IOS_DIR}/IosFileDialog.mm
+         ${BANJOPAD_IOS_DIR}/NullRendererContext.cpp
+     )
++    set_source_files_properties(
++        ${BANJOPAD_IOS_DIR}/IosFileDialog.mm
++        PROPERTIES COMPILE_FLAGS "-fobjc-arc"
++    )
+ endif()
+
+ target_include_directories(BanjoRecompiled PRIVATE
+@@ -316,6 +321,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
+         "-framework Metal"
+         "-framework QuartzCore"
+         "-framework CoreGraphics"
++        "-framework UniformTypeIdentifiers"
+     )
+
+     set_target_properties(BanjoRecompiled PROPERTIES

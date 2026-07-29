@@ -12,5 +12,6 @@ Fetched 2026-07-28 by `scripts/fetch-references.sh`:
 - **N64Recomp** — <https://github.com/N64Recomp/N64Recomp.git> @ `ffb39cdad1da5de07eaaa48bd1db4a89a7986771`; current upstream read-only check for recompiler and iOS/JIT-related drift.
 - **N64ModernRuntime** — <https://github.com/N64Recomp/N64ModernRuntime.git> @ `ae1ffbb909d9f93c88c41830deb539f7feef5ed2`; current upstream read-only check for timer, save, and mobile-runtime drift.
 - **rt64** — <https://github.com/rt64/rt64.git> @ `6f1c2d99a4ea571c139f449c326fd176ba8f3496`; current upstream read-only check for plume-Metal and shader-toolchain drift.
+- **BK Reloaded v0.1.1 (RT64)** — <https://evilgames.eu/files/texture-packs/bk-reloaded-v0.1.1-rt64.rtz>, SHA-256 `1cbd5d2301f98947ea8e27a90796c16f56884a88461f28de2b85a34f5763e65f`; local-only data-mod input for the Phase 5 `.rtz` picker, foreground-rescan, and visible texture-replacement gates.
 
 All reference-clone push URLs are set to `DISABLED`. Upstream pins and per-file citations live in the feasibility document's tree table; build inputs are the pinned checkouts under `sources/`, never these reference clones.
