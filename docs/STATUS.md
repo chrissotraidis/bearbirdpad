@@ -1,18 +1,16 @@
-# Status — updated 2026-07-29, iteration 52
+# Status — updated 2026-07-29, iteration 53
 
-Phase: 10+ — polish backlog; DD5 settled as evidence-gated rather than speculative
+Phase: 10+ — polish backlog; DD6 settled as a read-only upstream handoff
 
-Done this iteration: audited DD5 (`MTLBinaryArchive`) against the pinned renderer and the Phase 8 measurement contract, then deliberately kept the existing renderer instead of adding an unmeasured persistent PSO cache. No production app behavior changed. Evidence:
+Done this iteration: audited DD6 against current N64ModernRuntime and plume upstream HEADs, validated the existing patches in isolated temporary trees, and created `docs/UPSTREAM-HANDOFF.md` without writing upstream. No production app behavior changed. Evidence:
 
-- `rt64_raster_shader_cache.cpp` still submits specialized raster shaders to background compilation threads at idle priority while explicitly allowing the ubershader to render in the meantime.
-- `rt64_framebuffer_renderer.cpp` selects a specialized pipeline when ready and otherwise falls back to `RasterShaderUber`.
-- `rt64_raster_shader.cpp` creates the eight dynamic Metal ubershader pipeline permutations in parallel. This is the intended correctness and hitch-mitigation path, not a synchronous first-use cliff.
-- A source audit found Metal binary-archive API declarations only in the vendored `metal-cpp` headers; plume/RT64 has no archive creation, serialization, persistence, invalidation, or pipeline attachment implementation.
-- The repository contains zero `.trace`, `.gputrace`, or Metal-trace artifacts. Both required physical-device rows in `docs/perf-baseline.md` still contain only `HUMAN-VERIFY`, including worst cold-start hitch.
-- Therefore DD5's trigger is not met: no three physical cold-start traces show a user-visible hitch attributable to PSO compilation. The implementation remains deferred by evidence, with the exact reopen threshold retained in `docs/perf-baseline.md`.
-- No source, patch, build product, ROM, save, or generated artifact changed during this audit.
+- Read-only `git fetch --depth=1 origin HEAD` confirmed current N64ModernRuntime is still `ae1ffbb909d9f93c88c41830deb539f7feef5ed2`; its timer set still compares mutable `OSTimer::timestamp` values and lacks the downstream fix.
+- The same read-only check confirmed current plume is still `d890ac899e505fb30040e037a4037cdeca68f033`; it has `PLUME_IOS` capability branches but no `plume_uikit.mm` or iOS CMake source selection.
+- `git apply --check --include=ultramodern/src/timer.cpp` proved that the timer-only hunk inside `patches/nmr/002-ios-runtime-gates-and-saves.patch` applies cleanly to current upstream. The handoff excludes that mixed patch's save and code-mod changes.
+- A clean temporary archive of current plume accepted patches `001` through `004` in order. The handoff classifies `002` as an independent correctness fix, `001` as the UIKit foundation, and `003`/`004` as downstream policies that need a general resize/lifecycle API before upstreaming.
+- All inspected build and reference checkouts retained `DISABLED` push URLs. No upstream branch, issue, pull request, push, source edit, ROM, save, or generated artifact was created.
 
-Next goal: settle DD6 by auditing the current iOS patch series for an upstream-ready, read-only handoff boundary; do not create upstream branches, issues, pull requests, or other writes.
+Next goal: audit BanjoRecomp's current upstream HEAD against pinned `c20314c`; if it advanced, prove the complete patch series replays in isolation before deciding a deliberate, single-purpose pin bump.
 
 Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 

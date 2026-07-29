@@ -15,3 +15,5 @@ Fetched 2026-07-28 by `scripts/fetch-references.sh`:
 - **BK Reloaded v0.1.1 (RT64)** — <https://evilgames.eu/files/texture-packs/bk-reloaded-v0.1.1-rt64.rtz>, SHA-256 `1cbd5d2301f98947ea8e27a90796c16f56884a88461f28de2b85a34f5763e65f`; local-only data-mod input for the Phase 5 `.rtz` picker, foreground-rescan, and visible texture-replacement gates.
 
 All reference-clone push URLs are set to `DISABLED`. Upstream pins and per-file citations live in the feasibility document's tree table; build inputs are the pinned checkouts under `sources/`, never these reference clones.
+
+Reverified 2026-07-29 for the read-only upstream handoff: N64ModernRuntime remote HEAD remained `ae1ffbb909d9f93c88c41830deb539f7feef5ed2`, plume remote HEAD remained `d890ac899e505fb30040e037a4037cdeca68f033`, the timer/UIKit gaps were still present, and both push URLs remained `DISABLED`.
