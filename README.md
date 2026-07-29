@@ -16,6 +16,8 @@ BanjoPad keeps the upstream recompiled game and Metal renderer, then adds the iO
 
 The app never includes a ROM. You must provide your own complete, legally obtained Banjo-Kazooie NTSC-U 1.0 cartridge dump on first launch.
 
+See [Texture packs](docs/TEXTURE-PACKS.md) for installation and the currently tested recommendation.
+
 ## Build
 
 Start with [Building BanjoPad for iOS](docs/BUILDING-IOS.md). The complete local path is:

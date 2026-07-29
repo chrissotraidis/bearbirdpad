@@ -1,18 +1,19 @@
-# Status — updated 2026-07-29, iteration 22
+# Status — updated 2026-07-29, iteration 23
 
-Phase: 10+ — polish backlog; UIKit startup-warning ownership isolated
+Phase: 10+ — polish backlog; first-time foreground texture-pack discovery fixed
 
-Done this iteration: isolated the repeated UIKit appearance-transition warning without changing production behavior. Evidence:
+Done this iteration: fixed and replayed the Files-folder foreground rescan, then verified the recommended data-only pack on both phone and tablet idioms. Evidence:
 
-- A binary-identical Simulator app with `UILaunchStoryboardName` removed still emitted exactly two `Unbalanced calls to begin/end appearance transitions` warnings, excluding the branded launch storyboard.
-- A temporary build with `BanjoPadTouch_Install()` removed emitted the same two warnings, excluding the touch overlay and native menu button.
-- A second temporary build with both `BanjoPadLifecycle_Install()` and `BanjoPadTouch_Install()` removed emitted the same two warnings, excluding BanjoPad's application shell and lifecycle hooks.
-- The pinned SDL 2.32.10 UIKit backend resets `UIWindow.rootViewController` twice in `SDL_uikitview.m` while replacing its generic view. BanjoRecomp then calls `SDL_Metal_CreateView`, so the two SDL resets match the two warnings and explain why every BanjoPad-disabled comparison reproduced them.
-- Restored the production entry point, rebuilt the Release Simulator app, and installed it on the iPhone 16 Pro, iOS 18.5 Simulator. Console proof shows BanjoPad launcher init, UIKit video, 48 kHz audio, foreground lifecycle handling, and Apple iOS simulator GPU initialization.
-- Captured the restored no-ROM launcher at native resolution and confirmed the Banjo/Kazooie art, all five actions, native menu button, Dynamic Island clearance, and home-indicator clearance remain intact.
-- No production patch was made: the warning is a nonfunctional diagnostic in pinned SDL code, while bypassing its view-controller reset would alter renderer attachment and orientation behavior.
+- Reproduced the defect on an iPhone 16 Pro, iOS 18.5 Simulator: with no pack present at launch, copying the verified BK Reloaded `.rtz` into `Documents/BanjoRecompiled/mods` while backgrounded and returning to the app resumed audio but never opened the pack.
+- Root cause: the iOS event path called `recompui::update_mod_list(true)`, which only scans through an already-constructed Mods-menu object. Before the user has visited that screen, the null menu makes a first-time Files drop a silent no-op.
+- Added pinned RecompFrontend patch `006-ios-foreground-mod-rescan.patch`: on foreground before game start, scan the runtime mod folder directly, then refresh an existing menu without asking it to scan again. The declaration remains iOS-local, so no new target dependency is introduced.
+- Replayed the same scenario with the fixed Release app. The console recorded a clean background flush, foreground audio recovery, then `Opening mod BK-Reloaded-v0.1.1` without a relaunch.
+- Verified SHA-256 `1cbd5d2301f98947ea8e27a90796c16f56884a88461f28de2b85a34f5763e65f`. With manifest ID `BK-Reloaded` enabled, both iPhone 16 Pro and iPad Pro 11-inch (M4), iOS 18.5 Simulators logged `Loading mod BK-Reloaded` and rendered the live title sequence with the touch overlay. With the pack known but disabled, the iPhone opened its metadata but did not load it.
+- Release Simulator and unsigned arm64 device builds passed. A clean temporary replay applied all six frontend patches in order, and the macOS `BanjoRecompiled` canary rebuilt and passed bundle verification.
+- Package audit passed with no ROM or generated-source leakage. The refreshed unsigned IPA is 7.5 MiB with SHA-256 `208de2a6129a3edf47a739709d3967c020c958cffcefb572e01ad135d44381f2`.
+- Added `docs/TEXTURE-PACKS.md` with the tested BK Reloaded recommendation, exact digest, Files installation path, and physical-device caveat; no pack data was added to Git.
 
-Next goal: exercise the existing data-only texture-pack path on both iPad and iPhone, verify foreground rescanning and visible enable/disable behavior, then document one tested recommendation without redistributing pack data.
+Next goal: audit drift between the pinned BanjoRecomp/RecompFrontend revisions and current upstream around iOS-relevant renderer, input, and texture-pack behavior; bump only a small, regression-safe pin set with a complete patch replay.
 
 Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 
