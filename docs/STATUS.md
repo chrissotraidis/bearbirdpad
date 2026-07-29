@@ -1,16 +1,16 @@
-# Status — updated 2026-07-29, iteration 74
+# Status — updated 2026-07-29, iteration 75
 
-Phase: 10+ — touch-control polish; rendered Controls-page round-up verified
+Phase: 10+ — local round-up complete; file-picker lifecycle verified
 
-Done this iteration: closed the final local evidence gap for the four iOS touch settings rows without making an unnecessary layout change. Evidence:
+Done this iteration: closed the remaining locally automatable file-picker lifecycle gap without making an unnecessary source change. Evidence:
 
-- The exact `3b15e48` Release build remained installed on an iPhone 16 Pro, iOS 18.5 Simulator with the app-private normalized retail ROM. Keyboard navigation selected Settings → Controls and opened the actual RmlUi page.
-- `Touch Controls`, `Show L Button`, `Show D-pad`, and `Hide When Controller Connected` all render together above the input mappings. The long controller label remains fully readable, each toggle shares the same right edge, no row overlaps or clips, and the mapping list plus `Reset to defaults` remain usable in the same landscape viewport.
-- The independent UIKit `•••` menu control stayed available while Settings hid the gameplay overlay. Closing Settings restored the complete 12-control accessibility tree.
-- A source/spec audit found every locally automatable §5 behavior implemented and previously verified. The remaining §5.5 checks require physical multitouch, controller hardware, speaker output, or gameplay feel and therefore remain in the Phase 6 `HUMAN-VERIFY` item below.
-- No source correction was justified, so the previously verified ROM-free IPA remains unchanged: 54 entries, 7,552,935 bytes, SHA-256 `34b7178e42e721d456f49b18ff6696055b8e427852c37c34364792e507316ccc`.
+- Traced the complete iOS import path from `IosFileDialog.mm` through the frontend callbacks. Both ROM validation/copy and mod installation consume the coordinated temporary copy synchronously before UIKit removes it, so the suspected deferred-use lifetime bug does not exist.
+- Invoked the exact Release app's single-ROM and multi-mod document pickers on the iPhone 16 Pro, iOS 18.5 Simulator. Both rendered the native Files `Recents` view with Search, Browse, and Cancel; the mod picker visibly used multiple-selection mode.
+- Cancelled both picker modes through their visible controls. Each returned to the running game with the complete 12-control accessibility tree, and neither `tmp/rom-import` nor `tmp/mod-import` retained a file.
+- `scripts/package-audit.sh build-ios-app-device/Release/BanjoRecompiled.app` passed again with ROM files/digests and generated-source markers absent. The unchanged unsigned IPA remains 54 entries, 7,552,935 bytes, SHA-256 `34b7178e42e721d456f49b18ff6696055b8e427852c37c34364792e507316ccc`.
+- Provider-backed selection and actual imported-file behavior remain physical-device/user-data checks and therefore stay in the Phase 5 `HUMAN-VERIFY` item below.
 
-Next goal: pause at this verified local round-up. The next owner-directed pass is touch-control feel/layout iteration on this Mac, followed by the existing Phase 6 physical-device checks on the other Mac/iPad.
+Next goal: stop at this completed local round-up. The next owner-directed pass is touch-control feel/layout iteration on this Mac; physical-device acceptance follows later on the owner's other Mac/iPad.
 
 Blockers: no local source, build, or package blocker. The owner confirmed that no iPad is attached to this Mac and physical-device testing will happen on another machine, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, deterministic IPA generation, and the macOS canary are green.
 
