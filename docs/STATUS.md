@@ -1,20 +1,17 @@
-# Status — updated 2026-07-29, iteration 58
+# Status — updated 2026-07-29, iteration 59
 
-Phase: 10+ — polish backlog; full local release reproducibility gate green
+Phase: 10+ — polish backlog; unsigned generic-device release gate green
 
-Done this iteration: rebuilt and re-audited the final pinned patch state locally, then fixed nondeterministic IPA packaging discovered by the reproducibility gate. No game or renderer behavior changed. Evidence:
+Done this iteration: rebuilt the real unsigned Release app for a generic arm64 iOS device from the final pinned source state, audited it, and proved that both the device build and deterministic packager reproduce the previously verified IPA exactly. No game or renderer behavior changed. Evidence:
 
-- `scripts/fetch-sources.sh` verified every pinned revision, re-disabled every upstream push URL, and matched all 28 downstream patches against `.banjopad-patch-state`.
-- `scripts/build-ios.sh --simulator --app --config Release` completed with `** BUILD SUCCEEDED **` and rebuilt `build-ios-app-simulator/Release/BanjoRecompiled.app`. Its plist retains `UIRequiresFullScreen=true` and landscape left/right only.
-- The first sandboxed Xcode attempt was denied access to CoreSimulator/Xcode DerivedData; the required-access rerun passed. This was an execution-environment denial, not a source or build failure.
-- `cmake --build build-macos --target BanjoRecompiled` rebuilt the shared-code macOS Release canary successfully; CMake's bundle verification returned `valid='1'` and `verified='1'`.
-- `scripts/test-touch-input.sh` passed.
+- `scripts/build-ios.sh --device --app --config Release` first passed the touch-input shim tests, then completed with `** BUILD SUCCEEDED **` using `generic/platform=iOS`, arm64, iOS 16.0, and `CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO`.
+- The rebuilt product is `build-ios-app-device/Release/BanjoRecompiled.app`; `file` and `lipo` report one arm64 Mach-O executable, its plist reports `DTPlatformName=iphoneos` and `MinimumOSVersion=16.0`, and `codesign` confirms that it is intentionally unsigned.
 - `scripts/package-audit.sh build-ios-app-device/Release/BanjoRecompiled.app` passed with no ROM files/digests or generated-source paths/markers.
-- The first unchanged-app IPA rebuild produced a different hash, exposing volatile ZIP directory metadata and update-in-place behavior in `scripts/package-ios.sh`.
-- The packager now normalizes payload timestamps to a fixed UTC value, sorts archive entries, builds and validates a temporary ZIP, then replaces the destination. `sh -n` passed.
-- Two consecutive packages of the same app produced identical bytes: 54 entries, 7,547,634 bytes, SHA-256 `bdc914b8983bf30fbe1ba460e4aae31a2999ead9257f04103933bcf75a516f9f`. `unzip -tq` passed and the archive contains no ROM, generated-source, or trace entries.
+- Two fresh packages of the rebuilt app were byte-for-byte identical: 54 entries, 7,547,634 bytes, SHA-256 `bdc914b8983bf30fbe1ba460e4aae31a2999ead9257f04103933bcf75a516f9f`.
+- That SHA-256 is also identical to iteration 58's package from the pre-rebuild app, providing evidence that the Release link and package paths are reproducible across a real device rebuild, not only across two ZIP invocations.
+- `unzip -tq` passed, and the final IPA contains no ROM, generated-source, shader-trace, or Metal-archive entries.
 
-Next goal: audit the remaining Phase 10+ inventory and select the next automatable, non-device-gated acceptance criterion; do not churn items whose reopen evidence is absent.
+Next goal: audit release-version metadata and the remaining local distribution path against the freshly reproducible device artifact; make only a concrete, evidence-backed correction.
 
 Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 
