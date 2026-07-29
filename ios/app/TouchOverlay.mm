@@ -116,6 +116,10 @@ static void push_menu_toggle();
         self.exclusiveTouch = NO;
         self.layer.borderWidth = 2.0;
         self.layer.borderColor = border_color().CGColor;
+        self.layer.shadowColor = UIColor.blackColor.CGColor;
+        self.layer.shadowOpacity = 0.72;
+        self.layer.shadowRadius = 3.0;
+        self.layer.shadowOffset = CGSizeZero;
         self.backgroundColor = fill_color(NO);
         self.isAccessibilityElement = YES;
         self.accessibilityLabel = accessibilityLabel;
@@ -126,6 +130,8 @@ static void push_menu_toggle();
         _label.text = label;
         _label.textAlignment = NSTextAlignmentCenter;
         _label.textColor = color ?: UIColor.whiteColor;
+        _label.shadowColor = [UIColor colorWithWhite:0.0 alpha:0.9];
+        _label.shadowOffset = CGSizeMake(0.0, 1.0);
         UIFont *baseFont = [UIFont systemFontOfSize:15.0 weight:UIFontWeightBold];
         _label.font =
             [UIFontMetrics.defaultMetrics scaledFontForFont:baseFont maximumPointSize:22.0];
@@ -171,7 +177,10 @@ static void push_menu_toggle();
 
 - (void)layoutSubviews {
     [super layoutSubviews];
-    self.layer.cornerRadius = MIN(self.bounds.size.width, self.bounds.size.height) * 0.5;
+    CGFloat cornerRadius = MIN(self.bounds.size.width, self.bounds.size.height) * 0.5;
+    self.layer.cornerRadius = cornerRadius;
+    self.layer.shadowPath =
+        [UIBezierPath bezierPathWithRoundedRect:self.bounds cornerRadius:cornerRadius].CGPath;
 }
 
 - (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)event {
@@ -268,6 +277,10 @@ static void push_menu_toggle();
         self.multipleTouchEnabled = NO;
         self.layer.borderWidth = 2.0;
         self.layer.borderColor = border_color().CGColor;
+        self.layer.shadowColor = UIColor.blackColor.CGColor;
+        self.layer.shadowOpacity = 0.72;
+        self.layer.shadowRadius = 3.0;
+        self.layer.shadowOffset = CGSizeZero;
         self.backgroundColor = fill_color(NO);
         self.isAccessibilityElement = YES;
         self.accessibilityLabel = @"Control stick";
@@ -330,7 +343,10 @@ static void push_menu_toggle();
 
 - (void)layoutSubviews {
     [super layoutSubviews];
-    self.layer.cornerRadius = MIN(self.bounds.size.width, self.bounds.size.height) * 0.5;
+    CGFloat cornerRadius = MIN(self.bounds.size.width, self.bounds.size.height) * 0.5;
+    self.layer.cornerRadius = cornerRadius;
+    self.layer.shadowPath =
+        [UIBezierPath bezierPathWithOvalInRect:self.bounds].CGPath;
     CGFloat thumbSize = self.bounds.size.width * 0.4;
     self.thumb.bounds = CGRectMake(0.0, 0.0, thumbSize, thumbSize);
     if (self.activeTouch == nil) {

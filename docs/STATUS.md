@@ -1,19 +1,17 @@
-# Status — updated 2026-07-29, iteration 66
+# Status — updated 2026-07-29, iteration 67
 
-Phase: 10+ — touch-control polish; controller-presence signal hardened
+Phase: 10+ — touch-control polish; dual-tone contrast edge added
 
-Done this iteration: audited the touch overlay's controller-aware fade signal, removed two false-positive paths, and replayed the retail-ROM touch flow in the iPad Simulator. Evidence:
+Done this iteration: improved touch-control visibility across bright and dark gameplay without changing the documented 33% fill, 2 pt light border, geometry, hit targets, or controller-fade behavior. Evidence:
 
-- New `patches/frontend/007-ios-game-controller-presence.patch` marks a controller connected only after `SDL_GameControllerOpen` succeeds. Removal now checks the remaining devices with `SDL_IsGameController` instead of treating every SDL joystick as a game controller; desktop code remains behind the existing iOS compile guard.
-- The Release Simulator app built successfully, launched on the iPad Pro 11-inch (M4), auto-started the locally stored verified retail ROM, and exposed the complete 12-element touch accessibility tree: menu, stick, A/B, Start, both Z triggers, R, and four C buttons.
-- Activating the native Start touch control advanced the Banjo boot sequence. Opening the BanjoPad menu removed all gameplay controls except the menu button; closing it restored the complete control tree over the live title sequence.
-- Console capture showed successful lifecycle/audio initialization and no SDL `Controller added` event during the no-controller run, so the overlay remained in its normal no-controller state.
-- `scripts/build-ios.sh --device --app --config Release` passed touch tests, rebuilt the shared controller event path, relinked the arm64 iOS 16.0 app, and completed with `** BUILD SUCCEEDED **`.
-- Exact `--whitespace=error` reverse/apply validation passed. The full frontend series reversed in order 007→001 and replayed in order 001→007; `scripts/fetch-sources.sh` recognized the final patch graph from its digest ledger.
-- `cmake --build build-macos --target BanjoRecompiled -j 4` rebuilt the shared input event file and completed bundle fixup with `valid='1'` and `verified='1'`.
-- Package audit passed with no ROM or generated-source marker in the app. Two fresh unsigned IPAs were byte-for-byte identical: 54 entries, 7,545,220 bytes, SHA-256 `a5a7b45f363fea6927d44c4943b26e965ec4d5c1a73cfa67acb177407b8ea071`; `unzip -tq` passed.
+- `ios/app/TouchOverlay.mm` now gives every button and the stick a zero-offset black outer shadow and each label a one-point black text shadow. Rounded `shadowPath` values are updated with layout so the edge follows each pill/circle and avoids an unconstrained per-frame shadow raster.
+- Before the change, the single light border nearly disappeared over the retail-ROM boot sequence's pale-blue sky. The rebuilt Release app retained a clear dark silhouette on a full-white transition frame and kept its light border readable over the forest/title sequence.
+- The live iPad Pro 11-inch (M4) run still exposed the complete 12-element touch accessibility tree. Opening the BanjoPad menu removed every gameplay control except the menu button; closing it restored the same tree, proving the visual layer did not alter hit behavior or overlay state.
+- `scripts/build-ios.sh --simulator --app --config Release` and `scripts/build-ios.sh --device --app --config Release` both passed touch tests, compiled the Objective-C++ overlay with the iOS 16.0 SDK targets, linked, and completed with `** BUILD SUCCEEDED **`.
+- `cmake --build build-macos --target BanjoRecompiled -j 4` completed bundle fixup with `valid='1'` and `verified='1'`; `scripts/fetch-sources.sh` recognized the complete pinned patch graph from its digest ledger.
+- Package audit passed with no ROM or generated-source marker in the app. Two fresh unsigned IPAs were byte-for-byte identical: 54 entries, 7,544,887 bytes, SHA-256 `56cacea4fb72cc2e8284ca1960e77c6d4ad28bccbf9dc1c091770741ef140013`; `unzip -tq` passed.
 
-Next goal: iterate on touch-control visibility and ergonomics in Simulator on this Mac, then move signed physical-device feel, controller pairing, and lifecycle acceptance to the owner's other Mac with an attached iPad.
+Next goal: replay the 0.85-scale touch layout on an iPhone 16 Pro Simulator with the private retail ROM kept inside Simulator storage; verify no overlaps, bright/dark contrast, Start, stick, and menu hide/restore before any geometry tuning.
 
 Blockers: no local source, build, or package blocker. The owner confirmed that no iPad is attached to this Mac and physical-device testing will happen on another machine, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, deterministic IPA generation, and the macOS canary are green.
 
