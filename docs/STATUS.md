@@ -1,17 +1,19 @@
-# Status — updated 2026-07-29, iteration 65
+# Status — updated 2026-07-29, iteration 66
 
-Phase: 10+ — polish backlog; SDL startup result validation completed
+Phase: 10+ — touch-control polish; controller-presence signal hardened
 
-Done this iteration: completed the adjacent SDL startup audit and converted three ignored failure paths into explicit failures before invalid native handles can reach the renderer or audio device setup. Evidence:
+Done this iteration: audited the touch overlay's controller-aware fade signal, removed two false-positive paths, and replayed the retail-ROM touch flow in the iPad Simulator. Evidence:
 
-- New `patches/banjo/010-validate-sdl-startup-results.patch` checks `SDL_GetWindowWMInfo` on the Windows and Apple paths that consume its native handle, rejects null `SDL_Metal_CreateView` and `SDL_Metal_GetLayer` results before constructing the renderer handle, and rejects a failed `SDL_InitSubSystem(SDL_INIT_AUDIO)` before opening an audio device.
-- The Linux/Android path remains unchanged where the populated `SDL_SysWMinfo` value is not consumed. Existing `SDL_CreateWindow`, `SDL_BuildAudioCVT`, `SDL_OpenAudioDevice`, and controller-mapping results were already handled.
-- Exact reverse-apply validation passed with `--whitespace=error`. The full Banjo series reversed in order 010→001 and replayed in order 001→010 on the pinned tree; `scripts/fetch-sources.sh` then recognized every patch through the cached digest ledger.
-- `scripts/build-ios.sh --device --app --config Release` passed touch tests, rebuilt the shared entry point, relinked the arm64 iOS 16.0 app, and completed with `** BUILD SUCCEEDED **`.
-- `cmake --build build-macos --target BanjoRecompiled` completed a full 1,140-step macOS Release rebuild, linked the same shared entry point, and completed bundle fixup with `valid='1'` and `verified='1'`; strict deep code-signature verification passed.
-- Package audit passed with no ROM or generated-source marker in the app. Two fresh unsigned IPAs were byte-for-byte identical: 54 entries, 7,545,185 bytes, SHA-256 `a0d3e15e7b0f6ba3ee44d1ddfa4baecdfdf2e4ccded6107e59b6b61dd1b70baf`; `unzip -tq` passed.
+- New `patches/frontend/007-ios-game-controller-presence.patch` marks a controller connected only after `SDL_GameControllerOpen` succeeds. Removal now checks the remaining devices with `SDL_IsGameController` instead of treating every SDL joystick as a game controller; desktop code remains behind the existing iOS compile guard.
+- The Release Simulator app built successfully, launched on the iPad Pro 11-inch (M4), auto-started the locally stored verified retail ROM, and exposed the complete 12-element touch accessibility tree: menu, stick, A/B, Start, both Z triggers, R, and four C buttons.
+- Activating the native Start touch control advanced the Banjo boot sequence. Opening the BanjoPad menu removed all gameplay controls except the menu button; closing it restored the complete control tree over the live title sequence.
+- Console capture showed successful lifecycle/audio initialization and no SDL `Controller added` event during the no-controller run, so the overlay remained in its normal no-controller state.
+- `scripts/build-ios.sh --device --app --config Release` passed touch tests, rebuilt the shared controller event path, relinked the arm64 iOS 16.0 app, and completed with `** BUILD SUCCEEDED **`.
+- Exact `--whitespace=error` reverse/apply validation passed. The full frontend series reversed in order 007→001 and replayed in order 001→007; `scripts/fetch-sources.sh` recognized the final patch graph from its digest ledger.
+- `cmake --build build-macos --target BanjoRecompiled -j 4` rebuilt the shared input event file and completed bundle fixup with `valid='1'` and `verified='1'`.
+- Package audit passed with no ROM or generated-source marker in the app. Two fresh unsigned IPAs were byte-for-byte identical: 54 entries, 7,545,220 bytes, SHA-256 `a5a7b45f363fea6927d44c4943b26e965ec4d5c1a73cfa67acb177407b8ea071`; `unzip -tq` passed.
 
-Next goal: iterate on the touch-control experience on this Mac, then move signed physical-device acceptance to the owner's other Mac with an attached iPad.
+Next goal: iterate on touch-control visibility and ergonomics in Simulator on this Mac, then move signed physical-device feel, controller pairing, and lifecycle acceptance to the owner's other Mac with an attached iPad.
 
 Blockers: no local source, build, or package blocker. The owner confirmed that no iPad is attached to this Mac and physical-device testing will happen on another machine, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, deterministic IPA generation, and the macOS canary are green.
 
