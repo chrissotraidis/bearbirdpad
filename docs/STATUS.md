@@ -1,15 +1,16 @@
-# Status — updated 2026-07-29, iteration 54
+# Status — updated 2026-07-29, iteration 55
 
-Phase: 10+ — polish backlog; BanjoRecomp pin verified current
+Phase: 10+ — polish backlog; RecompFrontend pin verified as the current parent-selected revision
 
-Done this iteration: performed the deliberate BanjoRecomp pin-drift gate before changing any build input and found that no pin bump exists to take. No production app behavior changed. Evidence:
+Done this iteration: audited RecompFrontend's standalone default branch and the revision selected by current BanjoRecomp, then rejected a false "upgrade" that would actually downgrade the build input. No production app behavior changed. Evidence:
 
-- Read-only `git fetch --depth=1 origin HEAD` returned `c20314cd1bcaefff7bdbce257a25ebcc30cc1cdc`, exactly the revision already declared by `scripts/fetch-sources.sh`.
-- The pinned and remote commit metadata match: authored `2026-07-26T09:47:11+10:00`, subject `jinjo saving: Fix jinjo unsynced display state (#310)`.
-- `git diff --name-status HEAD..FETCH_HEAD`, `git diff --stat HEAD..FETCH_HEAD`, and the `.gitmodules`/`lib` submodule delta were all empty.
-- Because source and submodule inputs are byte-for-byte unchanged, patch replay and build/package reruns would test the same graph already green in iteration 51. The pin, patch state, production app, IPA, ROM, saves, and generated sources were left untouched.
+- Read-only `git fetch --depth=1 origin HEAD` and `git ls-remote --symref origin HEAD` confirmed standalone `main` is `9ef9cdfdead7649247ab4957f43517f44c33931d`.
+- The pinned `d0d90ba49f46f4896aaeda362056c21b1e342561` is the tip of upstream branch `include-order-fix`, not a stale local commit. It is newer than `main`.
+- Current remote BanjoRecomp HEAD still selects `d0d90ba` for `lib/RecompFrontend`, matching `scripts/fetch-sources.sh` and the local build input exactly.
+- The only pinned-versus-main content delta is `recompui/CMakeLists.txt`: the selected revision adds `__PRFCHWINTRIN_H` and moves N64ModernRuntime include directories ahead of RT64 includes. Replacing it with default `main` would remove that build workaround.
+- No pin, patch, source, submodule, build product, production app, IPA, ROM, save, or generated artifact changed. Patch replay and rebuild were not run because the authoritative parent-selected input remains byte-for-byte identical.
 
-Next goal: audit RecompFrontend's current upstream HEAD against pinned `d0d90ba`; if it advanced, replay the frontend patch series in isolation and take only a deliberate, verified single-purpose bump.
+Next goal: finish the pin-current inventory by auditing N64ModernRuntime's parent-selected `gamemodes` revision `ca568b6` against standalone `main`, without treating a branch change as a routine pin bump.
 
 Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 
