@@ -1,18 +1,17 @@
-# Status — updated 2026-07-29, iteration 29
+# Status — updated 2026-07-29, iteration 30
 
-Phase: 10+ — polish backlog; touch input cancels across interruptions
+Phase: 10+ — polish backlog; touch-state regression gate runs before iOS builds
 
-Done this iteration: closed the remaining stuck-input seam between UIKit touch objects and the thread-safe controller state. Evidence:
+Done this iteration: turned the existing pure-C++ touch-state test into a strict, repeatable build gate. Evidence:
 
-- Background handling already cleared the atomic button/stick/camera state, while UIKit normally delivered `touchesCancelled:` separately. An interruption arriving between those paths could leave a button or the persistent menu retaining an old `activeTouch` and pressed appearance even though gameplay input was neutral.
-- One main-thread `cancel_all_inputs` path now clears every overlay control, the persistent menu button, and the shared controller state. Menu transitions and disabling touch controls reuse the same path.
-- `BanjoPadTouch_Install` registers one `UIApplicationWillResignActiveNotification` observer, so Control Center, alerts, Home, and other inactive transitions cancel UIKit state before a stale touch can survive.
-- iPad Pro 11-inch (M4), iOS 18.5, passed a Release retail-game transition: move the adjustable stick right, press Home, foreground BanjoPad from its icon, move left, open the in-game menu, and close it. The complete gameplay accessibility tree returned after both foregrounding and menu close, and the post-resume stick action succeeded.
-- Button masks, visual layout, safe-area placement, camera gesture region, and game/menu input mappings are unchanged.
+- `tests/touch_input_shim_test.cpp` already covered stock-plus-touch input merging, axis clamping, two simultaneous owners of the same N64 button bit, staged release, camera merging, `release_all`, absent stock input, and non-player-one behavior, but it had no repo-native runner and normal builds could silently skip it.
+- New executable `scripts/test-touch-input.sh` compiles the real `TouchInputShim.cpp` plus that test against the macOS SDK with C++20, pthreads, and `-Wall -Wextra -Werror`, then runs the binary.
+- `scripts/build-ios.sh` now invokes the test immediately after argument validation, before dependency work or any smoke/stub/full-app build. A broken touch-state invariant therefore fails both Simulator and device workflows early.
+- The standalone runner passed. Full-app Release Simulator and unsigned device builds each independently printed `Touch input shim tests passed.` before their Xcode build succeeded.
 - Simulator and unsigned device Release builds passed. `scripts/package-audit.sh` again found no ROM, ROM digest, or generated-source marker.
-- Refreshed `build/release/BanjoPad-0.1.0-unsigned.ipa`: 7.3 MB allocated size, SHA-256 `68a9ca26aabeaf995a32e26e6982f0c64bbb26f637b8910861b2c01462a34470`.
+- Refreshed `build/release/BanjoPad-0.1.0-unsigned.ipa`: 7.2 MB allocated size, SHA-256 `e8247b55b527de5da5f97bd96bc3d643e92851d5c0c41885ce4ed1ffa83cb73b`.
 
-Next goal: add a narrow automated regression gate for overlapping touch-button reference counts and `release_all`, without pulling UIKit into the host test target.
+Next goal: make the adjustable stick announce its current direction after VoiceOver actions, while preserving the existing 120 ms gameplay pulse.
 
 Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 

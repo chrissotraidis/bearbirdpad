@@ -43,6 +43,8 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+"$ROOT/scripts/test-touch-input.sh"
+
 case "$MODE" in
     --device)
         PLATFORM="device"
