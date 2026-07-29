@@ -1,21 +1,22 @@
-# Status — updated 2026-07-29, iteration 44
+# Status — updated 2026-07-29, iteration 45
 
-Phase: 10+ — polish backlog; save atomicity survives force-close and stored-ROM relaunch
+Phase: 10+ — polish backlog; five-cycle Home/foreground soak stays neutral and durable
 
-Done this iteration: audited primary-save/backup atomicity across a production App Switcher force-close and normal stored-ROM relaunch. No app-source correction was needed. Evidence:
+Done this iteration: ran five consecutive real Home → BanjoPad foreground cycles in one production process while auditing input release, rendering, accessibility, process continuity, and save atomicity. No app-source correction was needed. Evidence:
 
-- Before the cycle, the primary save and `.bak` were each exactly 2,048 bytes, both had SHA-256 `3766157740b5946d1e62cecd9b60767d411fee76bc55e6c9df7df269de7fb8c2`, and no `.temp`, `.tmp`, or partial file existed.
-- Simulator's real Device → App Switcher → `Close BanjoPad` action terminated PID `75723`. Immediately afterward, both files retained the exact baseline size, hash, and mtime, with no temporary file.
-- A normal no-argument launch created PID `76948`, displayed `Start Game` rather than `Load ROM`, and reached rendered gameplay through the launcher's production Return-key path.
-- After stored-ROM gameplay resumed, both save files remained exactly 2,048 bytes with the same baseline SHA-256. Their mtimes advanced together from `1785331260` to `1785331676`, and no orphaned temporary or partial file appeared.
-- The first captured post-launch frame was blank; a follow-up frame showed the retail-ROM attract sequence advancing with the complete 12-target native accessibility tree, so the blank frame was transient rather than a persistent resume failure.
+- Before cycle 1, the production touch functions simultaneously staged and read back A `32768`, stick `(0.75, -0.5)`, and camera `(0.625, -0.375)`.
+- Every real Simulator Home action exposed the BanjoPad icon. Every icon return restored the BanjoPad menu, all 10 gameplay buttons, and a centered stick with all four direction actions.
+- PID `76948` and unique PID `8331597` survived all five cycles. After cycle 5, UIKit reported `UIApplicationStateActive` (`0`) and `BanjoPadTouch_Enabled() == 1`.
+- Production merged buttons, stick, and camera all read exactly zero after the soak, proving the cycle-1 hold was released and never replayed.
+- The retail-ROM attract sequence was visibly advancing after cycle 5; no persistent blank frame or renderer-resume failure appeared.
+- The primary save and `.bak` remained exactly 2,048 bytes with SHA-256 `3766157740b5946d1e62cecd9b60767d411fee76bc55e6c9df7df269de7fb8c2` and unchanged mtime `1785331676`. No `.temp`, `.tmp`, or partial file appeared.
 - `Documents/BanjoRecompiled/ios-controls.json` remained `touch_controls: true` with SHA-256 `f9417c1ac93f257c45249aad6252877e5768cf1f562048c99c71f34f917b9bcb`.
 - Because app source remained identical to iteration 36, this verification-only iteration reused the exact installed Simulator Release build and existing device/IPA artifacts instead of rebuilding identical binaries.
 - The touch-state regression and device-app package audit passed again.
 - `scripts/package-audit.sh` found no ROM, ROM digest, or generated-source marker.
 - Existing `build/release/BanjoPad-0.1.0-unsigned.ipa`: 7.2 MB allocated size, SHA-256 `9992b326d9fb8e346fb8ca059d1ff80d04bda61dd86d7039c13bb01e8f6bd9e2`.
 
-Next goal: run five consecutive real Home → BanjoPad foreground cycles in one process, then prove PID continuity, advancing rendering, complete neutral controls, unchanged save hashes, and no orphaned temporary file.
+Next goal: run five consecutive real Lock → hardware Home wake/unlock cycles in one process, then prove PID continuity, advancing rendering, complete neutral controls, unchanged save hashes, and no orphaned temporary file.
 
 Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 
