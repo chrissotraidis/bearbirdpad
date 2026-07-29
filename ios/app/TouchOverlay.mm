@@ -492,6 +492,7 @@ static void push_menu_toggle();
 @property(nonatomic, assign) BOOL controllerConnected;
 
 - (void)cancelAllInputs;
+- (void)setOptionalControlsShowL:(BOOL)showL showDpad:(BOOL)showDpad;
 - (void)updateControllerAppearance;
 
 @end
@@ -632,6 +633,23 @@ static void push_menu_toggle();
         UIAccessibilityIsReduceTransparencyEnabled() ||
         UIAccessibilityDarkerSystemColorsEnabled();
     self.alpha = self.controllerConnected && !strongerContrast ? 0.4 : 1.0;
+}
+
+- (void)setOptionalControlsShowL:(BOOL)showL showDpad:(BOOL)showDpad {
+    if (!showL) {
+        [self.buttonL cancelInput];
+    }
+    if (!showDpad) {
+        [self.dUp cancelInput];
+        [self.dDown cancelInput];
+        [self.dLeft cancelInput];
+        [self.dRight cancelInput];
+    }
+    self.buttonL.hidden = !showL;
+    self.dUp.hidden = !showDpad;
+    self.dDown.hidden = !showDpad;
+    self.dLeft.hidden = !showDpad;
+    self.dRight.hidden = !showDpad;
 }
 
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
@@ -782,6 +800,8 @@ static BanjoPadCameraGesture *sCameraGesture;
 static BanjoPadCameraGestureDelegate *sCameraDelegate;
 static id sResignObserver;
 static std::atomic_bool sEnabled(true);
+static std::atomic_bool sShowDpad(false);
+static std::atomic_bool sShowL(false);
 static std::atomic_bool sMenuVisible(true);
 static std::atomic_bool sControllerConnected(false);
 static NSUInteger sCameraGeneration;
@@ -818,19 +838,23 @@ static void cancel_all_inputs() {
 
 @end
 
-static void save_enabled_setting() {
+static void save_control_settings() {
     NSString *path = settings_path();
     NSString *directory = path.stringByDeletingLastPathComponent;
     [NSFileManager.defaultManager createDirectoryAtPath:directory
                            withIntermediateDirectories:YES
                                             attributes:nil
                                                  error:nil];
-    NSDictionary *json = @{@"touch_controls": @(sEnabled.load())};
+    NSDictionary *json = @{
+        @"show_dpad": @(sShowDpad.load()),
+        @"show_l_button": @(sShowL.load()),
+        @"touch_controls": @(sEnabled.load()),
+    };
     NSData *data = [NSJSONSerialization dataWithJSONObject:json options:NSJSONWritingPrettyPrinted error:nil];
     [data writeToFile:path options:NSDataWritingAtomic error:nil];
 }
 
-static void load_enabled_setting() {
+static void load_control_settings() {
     NSData *data = [NSData dataWithContentsOfFile:settings_path()];
     if (data == nil) {
         return;
@@ -839,6 +863,14 @@ static void load_enabled_setting() {
     NSNumber *enabled = [json isKindOfClass:NSDictionary.class] ? json[@"touch_controls"] : nil;
     if ([enabled isKindOfClass:NSNumber.class]) {
         sEnabled.store(enabled.boolValue);
+    }
+    NSNumber *showDpad = [json isKindOfClass:NSDictionary.class] ? json[@"show_dpad"] : nil;
+    if ([showDpad isKindOfClass:NSNumber.class]) {
+        sShowDpad.store(showDpad.boolValue);
+    }
+    NSNumber *showL = [json isKindOfClass:NSDictionary.class] ? json[@"show_l_button"] : nil;
+    if ([showL isKindOfClass:NSNumber.class]) {
+        sShowL.store(showL.boolValue);
     }
 }
 
@@ -971,6 +1003,7 @@ static void apply_overlay_state() {
         sOverlay = [[BanjoPadTouchOverlay alloc] initWithFrame:window.bounds];
         sOverlay.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     }
+    [sOverlay setOptionalControlsShowL:sShowL.load() showDpad:sShowDpad.load()];
     if (sOverlay.superview != window) {
         [sOverlay removeFromSuperview];
         sOverlay.frame = window.bounds;
@@ -990,6 +1023,14 @@ extern "C" int BanjoPadTouch_Enabled(void) {
     return sEnabled.load() ? 1 : 0;
 }
 
+extern "C" int BanjoPadTouch_ShowDpad(void) {
+    return sShowDpad.load() ? 1 : 0;
+}
+
+extern "C" int BanjoPadTouch_ShowL(void) {
+    return sShowL.load() ? 1 : 0;
+}
+
 extern "C" void BanjoPadTouch_Install(void) {
     dispatch_async(dispatch_get_main_queue(), ^{
         if (sResignObserver == nil) {
@@ -1001,7 +1042,7 @@ extern "C" void BanjoPadTouch_Install(void) {
                             cancel_all_inputs();
                         }];
         }
-        load_enabled_setting();
+        load_control_settings();
         install_when_ready();
     });
 }
@@ -1012,7 +1053,23 @@ extern "C" void BanjoPadTouch_SetEnabled(int enabled) {
         if (!sEnabled.load()) {
             cancel_all_inputs();
         }
-        save_enabled_setting();
+        save_control_settings();
+        apply_overlay_state();
+    });
+}
+
+extern "C" void BanjoPadTouch_SetShowDpad(int visible) {
+    sShowDpad.store(visible != 0);
+    dispatch_async(dispatch_get_main_queue(), ^{
+        save_control_settings();
+        apply_overlay_state();
+    });
+}
+
+extern "C" void BanjoPadTouch_SetShowL(int visible) {
+    sShowL.store(visible != 0);
+    dispatch_async(dispatch_get_main_queue(), ^{
+        save_control_settings();
         apply_overlay_state();
     });
 }

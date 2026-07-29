@@ -75,7 +75,7 @@ diff --git a/recompui/src/config/ui_config_page_controls.cpp b/recompui/src/conf
 index f379a6f..15ae0bb 100644
 --- a/recompui/src/config/ui_config_page_controls.cpp
 +++ b/recompui/src/config/ui_config_page_controls.cpp
-@@ -9,6 +9,15 @@
+@@ -9,6 +9,19 @@
  #include "recompinput/profiles.h"
  #include "recompui/config.h"
 
@@ -85,33 +85,43 @@ index f379a6f..15ae0bb 100644
 +
 +#if defined(__APPLE__) && TARGET_OS_IPHONE
 +extern "C" int BanjoPadTouch_Enabled(void);
++extern "C" int BanjoPadTouch_ShowDpad(void);
++extern "C" int BanjoPadTouch_ShowL(void);
 +extern "C" void BanjoPadTouch_SetEnabled(int enabled);
++extern "C" void BanjoPadTouch_SetShowDpad(int visible);
++extern "C" void BanjoPadTouch_SetShowL(int visible);
 +#endif
 +
  namespace recompui {
 
  ConfigPageControls *controls_page = nullptr;
-@@ -518,6 +527,26 @@ void ConfigPageControls::render_control_mappings() {
+@@ -518,6 +531,32 @@ void ConfigPageControls::render_control_mappings() {
          body_left_scroll->set_padding_right(8.0f);
          body_left_scroll->set_debug_id("Mappings Scroll Container");
 
 +#if defined(__APPLE__) && TARGET_OS_IPHONE
-+        auto touch_controls_row =
-+            context.create_element<Element>(body_left_scroll, 0, "div", false);
-+        touch_controls_row->set_display(Display::Flex);
-+        touch_controls_row->set_flex_direction(FlexDirection::Row);
-+        touch_controls_row->set_align_items(AlignItems::Center);
-+        touch_controls_row->set_justify_content(JustifyContent::SpaceBetween);
-+        touch_controls_row->set_width(100.0f, Unit::Percent);
-+        touch_controls_row->set_padding(16.0f);
-+        touch_controls_row->set_as_navigation_container(NavigationType::GridRow);
-+        context.create_element<Label>(
-+            touch_controls_row, "Touch Controls", theme::Typography::LabelMD);
-+        auto touch_controls_toggle =
-+            context.create_element<Toggle>(touch_controls_row, ToggleSize::Medium);
-+        touch_controls_toggle->set_checked(BanjoPadTouch_Enabled() != 0);
-+        touch_controls_toggle->add_checked_callback([](bool checked) {
++        auto create_touch_toggle = [&](const char *label, bool checked, auto callback) {
++            auto row = context.create_element<Element>(body_left_scroll, 0, "div", false);
++            row->set_display(Display::Flex);
++            row->set_flex_direction(FlexDirection::Row);
++            row->set_align_items(AlignItems::Center);
++            row->set_justify_content(JustifyContent::SpaceBetween);
++            row->set_width(100.0f, Unit::Percent);
++            row->set_padding(16.0f);
++            row->set_as_navigation_container(NavigationType::GridRow);
++            context.create_element<Label>(row, label, theme::Typography::LabelMD);
++            auto toggle = context.create_element<Toggle>(row, ToggleSize::Medium);
++            toggle->set_checked(checked);
++            toggle->add_checked_callback(callback);
++        };
++        create_touch_toggle("Touch Controls", BanjoPadTouch_Enabled() != 0, [](bool checked) {
 +            BanjoPadTouch_SetEnabled(checked ? 1 : 0);
++        });
++        create_touch_toggle("Show L Button", BanjoPadTouch_ShowL() != 0, [](bool checked) {
++            BanjoPadTouch_SetShowL(checked ? 1 : 0);
++        });
++        create_touch_toggle("Show D-pad", BanjoPadTouch_ShowDpad() != 0, [](bool checked) {
++            BanjoPadTouch_SetShowDpad(checked ? 1 : 0);
 +        });
 +#endif
 +

@@ -1,17 +1,16 @@
-# Status — updated 2026-07-29, iteration 71
+# Status — updated 2026-07-29, iteration 72
 
-Phase: 10+ — touch-control polish; explicit camera-drag threshold verified
+Phase: 10+ — touch-control polish; optional L-button and D-pad visibility verified
 
-Done this iteration: replaced `UIPanGestureRecognizer`'s undocumented activation hysteresis with the touch specification's explicit 8 pt camera-drag threshold. Evidence:
+Done this iteration: added the two persisted Controls-page toggles promised by §5.1 while preserving the hidden-by-default layout. Evidence:
 
-- `BanjoPadCameraGesture` remains possible below 8 pt so ordinary taps continue to SDL, begins at the exact radial threshold, emits the threshold-crossing displacement plus incremental deltas, and zeros camera input on end/cancel/failure. `cancelsTouchesInView`, `delaysTouchesBegan`, and `delaysTouchesEnded` are all disabled.
-- The existing delegate still rejects touches beginning on any `BanjoPadTouchButton` or `BanjoPadTouchStick`, rejects the left half, and rejects menu-visible/disabled-overlay states. Only an unobstructed right-half touch can become a camera drag.
-- The sensitivity trace reaches `recomp_get_right_analog_inputs` → `banjopad::touch::merge_right_analog` → `recomp_analog_camera_get_x()` → `recomp_get_analog_cam_sensitivity() * 40 * time_getDelta()`. UIKit therefore keeps normalized `translation / 60` input and does not double-apply the existing setting; the private iPhone config had Analog Camera `On` and sensitivity `3`.
-- `scripts/build-ios.sh --simulator --app --config Release` and `scripts/build-ios.sh --device --app --config Release` passed, including the touch-shim merge/clamp/release tests. The exact Simulator build installed on an iPhone 16 Pro, iOS 18.5, loaded its app-private normalized retail ROM, reached a playable new-game scene, and retained the complete 12-control tree.
-- Simulator desktop pointer capture moves a mouse cursor rather than synthesizing UIKit touch drags, so it cannot honestly approve physical drag feel or the exact threshold. That remains in the existing Phase 6 `HUMAN-VERIFY` gate; no product failure was inferred from the unavailable input modality.
-- The macOS canary build and strict bundle-signature check passed. `scripts/package-ios.sh` passed twice with identical output: 54 entries, 7,545,383 bytes, SHA-256 `053bf221157d0d9f449f15d9db8fadae025ef0ad514007d29e88a318bf99fec8`; the audit found no ROM/generated content and `unzip -tq` passed.
+- Settings → Controls now exposes `Show L Button` and `Show D-pad` beside the existing `Touch Controls` row. The iOS-only frontend patch series replayed cleanly from pinned RecompFrontend `d0d90ba`, and every replayed file matched the cached build source.
+- The existing `ios-controls.json` now atomically persists all three booleans. Missing visibility keys remain backward-compatible and default false. Hiding L or the D-pad cancels those controls before removing them, preventing a setting change from leaving a held bit behind.
+- `scripts/build-ios.sh --simulator --app --config Release` passed, including the touch-shim tests. The exact build installed on an iPhone 16 Pro, iOS 18.5, auto-started from the app-private normalized retail ROM, and exposed 12 accessible controls by default, 13 after enabling L, and 17 after enabling the D-pad. Relaunch retained all 17; restoring both toggles returned the tree to 12 and persisted `show_l_button=false`, `show_dpad=false`, `touch_controls=true`.
+- `scripts/build-ios.sh --device --app --config Release` passed for arm64 iPhoneOS. The device binary contains all three Controls-row labels.
+- The macOS canary build and strict bundle-signature check passed. `scripts/package-ios.sh` passed twice with identical output: 54 entries, 7,551,449 bytes, SHA-256 `e53758c110957b724425b0a4881fca8fe3002f513b8b7b3da55fad6787937779`; the audit found no ROM/generated content and `unzip -tq` passed.
 
-Next goal: add the missing persisted visibility controls for the hidden-by-default L button and D-pad promised by §5.1, while preserving the default 12-control layout.
+Next goal: pause at this verified local round-up. The next owner-directed pass is touch-control feel/layout iteration on this Mac, followed by the existing Phase 6 physical-device checks on the other Mac/iPad.
 
 Blockers: no local source, build, or package blocker. The owner confirmed that no iPad is attached to this Mac and physical-device testing will happen on another machine, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, deterministic IPA generation, and the macOS canary are green.
 
