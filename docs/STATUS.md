@@ -1,23 +1,19 @@
-# Status — updated 2026-07-29, iteration 19
+# Status — updated 2026-07-29, iteration 20
 
-Phase: 9 — release polish; branded native launch complete, hosted Actions explicitly deprioritized by the project owner
+Phase: 10+ — polish backlog; known-good retail ROM now reproven from validation through live Simulator title rendering
 
-Done this iteration: replaced the empty iOS launch declaration with a compiled, ROM-free BanjoPad launch experience and proved it across Simulator, device, package, and shared-source builds. Evidence:
+Done this iteration: exercised the supplied NTSC-U 1.0 ROM through the real iOS validation, storage, mod-loading, renderer, and game-start path without changing or publishing the ROM. Evidence:
 
-- Added `ios/app/LaunchScreen.storyboard`: a restrained deep-teal launch surface with centered yellow `BANJOPAD` branding and a native-port subtitle. It uses only system text/layout primitives and contains no ROM-derived data or new game artwork.
-- Replaced the empty `UILaunchScreen` dictionary with `UILaunchStoryboardName=LaunchScreen`.
-- Added append-only upstream patch `patches/banjo/008-ios-launch-screen.patch`; its reverse-apply check passes and `fetch-sources.sh` recorded SHA-256 `acb2fe6883dbf349eb364ec01758cab58cec98fb1891111287feb2e9d60cee69`.
-- Xcode compiled and linked `LaunchScreen.storyboardc` without storyboard warnings in both unsigned arm64 Release targets:
-  - Simulator: `build-ios-app-simulator/Release/BanjoRecompiled.app`
-  - Device: `build-ios-app-device/Release/BanjoRecompiled.app`
-- Installed the Simulator build on the booted iPad Pro 11-inch (M4), iOS 18.5. A cold-launch recording visibly captured the new BanjoPad launch frame and its transition to the existing BanjoRecompiled launcher; the process remained alive and reached launcher version `v1.0.1`.
-- The device bundle reports `UILaunchStoryboardName=LaunchScreen`, contains the compiled storyboard, and its executable is arm64 Mach-O.
-- The ROM/privacy package audit passed, the IPA ZIP verified all 54 entries, and the refreshed unsigned archive is 8.1 MiB with SHA-256 `c1b5b50aad017b95d14abed0da71cb9c14349e2a174042391694573921446c95`.
-- The macOS Release canary rebuilt, and `codesign --verify --deep --strict` passed.
+- Revalidated `/Users/chrissotraidis/Downloads/Banjo-Kazooie (USA).n64`: exactly 16 MiB and runtime XXH3-64 `1B67585D56E07F8C`.
+- Preserved the existing Simulator container, including its normalized ROM, save files, settings, and BK-Reloaded `.rtz`. A separate temporary in-container copy reported the same retail hash and was passed to the existing `--rom ... --auto-start` diagnostic seam.
+- Console proof: `Imported launch ROM`, `SDL Video Driver: uikit`, `audio ready: 48000 Hz`, Apple iOS simulator GPU selected, BK-Reloaded opened and loaded, and the recomp heap initialized. No validation, renderer, or game-thread failure appeared.
+- Captured a live iPad Pro 11-inch (M4), iOS 18.5 Simulator window showing the app correctly landscape, the animated Banjo-Kazooie title sequence rendered through Metal, and the full touch overlay visible. A direct framebuffer also captured rendered Spiral Mountain gameplay.
+- The process remained alive throughout the observation. The run emitted two UIKit `Unbalanced calls to begin/end appearance transitions` warnings during startup; they did not prevent launch or gameplay and remain a non-blocking polish observation.
+- Mac UI automation clicks are mouse events rather than true simulated fingers, so this run does not close the existing physical touch-input `HUMAN-VERIFY` items.
 
-Next goal: continue with the first reproducible game-facing Simulator case—exercise the known-good NTSC-U ROM from launcher into rendered gameplay, capture the earliest remaining failure if one exists, and make the narrowest fix.
+Next goal: execute the explicit Phase 10 iPhone scale pass on an iPhone 16 Pro Simulator; capture launcher and gameplay layouts, identify the first concrete overlap/readability defect, and make the narrowest layout fix.
 
-Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, Simulator launch, package audit, IPA generation, and macOS canary are green.
+Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, retail-ROM validation, Simulator title rendering, package audit, IPA generation, and macOS canary are green.
 
 ref/ additions: none this iteration.
 
