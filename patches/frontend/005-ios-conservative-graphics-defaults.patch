@@ -1,0 +1,56 @@
+diff --git a/recompui/src/config/ui_config_tab_graphics.cpp b/recompui/src/config/ui_config_tab_graphics.cpp
+index 4fdf81f..0391f7b 100644
+--- a/recompui/src/config/ui_config_tab_graphics.cpp
++++ b/recompui/src/config/ui_config_tab_graphics.cpp
+@@ -3,6 +3,10 @@
+ #include "recompui/renderer.h"
+ #include "util/steam_deck.h"
+ 
++#if defined(__APPLE__)
++#include <TargetConditionals.h>
++#endif
++
+ static bool created_graphics_config = false;
+ 
+ namespace recompui {
+@@ -18,6 +22,22 @@ namespace recompui {
+             return is_steam_deck() ? ultramodern::renderer::WindowMode::Fullscreen : ultramodern::renderer::WindowMode::Windowed;
+         }
+ 
++        static constexpr ultramodern::renderer::Antialiasing antialiasing_default() {
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++            return ultramodern::renderer::Antialiasing::None;
++#else
++            return ultramodern::renderer::Antialiasing::MSAA2X;
++#endif
++        }
++
++        static constexpr ultramodern::renderer::Resolution resolution_default() {
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++            return ultramodern::renderer::Resolution::Original;
++#else
++            return ultramodern::renderer::Resolution::Auto;
++#endif
++        }
++
+         using EnumOptionVector = const std::vector<recomp::config::ConfigOptionEnumOption>;
+         static EnumOptionVector resolution_options = {
+             {ultramodern::renderer::Resolution::Original, "Original", "Original"},
+@@ -237,7 +257,7 @@ namespace recompui {
+                 "Resolution",
+                 "Sets the output resolution of the game. <recomp-color primary>Original</recomp-color> matches the game's original 240p resolution. <recomp-color primary>Original 2x</recomp-color> will render at 480p. <recomp-color primary>Auto</recomp-color> will scale based on the game window's resolution.",
+                 resolution_options,
+-                ultramodern::renderer::Resolution::Auto
++                resolution_default()
+             );
+             {
+                 config.add_option_change_callback(
+@@ -330,7 +350,7 @@ namespace recompui {
+                 "<br />"
+                 "<recomp-color primary>Note: This option won't be available if your GPU does not support programmable MSAA sample positions, as it is currently required to avoid rendering glitches.</recomp-color>",
+                 antialiasing_options,
+-                ultramodern::renderer::Antialiasing::MSAA2X
++                antialiasing_default()
+             );
+ 
+             config.add_enum_option(
