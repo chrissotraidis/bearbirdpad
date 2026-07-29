@@ -115,8 +115,8 @@
         <string>arm64</string>
         <string>metal</string>
     </array>
-    <key>UILaunchScreen</key>
-    <dict/>
+    <key>UILaunchStoryboardName</key>
+    <string>LaunchScreen</string>
     <key>UIRequiresFullScreen</key>
     <true/>
     <key>UIStatusBarHidden</key>
