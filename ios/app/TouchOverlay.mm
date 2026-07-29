@@ -483,6 +483,11 @@ static void push_menu_toggle();
                selector:@selector(accessibilityAppearanceChanged:)
                    name:UIAccessibilityReduceTransparencyStatusDidChangeNotification
                  object:nil];
+        [NSNotificationCenter.defaultCenter
+            addObserver:self
+               selector:@selector(accessibilityAppearanceChanged:)
+                   name:UIAccessibilityDarkerSystemColorsStatusDidChangeNotification
+                 object:nil];
 
         UIColor *blue = [UIColor colorWithRed:0.36 green:0.72 blue:1.0 alpha:1.0];
         UIColor *green = [UIColor colorWithRed:0.43 green:0.92 blue:0.54 alpha:1.0];
@@ -598,8 +603,10 @@ static void push_menu_toggle();
 }
 
 - (void)updateControllerAppearance {
-    self.alpha =
-        self.controllerConnected && !UIAccessibilityIsReduceTransparencyEnabled() ? 0.4 : 1.0;
+    BOOL strongerContrast =
+        UIAccessibilityIsReduceTransparencyEnabled() ||
+        UIAccessibilityDarkerSystemColorsEnabled();
+    self.alpha = self.controllerConnected && !strongerContrast ? 0.4 : 1.0;
 }
 
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
