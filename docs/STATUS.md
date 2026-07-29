@@ -1,17 +1,20 @@
-# Status — updated 2026-07-29, iteration 57
+# Status — updated 2026-07-29, iteration 58
 
-Phase: 10+ — polish backlog; DD2 remains gated by the current mod architecture
+Phase: 10+ — polish backlog; full local release reproducibility gate green
 
-Done this iteration: audited DD2's text-patch-free replacement requirement against current N64ModernRuntime `main` and current standalone N64Recomp, then retained the existing iOS code-mod gate. No production app behavior changed. Evidence:
+Done this iteration: rebuilt and re-audited the final pinned patch state locally, then fixed nondeterministic IPA packaging discovered by the reproducibility gate. No game or renderer behavior changed. Evidence:
 
-- Read-only current-upstream checks used N64ModernRuntime `ae1ffbb909d9f93c88c41830deb539f7feef5ed2`, its nested N64Recomp `81213c1831fab2521a6a5459c67b63437d67e253`, and standalone N64Recomp `ffb39cdad1da5de07eaaa48bd1db4a89a7986771`.
-- Standalone N64Recomp contains only three `use_lookup_for_all_function_calls` references: the context field and two generator decisions. There is no runtime replacement-table API or base-recomp configuration exposure.
-- Current N64ModernRuntime sets that flag only on the live-regenerated hook context, then redirects the original functions with `patch_func`.
-- Current replacement loading still copies the base function's native bytes, calls `patch_func(to_replace, ...)`, and later restores those bytes with `unpatch_func`.
-- Banjo's base recompiler config does not enable the all-call lookup flag. Its generated base has `36132` direct named calls and only `198` `LOOKUP_FUNC` calls, so a replacement table cannot intercept the general call graph.
-- DD2 therefore remains correctly deferred: enabling code mods would still require JIT-produced replacement code plus writes to signed executable text. No code-mod gate, source, pin, patch, build product, ROM, save, or generated artifact changed.
+- `scripts/fetch-sources.sh` verified every pinned revision, re-disabled every upstream push URL, and matched all 28 downstream patches against `.banjopad-patch-state`.
+- `scripts/build-ios.sh --simulator --app --config Release` completed with `** BUILD SUCCEEDED **` and rebuilt `build-ios-app-simulator/Release/BanjoRecompiled.app`. Its plist retains `UIRequiresFullScreen=true` and landscape left/right only.
+- The first sandboxed Xcode attempt was denied access to CoreSimulator/Xcode DerivedData; the required-access rerun passed. This was an execution-environment denial, not a source or build failure.
+- `cmake --build build-macos --target BanjoRecompiled` rebuilt the shared-code macOS Release canary successfully; CMake's bundle verification returned `valid='1'` and `verified='1'`.
+- `scripts/test-touch-input.sh` passed.
+- `scripts/package-audit.sh build-ios-app-device/Release/BanjoRecompiled.app` passed with no ROM files/digests or generated-source paths/markers.
+- The first unchanged-app IPA rebuild produced a different hash, exposing volatile ZIP directory metadata and update-in-place behavior in `scripts/package-ios.sh`.
+- The packager now normalizes payload timestamps to a fixed UTC value, sorts archive entries, builds and validates a temporary ZIP, then replaces the destination. `sh -n` passed.
+- Two consecutive packages of the same app produced identical bytes: 54 entries, 7,547,634 bytes, SHA-256 `bdc914b8983bf30fbe1ba460e4aae31a2999ead9257f04103933bcf75a516f9f`. `unzip -tq` passed and the archive contains no ROM, generated-source, or trace entries.
 
-Next goal: run a full local release reproducibility gate over the final pinned patch state: verified patch replay, Release Simulator build, macOS canary, touch tests, package audit, and unsigned IPA verification.
+Next goal: audit the remaining Phase 10+ inventory and select the next automatable, non-device-gated acceptance criterion; do not churn items whose reopen evidence is absent.
 
 Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 

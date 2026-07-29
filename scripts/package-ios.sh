@@ -18,16 +18,23 @@ trap 'rm -rf "$package_root"' EXIT HUP INT TERM
 mkdir -p "$package_root/Payload" "$(dirname "$output_path")"
 ditto "$app_path" "$package_root/Payload/$(basename "$app_path")"
 
+export TZ=UTC
+find "$package_root/Payload" -exec touch -h -t 200101010000 {} +
+archive_path="$package_root/BanjoPad.ipa"
+
 (
     cd "$package_root"
-    COPYFILE_DISABLE=1 zip -q -r -X "$output_path" Payload
+    find Payload -print |
+        LC_ALL=C sort |
+        COPYFILE_DISABLE=1 zip -q -X "$archive_path" -@
 )
 
-unzip -tq "$output_path" >/dev/null
+unzip -tq "$archive_path" >/dev/null
+mv -f "$archive_path" "$output_path"
 sha256=$(shasum -a 256 "$output_path" | awk '{print $1}')
-size=$(du -h "$output_path" | awk '{print $1}')
+size=$(wc -c < "$output_path" | tr -d ' ')
 
 echo "Packaged iOS archive:"
 echo "  $output_path"
-echo "  size: $size"
+echo "  size: $size bytes"
 echo "  sha256: $sha256"
