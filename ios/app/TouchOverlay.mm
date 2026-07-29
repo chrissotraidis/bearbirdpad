@@ -269,6 +269,7 @@ static void push_menu_toggle();
         self.accessibilityHint =
             @"Swipe up or down for vertical movement. Use Actions for every direction.";
         self.accessibilityTraits = UIAccessibilityTraitAdjustable;
+        self.accessibilityValue = @"Centered";
         self.accessibilityCustomActions = @[
             [[UIAccessibilityCustomAction alloc] initWithName:@"Move up"
                                                        target:self
@@ -348,47 +349,52 @@ static void push_menu_toggle();
     BanjoPadTouch_SetStick(dx / travel, -dy / travel);
 }
 
-- (void)pulseAccessibilityX:(float)x y:(float)y {
+- (void)pulseAccessibilityX:(float)x y:(float)y direction:(NSString *)direction {
     NSUInteger generation = ++self.accessibilityGeneration;
+    self.accessibilityValue = direction;
+    UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, direction);
     BanjoPadTouch_SetStick(x, y);
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 160 * NSEC_PER_MSEC),
                    dispatch_get_main_queue(), ^{
         if (generation == self.accessibilityGeneration && self.activeTouch == nil) {
             BanjoPadTouch_SetStick(0.0f, 0.0f);
+            self.accessibilityValue = @"Centered";
         }
     });
 }
 
 - (void)accessibilityIncrement {
-    [self pulseAccessibilityX:0.0f y:1.0f];
+    [self pulseAccessibilityX:0.0f y:1.0f direction:@"Up"];
 }
 
 - (void)accessibilityDecrement {
-    [self pulseAccessibilityX:0.0f y:-1.0f];
+    [self pulseAccessibilityX:0.0f y:-1.0f direction:@"Down"];
 }
 
 - (BOOL)accessibilityMoveUp {
-    [self pulseAccessibilityX:0.0f y:1.0f];
+    [self pulseAccessibilityX:0.0f y:1.0f direction:@"Up"];
     return YES;
 }
 
 - (BOOL)accessibilityMoveDown {
-    [self pulseAccessibilityX:0.0f y:-1.0f];
+    [self pulseAccessibilityX:0.0f y:-1.0f direction:@"Down"];
     return YES;
 }
 
 - (BOOL)accessibilityMoveLeft {
-    [self pulseAccessibilityX:-1.0f y:0.0f];
+    [self pulseAccessibilityX:-1.0f y:0.0f direction:@"Left"];
     return YES;
 }
 
 - (BOOL)accessibilityMoveRight {
-    [self pulseAccessibilityX:1.0f y:0.0f];
+    [self pulseAccessibilityX:1.0f y:0.0f direction:@"Right"];
     return YES;
 }
 
 - (BOOL)accessibilityCenter {
     ++self.accessibilityGeneration;
+    self.accessibilityValue = @"Centered";
+    UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, self.accessibilityValue);
     BanjoPadTouch_SetStick(0.0f, 0.0f);
     return YES;
 }
@@ -422,6 +428,7 @@ static void push_menu_toggle();
     ++self.accessibilityGeneration;
     self.activeTouch = nil;
     self.thumb.center = CGPointMake(CGRectGetMidX(self.bounds), CGRectGetMidY(self.bounds));
+    self.accessibilityValue = @"Centered";
     BanjoPadTouch_SetStick(0.0f, 0.0f);
 }
 

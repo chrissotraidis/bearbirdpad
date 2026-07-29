@@ -1,17 +1,19 @@
-# Status — updated 2026-07-29, iteration 30
+# Status — updated 2026-07-29, iteration 31
 
-Phase: 10+ — polish backlog; touch-state regression gate runs before iOS builds
+Phase: 10+ — polish backlog; adjustable stick announces VoiceOver actions
 
-Done this iteration: turned the existing pure-C++ touch-state test into a strict, repeatable build gate. Evidence:
+Done this iteration: gave the adjustable control stick an explicit spoken/value state for every assistive action without changing its gameplay timing. Evidence:
 
-- `tests/touch_input_shim_test.cpp` already covered stock-plus-touch input merging, axis clamping, two simultaneous owners of the same N64 button bit, staged release, camera merging, `release_all`, absent stock input, and non-player-one behavior, but it had no repo-native runner and normal builds could silently skip it.
-- New executable `scripts/test-touch-input.sh` compiles the real `TouchInputShim.cpp` plus that test against the macOS SDK with C++20, pthreads, and `-Wall -Wextra -Werror`, then runs the binary.
-- `scripts/build-ios.sh` now invokes the test immediately after argument validation, before dependency work or any smoke/stub/full-app build. A broken touch-state invariant therefore fails both Simulator and device workflows early.
-- The standalone runner passed. Full-app Release Simulator and unsigned device builds each independently printed `Touch input shim tests passed.` before their Xcode build succeeded.
+- The live stick previously exposed its label, hint, adjustable trait, and five custom actions, but no `accessibilityValue`; users received the action name without a persistent centered-state cue.
+- The stick now starts at `Centered`. Up, Down, Left, and Right set the matching value and post `UIAccessibilityAnnouncementNotification`; Center posts `Centered`.
+- The existing generation guard and 160 ms gameplay pulse are unchanged. When a directional pulse expires, the N64 stick and accessibility value both return to centered; cancellation, menu transitions, and app interruptions also restore `Centered`.
+- iPad Pro 11-inch (M4), iOS 18.5, launched the retail game in the Release build. Its live tree reported `Control stick, Value: Centered` with Move up/down/left/right/Center actions. Move right executed and the tree returned to `Centered` after the pulse.
+- Iteration 30's next-goal wording said 120 ms, but source and all prior builds use 160 ms; this iteration preserves the authoritative implementation rather than silently changing input behavior to match stale prose.
+- The touch-state regression gate passed before both builds.
 - Simulator and unsigned device Release builds passed. `scripts/package-audit.sh` again found no ROM, ROM digest, or generated-source marker.
-- Refreshed `build/release/BanjoPad-0.1.0-unsigned.ipa`: 7.2 MB allocated size, SHA-256 `e8247b55b527de5da5f97bd96bc3d643e92851d5c0c41885ce4ed1ffa83cb73b`.
+- Refreshed `build/release/BanjoPad-0.1.0-unsigned.ipa`: 7.9 MB allocated size, SHA-256 `f3ac68b418ff20d86b11aed39f94e3c62044bd1d15de83ded47b1e835c5a2325`.
 
-Next goal: make the adjustable stick announce its current direction after VoiceOver actions, while preserving the existing 120 ms gameplay pulse.
+Next goal: mirror assistive stick pulses in the visible thumb position, then verify that normal touch movement and centering remain unchanged.
 
 Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 
