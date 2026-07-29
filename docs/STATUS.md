@@ -1,18 +1,20 @@
-# Status — updated 2026-07-29, iteration 33
+# Status — updated 2026-07-29, iteration 34
 
-Phase: 10+ — polish backlog; controller fade preserves touch accessibility
+Phase: 10+ — polish backlog; repeated assistive button pulses retain full duration
 
-Done this iteration: audited the controller-connected touch fade in the live retail game and proved that it remains a visual cue rather than an accessibility or input disable. No app-source correction was needed. Evidence:
+Done this iteration: protected rapid repeated assistive button activations from stale delayed releases without changing direct-touch timing. Evidence:
 
-- Source inspection confirmed that controller presence changes only `sOverlay.alpha` between `1.0` and `0.4`; it does not change `hidden`, `userInteractionEnabled`, accessibility labels, traits, values, actions, or the camera gesture.
-- The running iPad Pro 11-inch (M4), iOS 18.5, Simulator Release process exercised the exported production `BanjoPadTouch_SetControllerConnected` path directly. The retail game visibly faded every gameplay touch control to 40%.
-- In the faded state, the live accessibility tree still exposed all 11 enabled gameplay targets: A, B, both Z controls, R, Start, four C controls, and the adjustable stick with `Value: Centered` plus all five directional/Center actions. Hidden-by-default L and D-pad controls remained correctly absent.
-- The faded A target accepted activation. Switching the same production state back to disconnected restored full opacity, with the same accessibility tree intact.
-- Because the tested commit and app source were unchanged from iteration 32, the already-passed Simulator and unsigned device Release builds remain the exact binaries under test; this verification-only iteration did not rebuild identical source.
-- The touch-state regression gate and device-app package audit passed again. No ROM, ROM digest, or generated-source marker was present.
-- Existing `build/release/BanjoPad-0.1.0-unsigned.ipa`: 7.9 MB allocated size, SHA-256 `9999ff8ed3dbc284875a2ad9a87754cc05114087a9f5c8a20fa8907f40bb8f1d`.
+- Each gameplay button now increments an accessibility generation token before its existing 120 ms pulse. A delayed release applies only if its token is still current, so an older timeout cannot shorten a newer activation.
+- The delayed release also requires no active direct touch. `cancelInput` invalidates every queued assistive release before clearing the held state, so direct-touch holds, menu transitions, setting changes, and app interruptions remain authoritative.
+- No direct-touch event path or 120 ms gameplay duration changed.
+- The touch-state regression gate passed before both builds.
+- Simulator and unsigned device Release builds passed after compiling and linking the changed Objective-C++ overlay.
+- iPad Pro 11-inch (M4), iOS 18.5, installed the new Simulator Release app and auto-started its existing retail ROM through the documented launch path. Gameplay rendered, the complete touch accessibility tree remained present, and A accepted activation.
+- Computer Use serializes accessibility actions, so it cannot issue two activations inside 120 ms; the generation comparison, cancellation path, compiled targets, and single live activation are the verification boundary rather than a claimed rapid-input recording.
+- `scripts/package-audit.sh` found no ROM, ROM digest, or generated-source marker.
+- Refreshed `build/release/BanjoPad-0.1.0-unsigned.ipa`: 7.6 MB allocated size, SHA-256 `51a863bcd00c9919c3aa27bb17ac958c32d9f3de3f911f6d7cf737ab7a39f8bf`.
 
-Next goal: protect rapid repeated assistive button activations with the same generation-token pattern used by the stick, so an older 120 ms release cannot shorten a newer activation.
+Next goal: make the controller-connected visual cue honor Reduce Transparency while preserving the default 40% fade and live accessibility tree.
 
 Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 

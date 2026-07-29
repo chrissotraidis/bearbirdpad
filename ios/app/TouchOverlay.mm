@@ -85,6 +85,7 @@ static void push_menu_toggle();
 @property(nonatomic, strong) UILabel *label;
 @property(nonatomic, assign) UITouch *activeTouch;
 @property(nonatomic, assign) BOOL pressed;
+@property(nonatomic, assign) NSUInteger accessibilityGeneration;
 
 - (instancetype)initWithLabel:(NSString *)label
            accessibilityLabel:(NSString *)accessibilityLabel
@@ -196,10 +197,13 @@ static void push_menu_toggle();
         return YES;
     }
 
+    NSUInteger generation = ++self.accessibilityGeneration;
     self.pressed = YES;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 120 * NSEC_PER_MSEC),
                    dispatch_get_main_queue(), ^{
-        self.pressed = NO;
+        if (generation == self.accessibilityGeneration && self.activeTouch == nil) {
+            self.pressed = NO;
+        }
     });
     return YES;
 }
@@ -233,6 +237,7 @@ static void push_menu_toggle();
 }
 
 - (void)cancelInput {
+    ++self.accessibilityGeneration;
     self.activeTouch = nil;
     self.pressed = NO;
 }
