@@ -800,6 +800,7 @@ static BanjoPadCameraGesture *sCameraGesture;
 static BanjoPadCameraGestureDelegate *sCameraDelegate;
 static id sResignObserver;
 static std::atomic_bool sEnabled(true);
+static std::atomic_bool sHideWhenControllerConnected(false);
 static std::atomic_bool sShowDpad(false);
 static std::atomic_bool sShowL(false);
 static std::atomic_bool sMenuVisible(true);
@@ -846,6 +847,7 @@ static void save_control_settings() {
                                             attributes:nil
                                                  error:nil];
     NSDictionary *json = @{
+        @"hide_when_controller_connected": @(sHideWhenControllerConnected.load()),
         @"show_dpad": @(sShowDpad.load()),
         @"show_l_button": @(sShowL.load()),
         @"touch_controls": @(sEnabled.load()),
@@ -863,6 +865,11 @@ static void load_control_settings() {
     NSNumber *enabled = [json isKindOfClass:NSDictionary.class] ? json[@"touch_controls"] : nil;
     if ([enabled isKindOfClass:NSNumber.class]) {
         sEnabled.store(enabled.boolValue);
+    }
+    NSNumber *hideWhenControllerConnected =
+        [json isKindOfClass:NSDictionary.class] ? json[@"hide_when_controller_connected"] : nil;
+    if ([hideWhenControllerConnected isKindOfClass:NSNumber.class]) {
+        sHideWhenControllerConnected.store(hideWhenControllerConnected.boolValue);
     }
     NSNumber *showDpad = [json isKindOfClass:NSDictionary.class] ? json[@"show_dpad"] : nil;
     if ([showDpad isKindOfClass:NSNumber.class]) {
@@ -990,7 +997,8 @@ static void apply_overlay_state() {
     }
     install_menu_button(window);
 
-    if (!sEnabled.load() || sMenuVisible.load()) {
+    if (!sEnabled.load() || sMenuVisible.load() ||
+        (sControllerConnected.load() && sHideWhenControllerConnected.load())) {
         cancel_all_inputs();
         [sOverlay removeFromSuperview];
         sOverlay = nil;
@@ -1023,6 +1031,10 @@ extern "C" int BanjoPadTouch_Enabled(void) {
     return sEnabled.load() ? 1 : 0;
 }
 
+extern "C" int BanjoPadTouch_HideWhenControllerConnected(void) {
+    return sHideWhenControllerConnected.load() ? 1 : 0;
+}
+
 extern "C" int BanjoPadTouch_ShowDpad(void) {
     return sShowDpad.load() ? 1 : 0;
 }
@@ -1053,6 +1065,14 @@ extern "C" void BanjoPadTouch_SetEnabled(int enabled) {
         if (!sEnabled.load()) {
             cancel_all_inputs();
         }
+        save_control_settings();
+        apply_overlay_state();
+    });
+}
+
+extern "C" void BanjoPadTouch_SetHideWhenControllerConnected(int hidden) {
+    sHideWhenControllerConnected.store(hidden != 0);
+    dispatch_async(dispatch_get_main_queue(), ^{
         save_control_settings();
         apply_overlay_state();
     });
