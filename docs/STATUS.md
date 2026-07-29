@@ -1,24 +1,18 @@
-# Status — updated 2026-07-29, iteration 51
+# Status — updated 2026-07-29, iteration 52
 
-Phase: 10+ — polish backlog; DD3 settled by retaining the landscape-only full-screen contract
+Phase: 10+ — polish backlog; DD5 settled as evidence-gated rather than speculative
 
-Done this iteration: executed the DD3 iPad multitasking/Stage Manager decision gate with reversible, separate-bundle-ID test apps, traced the resize path through UIKit and plume, and retained `UIRequiresFullScreen=YES`. No production app behavior changed. Evidence:
+Done this iteration: audited DD5 (`MTLBinaryArchive`) against the pinned renderer and the Phase 8 measurement contract, then deliberately kept the existing renderer instead of adding an unmeasured persistent PSO cache. No production app behavior changed. Evidence:
 
-- The production plist still declares landscape left/right for both idioms and `UIRequiresFullScreen=true`.
-- A reversible `com.chrissotraidis.banjopad.dd3` copy with only `UIRequiresFullScreen=false` exposed Stage Manager window controls, but it still lacked Apple's required all-orientations declaration for true adaptive resizing.
-- A second reversible `com.chrissotraidis.banjopad.dd3-all` copy declared all four orientations. Stage Manager launched it in a real window and permitted portrait scene geometry.
-- The existing plume stability patch intentionally keeps window attributes fixed after initialization. A diagnostic single-flight refresh made the Metal layer and swapchain follow the new scene without recreating the original unbounded main-queue traffic.
-- LLDB measured the live transition precisely: the swapchain's old cached extent was `2420×1668`, UIKit's window/view/CAMetalLayer bounds became `834×1210` points at scale `2`, plume requested `1668×2420`, and `CAMetalLayer.drawableSize` reached `1668×2420`.
-- Even with the Metal resize proven, the landscape-only BanjoRecomp UI was not ship-ready at arbitrary aspect ratios: the portrait launcher remained a landscape canvas, its right-side menu moved partly offscreen, and the touch layout has no portrait design. This fails the usability side of DD3.
-- The diagnostic plume change and test bundle metadata were fully reverted. No new per-frame main-thread work, portrait declaration, test bundle ID, ROM, save, or derived artifact entered the repository.
-- The dedicated test apps used fresh isolated data containers; the production `com.chrissotraidis.banjopad` process and its save/settings container were not replaced.
-- Both temporary bundle IDs were uninstalled after the matrix, and the Simulator was restored to landscape, Split View & Slide Over, and its original pointer/keyboard capture state.
-- `scripts/build-ios.sh --simulator --app --config Release` completed with `** BUILD SUCCEEDED **` for both the diagnostic trace and the final production source after the experiment was removed.
-- The final Simulator plist is back to `UIRequiresFullScreen=true` with only landscape left/right for iPad and iPhone. The plume nested tree has no unstaged diagnostic diff and patch `004` does not exist.
-- `scripts/test-touch-input.sh` and `scripts/package-audit.sh build-ios-app-device/Release/BanjoRecompiled.app` passed. The audit found no ROM, ROM digest, or generated-source marker.
-- The existing unsigned IPA remains unchanged at SHA-256 `9992b326d9fb8e346fb8ca059d1ff80d04bda61dd86d7039c13bb01e8f6bd9e2`.
+- `rt64_raster_shader_cache.cpp` still submits specialized raster shaders to background compilation threads at idle priority while explicitly allowing the ubershader to render in the meantime.
+- `rt64_framebuffer_renderer.cpp` selects a specialized pipeline when ready and otherwise falls back to `RasterShaderUber`.
+- `rt64_raster_shader.cpp` creates the eight dynamic Metal ubershader pipeline permutations in parallel. This is the intended correctness and hitch-mitigation path, not a synchronous first-use cliff.
+- A source audit found Metal binary-archive API declarations only in the vendored `metal-cpp` headers; plume/RT64 has no archive creation, serialization, persistence, invalidation, or pipeline attachment implementation.
+- The repository contains zero `.trace`, `.gputrace`, or Metal-trace artifacts. Both required physical-device rows in `docs/perf-baseline.md` still contain only `HUMAN-VERIFY`, including worst cold-start hitch.
+- Therefore DD5's trigger is not met: no three physical cold-start traces show a user-visible hitch attributable to PSO compilation. The implementation remains deferred by evidence, with the exact reopen threshold retained in `docs/perf-baseline.md`.
+- No source, patch, build product, ROM, save, or generated artifact changed during this audit.
 
-Next goal: close the remaining automatable Phase 10+ decision inventory by auditing DD5 and DD6 against current evidence and upstream state, without adding speculative PSO-cache complexity or writing to upstream repositories.
+Next goal: settle DD6 by auditing the current iOS patch series for an upstream-ready, read-only handoff boundary; do not create upstream branches, issues, pull requests, or other writes.
 
 Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 

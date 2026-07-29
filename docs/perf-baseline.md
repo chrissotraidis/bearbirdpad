@@ -55,4 +55,6 @@ Use `Metal System Trace` for the three cold-start runs, `Game Memory` to confirm
 
 ## PSO cache decision
 
-DD5 (`MTLBinaryArchive`) remains deferred. The renderer already builds specialized PSOs asynchronously and has a dynamic ubershader fallback. Adding a persistent archive without physical cold-start hitch evidence would add lifecycle and invalidation complexity without a demonstrated gain. Trigger DD5 only if all three physical cold-start traces show a user-visible hitch attributable to PSO compilation; record the frame duration and shader/PSO evidence first.
+DD5 (`MTLBinaryArchive`) is evidence-gated and remains unimplemented. A 2026-07-29 source-and-evidence audit confirmed that the renderer still builds specialized PSOs asynchronously at idle priority, selects one of eight dynamic ubershader pipelines until a specialization is ready, and has no project-level binary-archive lifecycle beyond API declarations in vendored `metal-cpp` headers. The repository had zero Metal trace artifacts and both device rows above remained entirely `HUMAN-VERIFY`.
+
+Adding persistent storage, versioning, invalidation, and pipeline attachment without physical cold-start evidence would create complexity without a demonstrated gain. Reopen DD5 only if all three physical cold-start traces show a user-visible hitch attributable to PSO compilation; record the longest frame, visible hitch duration, and shader/PSO evidence first.
