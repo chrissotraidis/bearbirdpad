@@ -1,0 +1,8 @@
+diff --git a/src/main/main.cpp b/src/main/main.cpp
+--- a/src/main/main.cpp
++++ b/src/main/main.cpp
+@@ -102,3 +102,3 @@ ultramodern::gfx_callbacks_t::gfx_data_t create_gfx() {
+-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC) > 0) {
++    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC) < 0) {
+         exit_error("Failed to initialize SDL2: %s\n", SDL_GetError());
+     }

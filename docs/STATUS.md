@@ -1,18 +1,18 @@
-# Status — updated 2026-07-29, iteration 63
+# Status — updated 2026-07-29, iteration 64
 
-Phase: 10+ — polish backlog; protected-resource paths audited
+Phase: 10+ — polish backlog; SDL initialization failure detection corrected
 
-Done this iteration: traced every privacy-sensitive Apple framework path reachable from the SDL subsystems BanjoPad initializes and compared those paths with the built plist's intentionally empty usage-description set. No new permission or code change is justified. Evidence:
+Done this iteration: corrected BanjoRecomp's inverted SDL initialization failure check through the ordered downstream patch ledger and rebuilt both platform canaries. Evidence:
 
-- Core Motion is no longer reachable through SDL's device-accelerometer joystick because iteration 62 disables that hint before `SDL_Init`.
-- SDL's iOS HID backend contains CoreBluetooth support only for BLE Steam Controllers. It constructs `CBCentralManager` only when `SDL_HINT_JOYSTICK_HIDAPI_STEAM` is enabled; SDL defaults that hint to false and BanjoPad does not set it. Supported PS/Xbox/MFi controllers use Apple's `GCController` path without a Bluetooth permission prompt.
-- BanjoPad initializes SDL audio and calls `SDL_OpenAudioDevice(..., false, ...)`; `false` selects output, and SDL's iOS CoreAudio backend selects `AVAudioSessionCategoryPlayback`. No capture device, record category, or microphone permission path is used.
-- Searches of the app, downstream patches, BanjoRecomp entry path, and RecompFrontend found no camera, Photos, or local-network protected-resource calls.
-- The built plist contains no `NSMotionUsageDescription`, `NSBluetoothAlwaysUsageDescription`, `NSMicrophoneUsageDescription`, camera/Photos descriptions, or local-network declaration. That absence now matches the reachable feature set.
-- Static linking still includes framework code for SDL capabilities that BanjoPad does not activate; adding permission strings based only on linked symbols would misrepresent app behavior.
-- No artifact changed in this evidence-only iteration, so the iteration 62 generic-device build, package audit, and deterministic IPA hash remain current.
+- SDL 2.32.10's public header states that `SDL_Init` returns `0` on success and a negative error code on failure. BanjoRecomp checked `> 0`, so real initialization failures bypassed `exit_error`.
+- New `patches/banjo/009-fix-sdl-init-check.patch` changes only that predicate to `< 0`; it applies after patches 001-008 and exact reverse-apply validation passes with `--whitespace=error`.
+- `scripts/fetch-sources.sh` verified the cached state for every existing patch and applied patch 009 to the pinned Banjo tree. The full Banjo series then reversed in order 009→001 to the original `> 0` source and replayed 001→009 to the corrected `< 0` source in an isolated temporary tree.
+- A shallow-clone replay attempt tried to fetch missing promisor objects and was denied network access; it was interrupted and replaced by the fully local reverse/replay proof. Neither attempt wrote to upstream or changed the verified source tree outside the intended patch application.
+- `scripts/build-ios.sh --device --app --config Release` passed touch tests, recompiled `src/main/main.cpp`, relinked the arm64 iOS 16.0 app, and completed with `** BUILD SUCCEEDED **`.
+- `cmake --build build-macos --target BanjoRecompiled` recompiled the same shared entry file, linked the app, and completed bundle fixup with `valid='1'` and `verified='1'`; strict code-signature verification passed.
+- Package audit passed. Two fresh unsigned IPAs were byte-for-byte identical: 54 entries, 7,547,739 bytes, SHA-256 `9393855b8d29e1ff8d9bf03cf547e58409626a6247305333349aee8921031360`; `unzip -tq` passed.
 
-Next goal: correct BanjoRecomp's inverted SDL initialization failure check through the downstream patch ledger, then rebuild the iOS and macOS canaries.
+Next goal: audit adjacent SDL startup/audio return-value handling for the same class of inverted or ignored failure, fixing only a provable defect.
 
 Blockers: no local build blocker. Hosted CI is supplemental and intentionally excluded from the active gate per the project owner. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 
