@@ -1,20 +1,19 @@
-# Status — updated 2026-07-29, iteration 64
+# Status — updated 2026-07-29, iteration 65
 
-Phase: 10+ — polish backlog; SDL initialization failure detection corrected
+Phase: 10+ — polish backlog; SDL startup result validation completed
 
-Done this iteration: corrected BanjoRecomp's inverted SDL initialization failure check through the ordered downstream patch ledger and rebuilt both platform canaries. Evidence:
+Done this iteration: completed the adjacent SDL startup audit and converted three ignored failure paths into explicit failures before invalid native handles can reach the renderer or audio device setup. Evidence:
 
-- SDL 2.32.10's public header states that `SDL_Init` returns `0` on success and a negative error code on failure. BanjoRecomp checked `> 0`, so real initialization failures bypassed `exit_error`.
-- New `patches/banjo/009-fix-sdl-init-check.patch` changes only that predicate to `< 0`; it applies after patches 001-008 and exact reverse-apply validation passes with `--whitespace=error`.
-- `scripts/fetch-sources.sh` verified the cached state for every existing patch and applied patch 009 to the pinned Banjo tree. The full Banjo series then reversed in order 009→001 to the original `> 0` source and replayed 001→009 to the corrected `< 0` source in an isolated temporary tree.
-- A shallow-clone replay attempt tried to fetch missing promisor objects and was denied network access; it was interrupted and replaced by the fully local reverse/replay proof. Neither attempt wrote to upstream or changed the verified source tree outside the intended patch application.
-- `scripts/build-ios.sh --device --app --config Release` passed touch tests, recompiled `src/main/main.cpp`, relinked the arm64 iOS 16.0 app, and completed with `** BUILD SUCCEEDED **`.
-- `cmake --build build-macos --target BanjoRecompiled` recompiled the same shared entry file, linked the app, and completed bundle fixup with `valid='1'` and `verified='1'`; strict code-signature verification passed.
-- Package audit passed. Two fresh unsigned IPAs were byte-for-byte identical: 54 entries, 7,547,739 bytes, SHA-256 `9393855b8d29e1ff8d9bf03cf547e58409626a6247305333349aee8921031360`; `unzip -tq` passed.
+- New `patches/banjo/010-validate-sdl-startup-results.patch` checks `SDL_GetWindowWMInfo` on the Windows and Apple paths that consume its native handle, rejects null `SDL_Metal_CreateView` and `SDL_Metal_GetLayer` results before constructing the renderer handle, and rejects a failed `SDL_InitSubSystem(SDL_INIT_AUDIO)` before opening an audio device.
+- The Linux/Android path remains unchanged where the populated `SDL_SysWMinfo` value is not consumed. Existing `SDL_CreateWindow`, `SDL_BuildAudioCVT`, `SDL_OpenAudioDevice`, and controller-mapping results were already handled.
+- Exact reverse-apply validation passed with `--whitespace=error`. The full Banjo series reversed in order 010→001 and replayed in order 001→010 on the pinned tree; `scripts/fetch-sources.sh` then recognized every patch through the cached digest ledger.
+- `scripts/build-ios.sh --device --app --config Release` passed touch tests, rebuilt the shared entry point, relinked the arm64 iOS 16.0 app, and completed with `** BUILD SUCCEEDED **`.
+- `cmake --build build-macos --target BanjoRecompiled` completed a full 1,140-step macOS Release rebuild, linked the same shared entry point, and completed bundle fixup with `valid='1'` and `verified='1'`; strict deep code-signature verification passed.
+- Package audit passed with no ROM or generated-source marker in the app. Two fresh unsigned IPAs were byte-for-byte identical: 54 entries, 7,545,185 bytes, SHA-256 `a0d3e15e7b0f6ba3ee44d1ddfa4baecdfdf2e4ccded6107e59b6b61dd1b70baf`; `unzip -tq` passed.
 
-Next goal: audit adjacent SDL startup/audio return-value handling for the same class of inverted or ignored failure, fixing only a provable defect.
+Next goal: iterate on the touch-control experience on this Mac, then move signed physical-device acceptance to the owner's other Mac with an attached iPad.
 
-Blockers: no local build blocker. Hosted CI is supplemental and intentionally excluded from the active gate per the project owner. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
+Blockers: no local source, build, or package blocker. The owner confirmed that no iPad is attached to this Mac and physical-device testing will happen on another machine, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, deterministic IPA generation, and the macOS canary are green.
 
 ref/ additions: none this iteration.
 

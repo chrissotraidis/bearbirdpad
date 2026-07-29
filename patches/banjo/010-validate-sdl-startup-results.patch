@@ -1,0 +1,49 @@
+diff --git a/src/main/main.cpp b/src/main/main.cpp
+--- a/src/main/main.cpp
++++ b/src/main/main.cpp
+@@ -197,7 +197,13 @@ ultramodern::renderer::WindowHandle create_window(ultramodern::gfx_callbacks_t::
+ 
+     SDL_SysWMinfo wmInfo;
+     SDL_VERSION(&wmInfo.version);
++#if defined(_WIN32) || defined(__APPLE__)
++    if (SDL_GetWindowWMInfo(window, &wmInfo) != SDL_TRUE) {
++        exit_error("Failed to get native window info: %s\n", SDL_GetError());
++    }
++#else
+     SDL_GetWindowWMInfo(window, &wmInfo);
++#endif
+ 
+ #if defined(_WIN32)
+     // There's a 50/50 chance to choose the icon where the smallest variant is either Banjo or Kazooie alone.
+@@ -214,10 +220,17 @@ ultramodern::renderer::WindowHandle create_window(ultramodern::gfx_callbacks_t::
+     return ultramodern::renderer::WindowHandle{ window };
+ #elif defined(__APPLE__)
+     SDL_MetalView view = SDL_Metal_CreateView(window);
++    if (view == nullptr) {
++        exit_error("Failed to create Metal view: %s\n", SDL_GetError());
++    }
++    void* layer = SDL_Metal_GetLayer(view);
++    if (layer == nullptr) {
++        exit_error("Failed to get Metal layer: %s\n", SDL_GetError());
++    }
+ #if TARGET_OS_IPHONE
+-    return ultramodern::renderer::WindowHandle{ wmInfo.info.uikit.window, SDL_Metal_GetLayer(view) };
++    return ultramodern::renderer::WindowHandle{ wmInfo.info.uikit.window, layer };
+ #else
+-    return ultramodern::renderer::WindowHandle{ wmInfo.info.cocoa.window,  SDL_Metal_GetLayer(view) };
++    return ultramodern::renderer::WindowHandle{ wmInfo.info.cocoa.window, layer };
+ #endif
+ #else
+     static_assert(false && "Unimplemented");
+@@ -797,7 +810,10 @@ int main(int argc, char** argv) {
+     recompui::programconfig::set_program_id(banjo::program_id);
+     
+     // Initialize SDL audio and set the output frequency.
+-    SDL_InitSubSystem(SDL_INIT_AUDIO);
++    if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0) {
++        fprintf(stderr, "Failed to initialize SDL2 audio: %s\n", SDL_GetError());
++        return EXIT_FAILURE;
++    }
+ #if defined(__APPLE__) && TARGET_OS_IPHONE
+     fprintf(stdout, "BANJOPAD_IOS audio devices: %d\n", SDL_GetNumAudioDevices(0));
+ #endif
