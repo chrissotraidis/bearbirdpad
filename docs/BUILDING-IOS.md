@@ -86,7 +86,7 @@ scripts/package-ios.sh \
   build/release/BanjoPad-0.1.0-unsigned.ipa
 ```
 
-The script audits the app before wrapping `Payload/BanjoRecompiled.app`, normalizes archive timestamps and entry order, verifies the ZIP, and prints its SHA-256. Packaging the same app bundle twice therefore produces the same IPA bytes. An unsigned IPA cannot install directly: a personal-team workflow or sideloading tool must sign it for the destination device. To package an already signed app, set `REQUIRE_SIGNED=1`; the audit will reject a missing/invalid signature or provisioning profile.
+The script audits the app before wrapping `Payload/BanjoRecompiled.app`, normalizes archive timestamps and entry order, verifies the ZIP, and prints its SHA-256. Packaging the same app bundle twice therefore produces the same IPA bytes. An unsigned IPA cannot install directly: a personal-team workflow or sideloading tool must sign it for the destination device. To package an already signed app, set `REQUIRE_SIGNED=1`; the audit rejects ad-hoc signatures, missing or undecodable provisioning profiles, and signing Team IDs that do not match the embedded profile.
 
 Never add a ROM, generated source, save, mod, provisioning profile, certificate, or Instruments trace to Git.
 

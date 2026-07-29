@@ -1,17 +1,18 @@
-# Status — updated 2026-07-29, iteration 60
+# Status — updated 2026-07-29, iteration 61
 
-Phase: 10+ — polish backlog; distribution version and release policy aligned
+Phase: 10+ — polish backlog; package audit fails closed
 
-Done this iteration: audited the release-version identity from source templates through the freshly rebuilt device artifact and corrected stale documentation that still treated hosted GitHub Actions as a release blocker. No app source or artifact changed. Evidence:
+Done this iteration: exercised the package-audit rejection paths with isolated temporary app fixtures, improved generated-marker diagnostics, and closed a signed-package fail-open that accepted ad-hoc signatures with arbitrary nonempty provisioning files. No game or renderer behavior changed. Evidence:
 
-- `plutil -lint` passed for the full app, Metal smoke app, and CI-stub plist templates.
-- All three templates and `build-ios-app-device/Release/BanjoRecompiled.app/Info.plist` report `CFBundleShortVersionString=0.1.0` and `CFBundleVersion=1`.
-- `scripts/package-ios.sh` and `docs/BUILDING-IOS.md` agree on the default artifact identity `BanjoPad-0.1.0-unsigned.ipa`.
-- No local `v0.1.0` tag exists, which is correct while the signed physical-device package gate remains `HUMAN-VERIFY`.
-- `README.md`, the implementation plan, and the execution loop now agree with the project owner's direction: hosted CI is supplemental and does not block continued local release work; the signed physical-device package gate remains the honest boundary for cutting `v0.1.0`.
-- The iteration 59 unsigned generic-device Release build and deterministic IPA remain the current artifact evidence; rebuilding unchanged binaries for this documentation-only correction would add no verification value.
+- A copy of the known generated ROM renamed to neutral `Assets.dat` was rejected by SHA-1 `1fb13cad402518d3ae9a8dc4b52c5c54b2a4adc7`, proving digest detection is independent of filename.
+- A fixture containing `RecompiledFuncs.cpp` was rejected by path, and a neutral `Notes.txt` containing generated-source markers was rejected by content. Marker failures now report the relative path as `Forbidden package marker: ...` instead of an unexplained absolute filename.
+- An unsigned fixture was rejected under `REQUIRE_SIGNED=1`, and `REQUIRE_SIGNED=2` was rejected as invalid configuration.
+- A deliberately ad-hoc-signed app with a copied plist named `embedded.mobileprovision` initially passed, proving the old nonempty-file check was insufficient.
+- `REQUIRE_SIGNED=1` now rejects ad-hoc signatures, requires `embedded.mobileprovision` to decode as CMS, and requires the profile Team ID to match the signing Team ID. The same fake fixture now fails with the explicit non-ad-hoc-identity error.
+- `sh -n scripts/package-audit.sh` passed. The untouched device app still passes the unsigned audit, and a full positive packaging replay retained 54 entries, 7,547,634 bytes, and SHA-256 `bdc914b8983bf30fbe1ba460e4aae31a2999ead9257f04103933bcf75a516f9f`.
+- No Apple provisioning profile is installed locally, so the real non-ad-hoc success path remains part of the signed physical-device `HUMAN-VERIFY` gate.
 
-Next goal: exercise the package-audit rejection paths with isolated negative controls so the ROM/generated-source/signature guard is proven to fail closed, without touching the verified app bundle.
+Next goal: audit the built app's distribution-facing plist and entitlements against the documented iOS feature set, then correct only a locally provable mismatch.
 
 Blockers: no local build blocker. Hosted CI is supplemental and intentionally excluded from the active gate per the project owner. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 

@@ -20,7 +20,9 @@ case "$require_signed" in
 esac
 
 violations=$(mktemp)
-trap 'rm -f "$violations"' EXIT HUP INT TERM
+signature_info=$(mktemp)
+profile_info=$(mktemp)
+trap 'rm -f "$violations" "$signature_info" "$profile_info"' EXIT HUP INT TERM
 
 find "$app_path" -type f -print |
     LC_ALL=C sort |
@@ -41,11 +43,13 @@ find "$app_path" -type f -print |
         esac
     done
 
-if find "$app_path" -type f ! -name BanjoRecompiled ! -name BanjoPadCIStub -exec \
-    grep -IEl '1fe1632098865f639e22c11b9a81ee8f29c75d7a|1fb13cad402518d3ae9a8dc4b52c5c54b2a4adc7|RecompiledFuncs|RecompiledPatches|banjo\.us\.v10\.decompressed' {} + \
-    >> "$violations"; then
-    :
-fi
+find "$app_path" -type f ! -name BanjoRecompiled ! -name BanjoPadCIStub -exec \
+    grep -IEl '1fe1632098865f639e22c11b9a81ee8f29c75d7a|1fb13cad402518d3ae9a8dc4b52c5c54b2a4adc7|RecompiledFuncs|RecompiledPatches|banjo\.us\.v10\.decompressed' {} + |
+    LC_ALL=C sort |
+    while IFS= read -r file; do
+        relative=${file#"$app_path"/}
+        echo "Forbidden package marker: $relative" >> "$violations"
+    done
 
 if [ -s "$violations" ]; then
     echo "Package audit failed:" >&2
@@ -55,8 +59,28 @@ fi
 
 if [ "$require_signed" = 1 ]; then
     codesign --verify --deep --strict --verbose=2 "$app_path"
-    if [ ! -s "$app_path/embedded.mobileprovision" ]; then
+    codesign -d --verbose=4 "$app_path" 2> "$signature_info"
+
+    signature=$(sed -n 's/^Signature=//p' "$signature_info")
+    team_id=$(sed -n 's/^TeamIdentifier=//p' "$signature_info")
+    if [ "$signature" = "adhoc" ] || [ -z "$team_id" ] || [ "$team_id" = "not set" ]; then
+        echo "Signed package must use an Apple development/distribution identity, not an ad-hoc signature" >&2
+        exit 1
+    fi
+
+    profile="$app_path/embedded.mobileprovision"
+    if [ ! -s "$profile" ]; then
         echo "Signed package is missing embedded.mobileprovision" >&2
+        exit 1
+    fi
+    if ! security cms -D -i "$profile" > "$profile_info" 2>/dev/null; then
+        echo "Signed package has an invalid embedded.mobileprovision" >&2
+        exit 1
+    fi
+
+    profile_team=$(/usr/libexec/PlistBuddy -c 'Print :TeamIdentifier:0' "$profile_info" 2>/dev/null || true)
+    if [ -z "$profile_team" ] || [ "$profile_team" != "$team_id" ]; then
+        echo "Signed package TeamIdentifier does not match embedded.mobileprovision" >&2
         exit 1
     fi
 fi
@@ -65,7 +89,7 @@ echo "Package audit passed: $app_path"
 echo "  ROM files/digests: absent"
 echo "  Generated-source paths/markers: absent"
 if [ "$require_signed" = 1 ]; then
-    echo "  Signature and provisioning profile: valid"
+    echo "  Non-ad-hoc signature and provisioning TeamIdentifier: valid"
 else
     echo "  Signature requirement: skipped (REQUIRE_SIGNED=0)"
 fi
