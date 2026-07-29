@@ -1,24 +1,24 @@
-# Status — updated 2026-07-29, iteration 50
+# Status — updated 2026-07-29, iteration 51
 
-Phase: 10+ — polish backlog; 30-minute Home suspend resumes in place without state loss
+Phase: 10+ — polish backlog; DD3 settled by retaining the landscape-only full-screen contract
 
-Done this iteration: ran one uninterrupted real 30-minute Home suspend in the production Simulator process while auditing input release, process continuity, rendering, accessibility, settings, crash reports, and save atomicity. No app-source correction was needed. Evidence:
+Done this iteration: executed the DD3 iPad multitasking/Stage Manager decision gate with reversible, separate-bundle-ID test apps, traced the resize path through UIKit and plume, and retained `UIRequiresFullScreen=YES`. No production app behavior changed. Evidence:
 
-- Before Home, production input was neutral, then the touch functions simultaneously staged and read back A `32768`, stick `(0.75, -0.5)`, and camera `(0.625, -0.375)`.
-- Home occurred at `2026-07-29T14:43:03.945Z`. UIKit reported `UIApplicationStateBackground` (`2`) and production merged buttons, both stick axes, and both camera axes read exactly zero before the process was left untouched.
-- No Simulator, process, debugger, or save interaction occurred during the hold. Foreground validation began after `1,817.145` seconds (`30:17.145`), exceeding the required 30 minutes.
-- PID `87197` and unique PID `8341827` survived. Simulator launchd still reported one initialized execution, no prior exit, and a running job.
-- Foregrounding returned the complete menu, 10 gameplay buttons, and centered stick with all four direction actions. UIKit reported `UIApplicationStateActive` (`0`), `BanjoPadTouch_Enabled() == 1`, and all production input channels remained exactly zero.
-- Two resumed captures showed the retail-ROM attract sequence advance between different scenes; no persistent blank frame or renderer-resume failure appeared.
-- The primary save and `.bak` remained exactly 2,048 bytes with SHA-256 `3766157740b5946d1e62cecd9b60767d411fee76bc55e6c9df7df269de7fb8c2` and unchanged synchronized mtime `1785335807`. No `.temp`, `.tmp`, or partial file appeared.
-- No BanjoPad, watchdog, or jetsam report appeared in the host or Simulator diagnostic-report locations during the soak window.
-- `Documents/BanjoRecompiled/ios-controls.json` remained `touch_controls: true` with SHA-256 `f9417c1ac93f257c45249aad6252877e5768cf1f562048c99c71f34f917b9bcb`.
-- Because app source remained identical to iteration 36, this verification-only iteration reused the exact installed Simulator Release build and existing device/IPA artifacts instead of rebuilding identical binaries.
-- The touch-state regression and device-app package audit passed again.
-- `scripts/package-audit.sh` found no ROM, ROM digest, or generated-source marker.
-- Existing `build/release/BanjoPad-0.1.0-unsigned.ipa`: 7.2 MB allocated size, SHA-256 `9992b326d9fb8e346fb8ca059d1ff80d04bda61dd86d7039c13bb01e8f6bd9e2`.
+- The production plist still declares landscape left/right for both idioms and `UIRequiresFullScreen=true`.
+- A reversible `com.chrissotraidis.banjopad.dd3` copy with only `UIRequiresFullScreen=false` exposed Stage Manager window controls, but it still lacked Apple's required all-orientations declaration for true adaptive resizing.
+- A second reversible `com.chrissotraidis.banjopad.dd3-all` copy declared all four orientations. Stage Manager launched it in a real window and permitted portrait scene geometry.
+- The existing plume stability patch intentionally keeps window attributes fixed after initialization. A diagnostic single-flight refresh made the Metal layer and swapchain follow the new scene without recreating the original unbounded main-queue traffic.
+- LLDB measured the live transition precisely: the swapchain's old cached extent was `2420×1668`, UIKit's window/view/CAMetalLayer bounds became `834×1210` points at scale `2`, plume requested `1668×2420`, and `CAMetalLayer.drawableSize` reached `1668×2420`.
+- Even with the Metal resize proven, the landscape-only BanjoRecomp UI was not ship-ready at arbitrary aspect ratios: the portrait launcher remained a landscape canvas, its right-side menu moved partly offscreen, and the touch layout has no portrait design. This fails the usability side of DD3.
+- The diagnostic plume change and test bundle metadata were fully reverted. No new per-frame main-thread work, portrait declaration, test bundle ID, ROM, save, or derived artifact entered the repository.
+- The dedicated test apps used fresh isolated data containers; the production `com.chrissotraidis.banjopad` process and its save/settings container were not replaced.
+- Both temporary bundle IDs were uninstalled after the matrix, and the Simulator was restored to landscape, Split View & Slide Over, and its original pointer/keyboard capture state.
+- `scripts/build-ios.sh --simulator --app --config Release` completed with `** BUILD SUCCEEDED **` for both the diagnostic trace and the final production source after the experiment was removed.
+- The final Simulator plist is back to `UIRequiresFullScreen=true` with only landscape left/right for iPad and iPhone. The plume nested tree has no unstaged diagnostic diff and patch `004` does not exist.
+- `scripts/test-touch-input.sh` and `scripts/package-audit.sh build-ios-app-device/Release/BanjoRecompiled.app` passed. The audit found no ROM, ROM digest, or generated-source marker.
+- The existing unsigned IPA remains unchanged at SHA-256 `9992b326d9fb8e346fb8ca059d1ff80d04bda61dd86d7039c13bb01e8f6bd9e2`.
 
-Next goal: execute the DD3 Stage Manager/multitasking decision gate with an iPad Simulator resize matrix, then either retain the documented full-screen posture with evidence or implement and verify safe resizable-window support.
+Next goal: close the remaining automatable Phase 10+ decision inventory by auditing DD5 and DD6 against current evidence and upstream state, without adding speculative PSO-cache complexity or writing to upstream repositories.
 
 Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 
