@@ -6,6 +6,13 @@ repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 source_root="$repo_root/sources/banjo"
 banjo_url="https://github.com/BanjoRecomp/BanjoRecomp.git"
 banjo_revision="c20314cd1bcaefff7bdbce257a25ebcc30cc1cdc"
+banjo_syms_revision="6820055"
+nmr_revision="ca568b6"
+n64recomp_revision="2b6f056"
+rt64_revision="6f1c2d9"
+plume_revision="d890ac8"
+frontend_revision="d0d90ba"
+bk_decomp_revision="351ca15"
 patch_state="$source_root/.banjopad-patch-state"
 using_patch_state=false
 
@@ -99,13 +106,13 @@ else
 fi
 
 assert_revision "$source_root" "$banjo_revision" "BanjoRecomp"
-assert_revision "$source_root/lib/N64ModernRuntime" "ca568b6" "N64ModernRuntime"
-assert_revision "$source_root/lib/N64ModernRuntime/N64Recomp" "2b6f056" "N64Recomp"
-assert_revision "$source_root/lib/rt64" "6f1c2d9" "rt64"
-assert_revision "$source_root/lib/rt64/src/contrib/plume" "d890ac8" "plume"
-assert_revision "$source_root/lib/RecompFrontend" "d0d90ba" "RecompFrontend"
-assert_revision "$source_root/lib/bk-decomp" "351ca15" "bk-decomp"
-assert_revision "$source_root/BanjoRecompSyms" "6820055" "BanjoRecompSyms"
+assert_revision "$source_root/lib/N64ModernRuntime" "$nmr_revision" "N64ModernRuntime"
+assert_revision "$source_root/lib/N64ModernRuntime/N64Recomp" "$n64recomp_revision" "N64Recomp"
+assert_revision "$source_root/lib/rt64" "$rt64_revision" "rt64"
+assert_revision "$source_root/lib/rt64/src/contrib/plume" "$plume_revision" "plume"
+assert_revision "$source_root/lib/RecompFrontend" "$frontend_revision" "RecompFrontend"
+assert_revision "$source_root/lib/bk-decomp" "$bk_decomp_revision" "bk-decomp"
+assert_revision "$source_root/BanjoRecompSyms" "$banjo_syms_revision" "BanjoRecompSyms"
 
 disable_pushes "$source_root"
 git -C "$source_root" submodule foreach --quiet --recursive \

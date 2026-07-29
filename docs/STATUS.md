@@ -1,19 +1,18 @@
-# Status — updated 2026-07-29, iteration 23
+# Status — updated 2026-07-29, iteration 24
 
-Phase: 10+ — polish backlog; first-time foreground texture-pack discovery fixed
+Phase: 10+ — polish backlog; upstream pin-drift audit complete
 
-Done this iteration: fixed and replayed the Files-folder foreground rescan, then verified the recommended data-only pack on both phone and tablet idioms. Evidence:
+Done this iteration: audited every iOS-critical upstream pin and kept the current graph because it is already current on each owning branch. Evidence:
 
-- Reproduced the defect on an iPhone 16 Pro, iOS 18.5 Simulator: with no pack present at launch, copying the verified BK Reloaded `.rtz` into `Documents/BanjoRecompiled/mods` while backgrounded and returning to the app resumed audio but never opened the pack.
-- Root cause: the iOS event path called `recompui::update_mod_list(true)`, which only scans through an already-constructed Mods-menu object. Before the user has visited that screen, the null menu makes a first-time Files drop a silent no-op.
-- Added pinned RecompFrontend patch `006-ios-foreground-mod-rescan.patch`: on foreground before game start, scan the runtime mod folder directly, then refresh an existing menu without asking it to scan again. The declaration remains iOS-local, so no new target dependency is introduced.
-- Replayed the same scenario with the fixed Release app. The console recorded a clean background flush, foreground audio recovery, then `Opening mod BK-Reloaded-v0.1.1` without a relaunch.
-- Verified SHA-256 `1cbd5d2301f98947ea8e27a90796c16f56884a88461f28de2b85a34f5763e65f`. With manifest ID `BK-Reloaded` enabled, both iPhone 16 Pro and iPad Pro 11-inch (M4), iOS 18.5 Simulators logged `Loading mod BK-Reloaded` and rendered the live title sequence with the touch overlay. With the pack known but disabled, the iPhone opened its metadata but did not load it.
-- Release Simulator and unsigned arm64 device builds passed. A clean temporary replay applied all six frontend patches in order, and the macOS `BanjoRecompiled` canary rebuilt and passed bundle verification.
-- Package audit passed with no ROM or generated-source leakage. The refreshed unsigned IPA is 7.5 MiB with SHA-256 `208de2a6129a3edf47a739709d3967c020c958cffcefb572e01ad135d44381f2`.
-- Added `docs/TEXTURE-PACKS.md` with the tested BK Reloaded recommendation, exact digest, Files installation path, and physical-device caveat; no pack data was added to Git.
+- BanjoRecomp `main` and local pin are both `c20314cd1bcaefff7bdbce257a25ebcc30cc1cdc`; there is no parent-project drift.
+- RT64 `main` and the nested pin are both `6f1c2d99a4ea571c139f449c326fd176ba8f3496`. Plume `main` and its nested pin are both `d890ac899e505fb30040e037a4037cdeca68f033`, so the patched Metal renderer bases are current.
+- N64ModernRuntime's active `gamemodes` branch and BanjoRecomp's pin are both `ca568b6ad79b9029d14077f0c3ffa757727c5559`. Its separate `main` head is not a drop-in replacement for BanjoRecomp's game-mode integration.
+- N64Recomp `2b6f05688de2abc7d86da5b4a89b84c2c6acbabe` is the exact nested commit recorded by that current `gamemodes` head; it is parent-owned rather than an independent BanjoPad pin.
+- RecompFrontend `main` is `9ef9cdfdead7649247ab4957f43517f44c33931d`, but the pinned `d0d90ba49f46f4896aaeda362056c21b1e342561` is two commits ahead on upstream's active `include-order-fix` branch. The only delta reorders runtime include paths ahead of RT64 and defines `__PRFCHWINTRIN_H`; moving to `main` would remove the build fixes rather than upgrade functionality.
+- No iOS renderer, input, lifecycle, or texture-pack behavior differs between the audited upstream heads and the pinned owning branches. A pin change would therefore be cross-branch churn with no acceptance benefit.
+- Consolidated all nested revision literals at the top of `scripts/fetch-sources.sh`; checkout validation behavior and the patch-state contract remain unchanged.
 
-Next goal: audit drift between the pinned BanjoRecomp/RecompFrontend revisions and current upstream around iOS-relevant renderer, input, and texture-pack behavior; bump only a small, regression-safe pin set with a complete patch replay.
+Next goal: audit iOS launcher and settings accessibility metadata, then add the smallest semantics needed for VoiceOver to identify and activate the native shell controls without changing the established visual design.
 
 Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 
