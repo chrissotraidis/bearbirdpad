@@ -75,9 +75,10 @@ diff --git a/recompui/src/config/ui_config_page_controls.cpp b/recompui/src/conf
 index f379a6f..b53e44e 100644
 --- a/recompui/src/config/ui_config_page_controls.cpp
 +++ b/recompui/src/config/ui_config_page_controls.cpp
-@@ -9,6 +9,21 @@
+@@ -9,6 +9,23 @@
  #include "recompinput/profiles.h"
  #include "recompui/config.h"
++#include "librecomp/game.hpp"
 
 +#if defined(__APPLE__)
 +#include <TargetConditionals.h>
@@ -88,6 +89,7 @@ index f379a6f..b53e44e 100644
 +extern "C" int BanjoPadTouch_HideWhenControllerConnected(void);
 +extern "C" int BanjoPadTouch_ShowDpad(void);
 +extern "C" int BanjoPadTouch_ShowL(void);
++extern "C" void BanjoPadTouch_BeginLayoutEditing(void);
 +extern "C" void BanjoPadTouch_SetEnabled(int enabled);
 +extern "C" void BanjoPadTouch_SetHideWhenControllerConnected(int hidden);
 +extern "C" void BanjoPadTouch_SetShowDpad(int visible);
@@ -97,12 +99,12 @@ index f379a6f..b53e44e 100644
  namespace recompui {
 
  ConfigPageControls *controls_page = nullptr;
-@@ -518,6 +533,38 @@ void ConfigPageControls::render_control_mappings() {
+@@ -518,6 +535,61 @@ void ConfigPageControls::render_control_mappings() {
          body_left_scroll->set_padding_right(8.0f);
          body_left_scroll->set_debug_id("Mappings Scroll Container");
 
 +#if defined(__APPLE__) && TARGET_OS_IPHONE
-+        auto create_touch_toggle = [&](const char *label, bool checked, auto callback) {
++        auto create_touch_toggle = [&](const char *label, bool checked) {
 +            auto row = context.create_element<Element>(body_left_scroll, 0, "div", false);
 +            row->set_display(Display::Flex);
 +            row->set_flex_direction(FlexDirection::Row);
@@ -114,23 +116,46 @@ index f379a6f..b53e44e 100644
 +            context.create_element<Label>(row, label, theme::Typography::LabelMD);
 +            auto toggle = context.create_element<Toggle>(row, ToggleSize::Medium);
 +            toggle->set_checked(checked);
-+            toggle->add_checked_callback(callback);
++            return toggle;
 +        };
-+        create_touch_toggle("Touch Controls", BanjoPadTouch_Enabled() != 0, [](bool checked) {
-+            BanjoPadTouch_SetEnabled(checked ? 1 : 0);
++        auto touch_controls_toggle =
++            create_touch_toggle("Touch Controls", BanjoPadTouch_Enabled() != 0);
++        auto show_l_toggle =
++            create_touch_toggle("Show L Button", BanjoPadTouch_ShowL() != 0);
++        auto show_dpad_toggle =
++            create_touch_toggle("Show D-pad", BanjoPadTouch_ShowDpad() != 0);
++        auto hide_with_controller_toggle = create_touch_toggle(
++            "Hide When Controller Connected",
++            BanjoPadTouch_HideWhenControllerConnected() != 0);
++        auto customize_touch_button = context.create_element<Button>(
++            body_left_scroll,
++            "Customize Touch Layout",
++            ButtonStyle::Secondary,
++            ButtonSize::Medium);
++        customize_touch_button->set_width(100.0f, Unit::Percent);
++        customize_touch_button->set_margin_top(8.0f);
++        customize_touch_button->set_margin_bottom(16.0f);
++        const bool game_started = ultramodern::is_game_started();
++        customize_touch_button->set_enabled(
++            BanjoPadTouch_Enabled() != 0 && game_started);
++        customize_touch_button->add_pressed_callback([]() {
++            BanjoPadTouch_BeginLayoutEditing();
 +        });
-+        create_touch_toggle("Show L Button", BanjoPadTouch_ShowL() != 0, [](bool checked) {
++
++        touch_controls_toggle->add_checked_callback(
++            [customize_touch_button, game_started](bool checked) {
++                BanjoPadTouch_SetEnabled(checked ? 1 : 0);
++                customize_touch_button->set_enabled(checked && game_started);
++            });
++        show_l_toggle->add_checked_callback([](bool checked) {
 +            BanjoPadTouch_SetShowL(checked ? 1 : 0);
 +        });
-+        create_touch_toggle("Show D-pad", BanjoPadTouch_ShowDpad() != 0, [](bool checked) {
++        show_dpad_toggle->add_checked_callback([](bool checked) {
 +            BanjoPadTouch_SetShowDpad(checked ? 1 : 0);
 +        });
-+        create_touch_toggle(
-+            "Hide When Controller Connected",
-+            BanjoPadTouch_HideWhenControllerConnected() != 0,
-+            [](bool checked) {
-+                BanjoPadTouch_SetHideWhenControllerConnected(checked ? 1 : 0);
-+            });
++        hide_with_controller_toggle->add_checked_callback([](bool checked) {
++            BanjoPadTouch_SetHideWhenControllerConnected(checked ? 1 : 0);
++        });
 +#endif
 +
          game_input_rows.clear();

@@ -9,6 +9,7 @@ int BanjoPadTouch_Enabled(void);
 int BanjoPadTouch_HideWhenControllerConnected(void);
 int BanjoPadTouch_ShowDpad(void);
 int BanjoPadTouch_ShowL(void);
+void BanjoPadTouch_BeginLayoutEditing(void);
 void BanjoPadTouch_Install(void);
 void BanjoPadTouch_SetEnabled(int enabled);
 void BanjoPadTouch_SetHideWhenControllerConnected(int hidden);

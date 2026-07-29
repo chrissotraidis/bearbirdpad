@@ -10,13 +10,14 @@ BanjoPad keeps the upstream recompiled game and Metal renderer, then adds the iO
 - Plume/RT64 Metal rendering
 - Retail NTSC-U 1.0 ROM validation and `.z64` / `.v64` / `.n64` import
 - `.rtz` texture packs through Files or the Mods picker
-- MFi/PS/Xbox input plus simultaneous multi-touch controls
+- MFi/PS/Xbox input plus simultaneous, customizable multi-touch controls
 - Save/config flush, audio recovery, and background-safe rendering
 - Audited unsigned IPA packaging
 
 The app never includes a ROM. You must provide your own complete, legally obtained Banjo-Kazooie NTSC-U 1.0 cartridge dump on first launch.
 
-See [Texture packs](docs/TEXTURE-PACKS.md) for installation and the currently tested recommendation.
+See [Touch controls](docs/TOUCH-CONTROLS.md) for layout customization and
+[Texture packs](docs/TEXTURE-PACKS.md) for installation and the currently tested recommendation.
 
 ## Build
 

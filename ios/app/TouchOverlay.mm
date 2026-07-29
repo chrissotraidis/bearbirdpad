@@ -86,7 +86,9 @@ static void push_menu_toggle();
 @property(nonatomic, strong) UILabel *label;
 @property(nonatomic, assign) UITouch *activeTouch;
 @property(nonatomic, assign) BOOL pressed;
+@property(nonatomic, assign) BOOL layoutEditing;
 @property(nonatomic, assign) NSUInteger accessibilityGeneration;
+@property(nonatomic, copy) void (^layoutSelectionHandler)(UIView *);
 
 - (instancetype)initWithLabel:(NSString *)label
            accessibilityLabel:(NSString *)accessibilityLabel
@@ -209,6 +211,12 @@ static void push_menu_toggle();
 }
 
 - (BOOL)accessibilityActivate {
+    if (self.layoutEditing) {
+        if (self.layoutSelectionHandler != nil) {
+            self.layoutSelectionHandler(self);
+        }
+        return YES;
+    }
     if (self.buttonMask == 0) {
         push_menu_toggle();
         return YES;
@@ -226,6 +234,9 @@ static void push_menu_toggle();
 }
 
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    if (self.layoutEditing) {
+        return;
+    }
     if (self.activeTouch == nil) {
         self.activeTouch = touches.anyObject;
         self.pressed = YES;
@@ -266,7 +277,9 @@ static void push_menu_toggle();
 
 @property(nonatomic, strong) UIView *thumb;
 @property(nonatomic, assign) UITouch *activeTouch;
+@property(nonatomic, assign) BOOL layoutEditing;
 @property(nonatomic, assign) NSUInteger accessibilityGeneration;
+@property(nonatomic, copy) void (^layoutSelectionHandler)(UIView *);
 
 - (void)cancelInput;
 - (BOOL)accessibilityMoveUp;
@@ -399,34 +412,63 @@ static void push_menu_toggle();
 }
 
 - (void)accessibilityIncrement {
+    if (self.layoutEditing) {
+        return;
+    }
     [self pulseAccessibilityX:0.0f y:1.0f direction:@"Up"];
 }
 
+- (BOOL)accessibilityActivate {
+    if (self.layoutEditing && self.layoutSelectionHandler != nil) {
+        self.layoutSelectionHandler(self);
+        return YES;
+    }
+    return NO;
+}
+
 - (void)accessibilityDecrement {
+    if (self.layoutEditing) {
+        return;
+    }
     [self pulseAccessibilityX:0.0f y:-1.0f direction:@"Down"];
 }
 
 - (BOOL)accessibilityMoveUp {
+    if (self.layoutEditing) {
+        return YES;
+    }
     [self pulseAccessibilityX:0.0f y:1.0f direction:@"Up"];
     return YES;
 }
 
 - (BOOL)accessibilityMoveDown {
+    if (self.layoutEditing) {
+        return YES;
+    }
     [self pulseAccessibilityX:0.0f y:-1.0f direction:@"Down"];
     return YES;
 }
 
 - (BOOL)accessibilityMoveLeft {
+    if (self.layoutEditing) {
+        return YES;
+    }
     [self pulseAccessibilityX:-1.0f y:0.0f direction:@"Left"];
     return YES;
 }
 
 - (BOOL)accessibilityMoveRight {
+    if (self.layoutEditing) {
+        return YES;
+    }
     [self pulseAccessibilityX:1.0f y:0.0f direction:@"Right"];
     return YES;
 }
 
 - (BOOL)accessibilityCenter {
+    if (self.layoutEditing) {
+        return YES;
+    }
     ++self.accessibilityGeneration;
     self.thumb.center = CGPointMake(CGRectGetMidX(self.bounds), CGRectGetMidY(self.bounds));
     self.accessibilityValue = @"Centered";
@@ -436,6 +478,9 @@ static void push_menu_toggle();
 }
 
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    if (self.layoutEditing) {
+        return;
+    }
     if (self.activeTouch == nil) {
         self.activeTouch = touches.anyObject;
         [self updateForTouch:self.activeTouch];
@@ -443,6 +488,9 @@ static void push_menu_toggle();
 }
 
 - (void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    if (self.layoutEditing) {
+        return;
+    }
     if (self.activeTouch != nil && [touches containsObject:self.activeTouch]) {
         [self updateForTouch:self.activeTouch];
     }
@@ -470,6 +518,10 @@ static void push_menu_toggle();
 
 @end
 
+static BanjoPadTouchButton *sMenuButton;
+static std::atomic_bool sLayoutEditorActive(false);
+static BOOL sLayoutEditorRequested;
+
 @interface BanjoPadTouchOverlay : UIView
 
 @property(nonatomic, strong) BanjoPadTouchStick *stick;
@@ -490,8 +542,27 @@ static void push_menu_toggle();
 @property(nonatomic, strong) BanjoPadTouchButton *dLeft;
 @property(nonatomic, strong) BanjoPadTouchButton *dRight;
 @property(nonatomic, assign) BOOL controllerConnected;
+@property(nonatomic, assign) BOOL showL;
+@property(nonatomic, assign) BOOL showDpad;
+@property(nonatomic, assign) BOOL layoutEditing;
+@property(nonatomic, strong) NSArray<UIView *> *editableControls;
+@property(nonatomic, strong) NSMutableArray<UIGestureRecognizer *> *editGestures;
+@property(nonatomic, strong) NSMutableDictionary<NSString *, NSArray<NSNumber *> *> *layoutCenters;
+@property(nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *layoutScales;
+@property(nonatomic, strong) NSMutableSet<NSString *> *hiddenControls;
+@property(nonatomic, strong) NSMutableDictionary<NSString *, NSValue *> *defaultSizes;
+@property(nonatomic, copy) NSString *layoutProfile;
+@property(nonatomic, strong) UIView *selectedControl;
+@property(nonatomic, strong) UIView *editorPanel;
+@property(nonatomic, strong) UILabel *editorLabel;
+@property(nonatomic, strong) UISlider *sizeSlider;
+@property(nonatomic, strong) UIButton *visibilityButton;
+@property(nonatomic, strong) UIButton *resetButton;
+@property(nonatomic, strong) UIButton *doneButton;
 
 - (void)cancelAllInputs;
+- (void)beginLayoutEditing;
+- (void)endLayoutEditing;
 - (void)setOptionalControlsShowL:(BOOL)showL showDpad:(BOOL)showDpad;
 - (void)updateControllerAppearance;
 
@@ -602,6 +673,41 @@ static void push_menu_toggle();
             _buttonA, _buttonB, _buttonZLeft, _buttonZRight, _buttonL, _buttonR, _buttonStart,
             _cUp, _cDown, _cLeft, _cRight, _dUp, _dDown, _dLeft, _dRight
         ];
+        _layoutCenters = [NSMutableDictionary dictionary];
+        _layoutScales = [NSMutableDictionary dictionary];
+        _hiddenControls = [NSMutableSet set];
+        _defaultSizes = [NSMutableDictionary dictionary];
+        _editGestures = [NSMutableArray array];
+
+        _stick.accessibilityIdentifier = @"stick";
+        _buttonA.accessibilityIdentifier = @"a";
+        _buttonB.accessibilityIdentifier = @"b";
+        _buttonZLeft.accessibilityIdentifier = @"z-left";
+        _buttonZRight.accessibilityIdentifier = @"z-right";
+        _buttonL.accessibilityIdentifier = @"l";
+        _buttonR.accessibilityIdentifier = @"r";
+        _buttonStart.accessibilityIdentifier = @"start";
+        _cUp.accessibilityIdentifier = @"c-up";
+        _cDown.accessibilityIdentifier = @"c-down";
+        _cLeft.accessibilityIdentifier = @"c-left";
+        _cRight.accessibilityIdentifier = @"c-right";
+        _dUp.accessibilityIdentifier = @"d-up";
+        _dDown.accessibilityIdentifier = @"d-down";
+        _dLeft.accessibilityIdentifier = @"d-left";
+        _dRight.accessibilityIdentifier = @"d-right";
+        _editableControls = @[
+            _stick, _buttonA, _buttonB, _buttonZLeft, _buttonZRight, _buttonL, _buttonR,
+            _buttonStart, _cUp, _cDown, _cLeft, _cRight, _dUp, _dDown, _dLeft, _dRight
+        ];
+        __weak BanjoPadTouchOverlay *weakSelf = self;
+        void (^selectForAccessibility)(UIView *) = ^(UIView *control) {
+            [weakSelf selectControl:control];
+        };
+        _stick.layoutSelectionHandler = selectForAccessibility;
+        for (BanjoPadTouchButton *button in _buttons) {
+            button.layoutSelectionHandler = selectForAccessibility;
+        }
+
         [self addSubview:_stick];
         for (BanjoPadTouchButton *button in _buttons) {
             [self addSubview:button];
@@ -611,6 +717,7 @@ static void push_menu_toggle();
         _dDown.hidden = YES;
         _dLeft.hidden = YES;
         _dRight.hidden = YES;
+        [self installLayoutEditor];
     }
     return self;
 }
@@ -636,6 +743,8 @@ static void push_menu_toggle();
 }
 
 - (void)setOptionalControlsShowL:(BOOL)showL showDpad:(BOOL)showDpad {
+    self.showL = showL;
+    self.showDpad = showDpad;
     if (!showL) {
         [self.buttonL cancelInput];
     }
@@ -650,6 +759,379 @@ static void push_menu_toggle();
     self.dDown.hidden = !showDpad;
     self.dLeft.hidden = !showDpad;
     self.dRight.hidden = !showDpad;
+    [self setNeedsLayout];
+}
+
+- (UIButton *)editorButtonWithTitle:(NSString *)title action:(SEL)action {
+    UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
+    [button setTitle:title forState:UIControlStateNormal];
+    [button setTitleColor:UIColor.whiteColor forState:UIControlStateNormal];
+    button.titleLabel.font = [UIFont systemFontOfSize:14.0 weight:UIFontWeightSemibold];
+    button.backgroundColor = [UIColor colorWithWhite:1.0 alpha:0.14];
+    button.layer.cornerRadius = 10.0;
+    [button addTarget:self action:action forControlEvents:UIControlEventTouchUpInside];
+    return button;
+}
+
+- (void)installLayoutEditor {
+    self.editorPanel = [[UIView alloc] initWithFrame:CGRectZero];
+    self.editorPanel.accessibilityIdentifier = @"touch-layout-editor";
+    self.editorPanel.backgroundColor = [UIColor colorWithWhite:0.04 alpha:0.9];
+    self.editorPanel.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.24].CGColor;
+    self.editorPanel.layer.borderWidth = 1.0;
+    self.editorPanel.layer.cornerRadius = 16.0;
+    self.editorPanel.hidden = YES;
+
+    self.editorLabel = [[UILabel alloc] initWithFrame:CGRectZero];
+    self.editorLabel.textColor = UIColor.whiteColor;
+    self.editorLabel.numberOfLines = 2;
+    self.editorLabel.adjustsFontSizeToFitWidth = YES;
+    self.editorLabel.minimumScaleFactor = 0.75;
+    self.editorLabel.font = [UIFont systemFontOfSize:14.0 weight:UIFontWeightSemibold];
+    [self.editorPanel addSubview:self.editorLabel];
+
+    self.sizeSlider = [[UISlider alloc] initWithFrame:CGRectZero];
+    self.sizeSlider.accessibilityIdentifier = @"touch-layout-size";
+    self.sizeSlider.accessibilityLabel = @"Selected control size";
+    self.sizeSlider.minimumValue = 0.70f;
+    self.sizeSlider.maximumValue = 1.50f;
+    self.sizeSlider.value = 1.0f;
+    self.sizeSlider.minimumTrackTintColor =
+        [UIColor colorWithRed:0.36 green:0.72 blue:1.0 alpha:1.0];
+    [self.sizeSlider addTarget:self
+                        action:@selector(editorSizeChanged:)
+              forControlEvents:UIControlEventValueChanged];
+    [self.editorPanel addSubview:self.sizeSlider];
+
+    self.visibilityButton =
+        [self editorButtonWithTitle:@"Hide" action:@selector(toggleSelectedVisibility)];
+    self.resetButton =
+        [self editorButtonWithTitle:@"Reset" action:@selector(resetCurrentLayout)];
+    self.doneButton =
+        [self editorButtonWithTitle:@"Done" action:@selector(endLayoutEditing)];
+    self.visibilityButton.accessibilityIdentifier = @"touch-layout-visibility";
+    self.resetButton.accessibilityIdentifier = @"touch-layout-reset";
+    self.doneButton.accessibilityIdentifier = @"touch-layout-done";
+    self.doneButton.backgroundColor =
+        [UIColor colorWithRed:0.10 green:0.48 blue:0.92 alpha:0.9];
+    [self.editorPanel addSubview:self.visibilityButton];
+    [self.editorPanel addSubview:self.resetButton];
+    [self.editorPanel addSubview:self.doneButton];
+    [self addSubview:self.editorPanel];
+
+    for (UIView *control in self.editableControls) {
+        UIPanGestureRecognizer *pan =
+            [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(moveControl:)];
+        UITapGestureRecognizer *tap =
+            [[UITapGestureRecognizer alloc] initWithTarget:self
+                                                    action:@selector(selectControlGesture:)];
+        pan.enabled = NO;
+        tap.enabled = NO;
+        [control addGestureRecognizer:pan];
+        [control addGestureRecognizer:tap];
+        [self.editGestures addObject:pan];
+        [self.editGestures addObject:tap];
+    }
+}
+
+- (void)layoutEditorPanel {
+    if (self.editorPanel.hidden) {
+        return;
+    }
+    UIEdgeInsets safe = self.safeAreaInsets;
+    CGFloat width = CGRectGetWidth(self.bounds);
+    CGFloat panelWidth = MIN(620.0, width - safe.left - safe.right - 20.0);
+    CGFloat panelHeight = CGRectGetHeight(self.bounds) < 560.0 ? 76.0 : 86.0;
+    self.editorPanel.frame = CGRectMake(
+        CGRectGetMidX(self.bounds) - panelWidth * 0.5,
+        safe.top + 8.0,
+        panelWidth,
+        panelHeight);
+
+    CGFloat inset = 12.0;
+    CGFloat buttonWidth = 70.0;
+    CGFloat gap = 8.0;
+    CGFloat contentHeight = panelHeight - inset * 2.0;
+    CGFloat trailingButtonsWidth = buttonWidth * 3.0 + gap * 2.0;
+    CGFloat labelWidth = MIN(150.0, panelWidth * 0.23);
+    CGFloat sliderX = inset + labelWidth + gap;
+    CGFloat sliderWidth =
+        panelWidth - inset * 2.0 - labelWidth - gap - trailingButtonsWidth - gap;
+    self.editorLabel.frame = CGRectMake(inset, inset, labelWidth, contentHeight);
+    self.sizeSlider.frame =
+        CGRectMake(sliderX, inset, MAX(80.0, sliderWidth), contentHeight);
+
+    CGFloat buttonX = panelWidth - inset - trailingButtonsWidth;
+    for (UIButton *button in
+         @[ self.visibilityButton, self.resetButton, self.doneButton ]) {
+        button.frame = CGRectMake(buttonX, inset, buttonWidth, contentHeight);
+        buttonX += buttonWidth + gap;
+    }
+}
+
+- (NSString *)profileForCompact:(BOOL)compact {
+    return compact ? @"phone-v1" : @"tablet-v1";
+}
+
+- (NSString *)storageKeyForProfile:(NSString *)profile {
+    return [@"BanjoPad.TouchLayout." stringByAppendingString:profile];
+}
+
+- (void)loadLayoutForProfile:(NSString *)profile {
+    if ([self.layoutProfile isEqualToString:profile]) {
+        return;
+    }
+    self.layoutProfile = profile;
+    [self.layoutCenters removeAllObjects];
+    [self.layoutScales removeAllObjects];
+    [self.hiddenControls removeAllObjects];
+
+    NSDictionary *stored =
+        [NSUserDefaults.standardUserDefaults dictionaryForKey:[self storageKeyForProfile:profile]];
+    NSDictionary *centers = stored[@"centers"];
+    NSDictionary *scales = stored[@"scales"];
+    NSArray *hidden = stored[@"hidden"];
+    if ([centers isKindOfClass:NSDictionary.class]) {
+        [self.layoutCenters addEntriesFromDictionary:centers];
+    }
+    if ([scales isKindOfClass:NSDictionary.class]) {
+        [self.layoutScales addEntriesFromDictionary:scales];
+    }
+    if ([hidden isKindOfClass:NSArray.class]) {
+        for (id key in hidden) {
+            if ([key isKindOfClass:NSString.class]) {
+                [self.hiddenControls addObject:key];
+            }
+        }
+    }
+}
+
+- (void)saveCurrentLayout {
+    if (self.layoutProfile.length == 0) {
+        return;
+    }
+    NSString *storageKey = [self storageKeyForProfile:self.layoutProfile];
+    if (self.layoutCenters.count == 0 &&
+        self.layoutScales.count == 0 &&
+        self.hiddenControls.count == 0) {
+        [NSUserDefaults.standardUserDefaults removeObjectForKey:storageKey];
+        return;
+    }
+    NSArray<NSString *> *hidden =
+        [self.hiddenControls.allObjects sortedArrayUsingSelector:@selector(compare:)];
+    NSDictionary *stored = @{
+        @"centers": [self.layoutCenters copy],
+        @"scales": [self.layoutScales copy],
+        @"hidden": hidden,
+    };
+    [NSUserDefaults.standardUserDefaults
+        setObject:stored
+           forKey:storageKey];
+}
+
+- (BOOL)isOptionalControlDisabled:(UIView *)control {
+    if (control == self.buttonL) {
+        return !self.showL;
+    }
+    return !self.showDpad &&
+        (control == self.dUp || control == self.dDown ||
+         control == self.dLeft || control == self.dRight);
+}
+
+- (void)clampControlToSafeBounds:(UIView *)control {
+    UIEdgeInsets safe = self.safeAreaInsets;
+    CGFloat halfWidth = CGRectGetWidth(control.bounds) * 0.5;
+    CGFloat halfHeight = CGRectGetHeight(control.bounds) * 0.5;
+    CGFloat minX = safe.left + halfWidth + 4.0;
+    CGFloat maxX = CGRectGetWidth(self.bounds) - safe.right - halfWidth - 4.0;
+    CGFloat minY = safe.top + halfHeight + 4.0;
+    CGFloat maxY = CGRectGetHeight(self.bounds) - safe.bottom - halfHeight - 4.0;
+    control.center = CGPointMake(
+        std::clamp(control.center.x, minX, MAX(minX, maxX)),
+        std::clamp(control.center.y, minY, MAX(minY, maxY)));
+}
+
+- (void)applySavedLayoutForCompact:(BOOL)compact {
+    [self loadLayoutForProfile:[self profileForCompact:compact]];
+    [self.defaultSizes removeAllObjects];
+    CGFloat width = CGRectGetWidth(self.bounds);
+    CGFloat height = CGRectGetHeight(self.bounds);
+    for (UIView *control in self.editableControls) {
+        NSString *key = control.accessibilityIdentifier;
+        if (key.length == 0) {
+            continue;
+        }
+        CGSize defaultSize = control.bounds.size;
+        self.defaultSizes[key] = [NSValue valueWithCGSize:defaultSize];
+        NSNumber *storedScale = self.layoutScales[key];
+        CGFloat scale = [storedScale isKindOfClass:NSNumber.class]
+            ? std::clamp(storedScale.doubleValue, 0.70, 1.50)
+            : 1.0;
+        control.bounds = CGRectMake(
+            0.0, 0.0, defaultSize.width * scale, defaultSize.height * scale);
+
+        NSArray<NSNumber *> *center = self.layoutCenters[key];
+        if ([center isKindOfClass:NSArray.class] && center.count == 2 &&
+            [center[0] isKindOfClass:NSNumber.class] &&
+            [center[1] isKindOfClass:NSNumber.class]) {
+            control.center =
+                CGPointMake(center[0].doubleValue * width, center[1].doubleValue * height);
+        }
+        [self clampControlToSafeBounds:control];
+
+        BOOL hidden =
+            [self.hiddenControls containsObject:key] || [self isOptionalControlDisabled:control];
+        control.hidden = self.layoutEditing ? NO : hidden;
+        control.alpha = self.layoutEditing && hidden ? 0.28 : 1.0;
+        BOOL selected = self.layoutEditing && control == self.selectedControl;
+        control.layer.shadowColor =
+            (selected
+                ? [UIColor colorWithRed:1.0 green:0.78 blue:0.16 alpha:1.0]
+                : UIColor.blackColor).CGColor;
+        control.layer.shadowRadius = selected ? 8.0 : 3.0;
+        control.layer.shadowOpacity = selected ? 1.0 : 0.72;
+        control.layer.shadowOffset = CGSizeZero;
+    }
+    [self layoutEditorPanel];
+    [self bringSubviewToFront:self.editorPanel];
+}
+
+- (void)selectControl:(UIView *)control {
+    if (!self.layoutEditing || control == nil) {
+        return;
+    }
+    self.selectedControl = control;
+    NSString *label = control.accessibilityLabel;
+    if (label.length == 0) {
+        label = control.accessibilityIdentifier;
+    }
+    self.editorLabel.text =
+        [NSString stringWithFormat:@"%@\nDrag to move • Size", label];
+    NSString *key = control.accessibilityIdentifier;
+    NSNumber *scale = self.layoutScales[key];
+    self.sizeSlider.value =
+        [scale isKindOfClass:NSNumber.class] ? scale.floatValue : 1.0f;
+
+    BOOL optionalDisabled = [self isOptionalControlDisabled:control];
+    BOOL hidden = [self.hiddenControls containsObject:key];
+    NSString *visibilityTitle = optionalDisabled ? @"Settings" : (hidden ? @"Show" : @"Hide");
+    [self.visibilityButton setTitle:visibilityTitle forState:UIControlStateNormal];
+    self.visibilityButton.enabled =
+        !optionalDisabled && ![key isEqualToString:@"stick"];
+    self.visibilityButton.alpha = self.visibilityButton.enabled ? 1.0 : 0.4;
+    [self setNeedsLayout];
+}
+
+- (void)selectControlGesture:(UITapGestureRecognizer *)gesture {
+    [self selectControl:gesture.view];
+}
+
+- (void)moveControl:(UIPanGestureRecognizer *)gesture {
+    UIView *control = gesture.view;
+    if (!self.layoutEditing || control == nil) {
+        return;
+    }
+    if (gesture.state == UIGestureRecognizerStateBegan) {
+        [self selectControl:control];
+    }
+    CGPoint translation = [gesture translationInView:self];
+    control.center = CGPointMake(
+        control.center.x + translation.x,
+        control.center.y + translation.y);
+    [gesture setTranslation:CGPointZero inView:self];
+    [self clampControlToSafeBounds:control];
+    self.layoutCenters[control.accessibilityIdentifier] = @[
+        @(control.center.x / CGRectGetWidth(self.bounds)),
+        @(control.center.y / CGRectGetHeight(self.bounds)),
+    ];
+}
+
+- (void)editorSizeChanged:(UISlider *)slider {
+    UIView *control = self.selectedControl;
+    NSString *key = control.accessibilityIdentifier;
+    NSValue *sizeValue = self.defaultSizes[key];
+    if (control == nil || key.length == 0 || sizeValue == nil) {
+        return;
+    }
+    CGFloat scale = std::clamp((CGFloat)slider.value, 0.70, 1.50);
+    self.layoutScales[key] = @(scale);
+    CGSize baseSize = sizeValue.CGSizeValue;
+    control.bounds =
+        CGRectMake(0.0, 0.0, baseSize.width * scale, baseSize.height * scale);
+    [self clampControlToSafeBounds:control];
+    self.layoutCenters[key] = @[
+        @(control.center.x / CGRectGetWidth(self.bounds)),
+        @(control.center.y / CGRectGetHeight(self.bounds)),
+    ];
+}
+
+- (void)toggleSelectedVisibility {
+    NSString *key = self.selectedControl.accessibilityIdentifier;
+    if (key.length == 0 || [key isEqualToString:@"stick"] ||
+        [self isOptionalControlDisabled:self.selectedControl]) {
+        return;
+    }
+    if ([self.hiddenControls containsObject:key]) {
+        [self.hiddenControls removeObject:key];
+    } else {
+        [self.hiddenControls addObject:key];
+    }
+    [self selectControl:self.selectedControl];
+}
+
+- (void)resetCurrentLayout {
+    if (self.layoutProfile.length == 0) {
+        return;
+    }
+    [self.layoutCenters removeAllObjects];
+    [self.layoutScales removeAllObjects];
+    [self.hiddenControls removeAllObjects];
+    [NSUserDefaults.standardUserDefaults
+        removeObjectForKey:[self storageKeyForProfile:self.layoutProfile]];
+    [self setNeedsLayout];
+    [self selectControl:self.buttonA];
+}
+
+- (void)beginLayoutEditing {
+    if (self.layoutEditing) {
+        return;
+    }
+    [self cancelAllInputs];
+    self.layoutEditing = YES;
+    self.stick.layoutEditing = YES;
+    for (BanjoPadTouchButton *button in self.buttons) {
+        button.layoutEditing = YES;
+    }
+    for (UIGestureRecognizer *gesture in self.editGestures) {
+        gesture.enabled = YES;
+    }
+    self.editorPanel.hidden = NO;
+    sLayoutEditorActive.store(true);
+    sMenuButton.hidden = YES;
+    [self selectControl:self.buttonA];
+    [self setNeedsLayout];
+    SDL_Log("[BanjoPad] touch layout editor opened");
+}
+
+- (void)endLayoutEditing {
+    if (!self.layoutEditing) {
+        return;
+    }
+    [self saveCurrentLayout];
+    self.layoutEditing = NO;
+    self.stick.layoutEditing = NO;
+    for (BanjoPadTouchButton *button in self.buttons) {
+        button.layoutEditing = NO;
+    }
+    for (UIGestureRecognizer *gesture in self.editGestures) {
+        gesture.enabled = NO;
+    }
+    self.editorPanel.hidden = YES;
+    self.selectedControl = nil;
+    sLayoutEditorActive.store(false);
+    sMenuButton.hidden = NO;
+    [self setNeedsLayout];
+    SDL_Log("[BanjoPad] touch layout saved");
 }
 
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
@@ -693,6 +1175,7 @@ static void push_menu_toggle();
     place(self.dDown, dx, dy + 48.0 * scale, 46.0, 46.0);
     place(self.dLeft, dx - 48.0 * scale, dy, 46.0, 46.0);
     place(self.dRight, dx + 48.0 * scale, dy, 46.0, 46.0);
+    [self applySavedLayoutForCompact:self.bounds.size.height < 560.0];
 }
 
 - (void)cancelAllInputs {
@@ -795,7 +1278,6 @@ static void push_menu_toggle();
 @end
 
 static BanjoPadTouchOverlay *sOverlay;
-static BanjoPadTouchButton *sMenuButton;
 static BanjoPadCameraGesture *sCameraGesture;
 static BanjoPadCameraGestureDelegate *sCameraDelegate;
 static id sResignObserver;
@@ -817,7 +1299,7 @@ static void cancel_all_inputs() {
 
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer
        shouldReceiveTouch:(UITouch *)touch {
-    if (sOverlay == nil || sMenuVisible.load()) {
+    if (sOverlay == nil || sMenuVisible.load() || sLayoutEditorActive.load()) {
         return NO;
     }
     UIView *view = touch.view;
@@ -997,8 +1479,13 @@ static void apply_overlay_state() {
     }
     install_menu_button(window);
 
-    if (!sEnabled.load() || sMenuVisible.load() ||
-        (sControllerConnected.load() && sHideWhenControllerConnected.load())) {
+    BOOL unavailable = !sEnabled.load() ||
+        (sControllerConnected.load() && sHideWhenControllerConnected.load());
+    if (unavailable) {
+        sLayoutEditorRequested = NO;
+    }
+    if (unavailable || sMenuVisible.load()) {
+        [sOverlay endLayoutEditing];
         cancel_all_inputs();
         [sOverlay removeFromSuperview];
         sOverlay = nil;
@@ -1021,6 +1508,10 @@ static void apply_overlay_state() {
     sCameraGesture.enabled = YES;
     [window bringSubviewToFront:sOverlay];
     [window bringSubviewToFront:sMenuButton];
+    if (sLayoutEditorRequested) {
+        sLayoutEditorRequested = NO;
+        [sOverlay beginLayoutEditing];
+    }
 }
 
 extern "C" int BanjoPadTouch_Available(void) {
@@ -1043,6 +1534,25 @@ extern "C" int BanjoPadTouch_ShowL(void) {
     return sShowL.load() ? 1 : 0;
 }
 
+extern "C" void BanjoPadTouch_BeginLayoutEditing(void) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (!sEnabled.load()) {
+            SDL_Log("[BanjoPad] layout editor requires Touch Controls");
+            return;
+        }
+        if (sControllerConnected.load() && sHideWhenControllerConnected.load()) {
+            SDL_Log("[BanjoPad] layout editor unavailable while touch controls are hidden");
+            return;
+        }
+        sLayoutEditorRequested = YES;
+        if (sMenuVisible.load()) {
+            push_menu_toggle();
+        } else {
+            apply_overlay_state();
+        }
+    });
+}
+
 extern "C" void BanjoPadTouch_Install(void) {
     dispatch_async(dispatch_get_main_queue(), ^{
         if (sResignObserver == nil) {
@@ -1063,6 +1573,7 @@ extern "C" void BanjoPadTouch_SetEnabled(int enabled) {
     sEnabled.store(enabled != 0);
     dispatch_async(dispatch_get_main_queue(), ^{
         if (!sEnabled.load()) {
+            sLayoutEditorRequested = NO;
             cancel_all_inputs();
         }
         save_control_settings();
