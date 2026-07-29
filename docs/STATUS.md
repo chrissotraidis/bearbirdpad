@@ -1,18 +1,18 @@
-# Status — updated 2026-07-29, iteration 62
+# Status — updated 2026-07-29, iteration 63
 
-Phase: 10+ — polish backlog; unused iOS motion access disabled
+Phase: 10+ — polish backlog; protected-resource paths audited
 
-Done this iteration: audited the source and built distribution metadata against Files import, controller, device-family, orientation, and lifecycle behavior; then disabled SDL's unused iOS accelerometer-as-joystick default instead of adding a misleading motion permission. Evidence:
+Done this iteration: traced every privacy-sensitive Apple framework path reachable from the SDL subsystems BanjoPad initializes and compared those paths with the built plist's intentionally empty usage-description set. No new permission or code change is justified. Evidence:
 
-- The built plist exposes the app's Documents directory and opens provider documents in place, declares `.z64`/`.v64`/`.n64` ROMs plus `.rtz`/`.nrm` mods, advertises the extended-gamepad profile, targets iPhone and iPad, requires arm64/Metal, and retains landscape-only full-screen policy. Those declarations match the iOS picker and SDL drop-file paths.
-- The unsigned local build has no signing entitlements; none are required for the declared Files/document-picker and GameController flows. Real signing-entitlement verification remains part of the physical package gate.
-- SDL 2.32.10 defaults `SDL_HINT_ACCELEROMETER_AS_JOYSTICK` to enabled and registers the device accelerometer during joystick initialization. BanjoPad initializes SDL joystick support but does not use device motion, and its plist correctly has no `NSMotionUsageDescription`.
-- `ios/app/ios_main.mm` now sets `SDL_HINT_ACCELEROMETER_AS_JOYSTICK=0` before the game initializes SDL, avoiding an unused Core Motion path and permission/crash risk without presenting a false permission rationale.
-- `scripts/build-ios.sh --device --app --config Release` passed the touch tests, recompiled `ios_main.mm`, relinked the arm64 iOS 16.0 executable, and completed with `** BUILD SUCCEEDED **`.
-- The rebuilt plist and template pass `plutil -lint`; Files/open-in-place/full-screen remain true; `NSMotionUsageDescription` remains absent; and the executable contains the explicit `SDL_ACCELEROMETER_AS_JOYSTICK` hint.
-- Package audit passed. Two fresh IPA packages were byte-for-byte identical: 54 entries, 7,545,434 bytes, SHA-256 `5eb788e3e1cf5a483405e662f4966c4f49b4cfe3f7937d14a630bd7641ef26bf`; `unzip -tq` passed.
+- Core Motion is no longer reachable through SDL's device-accelerometer joystick because iteration 62 disables that hint before `SDL_Init`.
+- SDL's iOS HID backend contains CoreBluetooth support only for BLE Steam Controllers. It constructs `CBCentralManager` only when `SDL_HINT_JOYSTICK_HIDAPI_STEAM` is enabled; SDL defaults that hint to false and BanjoPad does not set it. Supported PS/Xbox/MFi controllers use Apple's `GCController` path without a Bluetooth permission prompt.
+- BanjoPad initializes SDL audio and calls `SDL_OpenAudioDevice(..., false, ...)`; `false` selects output, and SDL's iOS CoreAudio backend selects `AVAudioSessionCategoryPlayback`. No capture device, record category, or microphone permission path is used.
+- Searches of the app, downstream patches, BanjoRecomp entry path, and RecompFrontend found no camera, Photos, or local-network protected-resource calls.
+- The built plist contains no `NSMotionUsageDescription`, `NSBluetoothAlwaysUsageDescription`, `NSMicrophoneUsageDescription`, camera/Photos descriptions, or local-network declaration. That absence now matches the reachable feature set.
+- Static linking still includes framework code for SDL capabilities that BanjoPad does not activate; adding permission strings based only on linked symbols would misrepresent app behavior.
+- No artifact changed in this evidence-only iteration, so the iteration 62 generic-device build, package audit, and deterministic IPA hash remain current.
 
-Next goal: audit app-reachable iOS privacy-sensitive framework paths against usage-description coverage, disabling unused SDL facilities instead of adding unnecessary permission prompts.
+Next goal: correct BanjoRecomp's inverted SDL initialization failure check through the downstream patch ledger, then rebuild the iOS and macOS canaries.
 
 Blockers: no local build blocker. Hosted CI is supplemental and intentionally excluded from the active gate per the project owner. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 
