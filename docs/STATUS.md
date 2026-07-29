@@ -1,16 +1,15 @@
-# Status — updated 2026-07-29, iteration 53
+# Status — updated 2026-07-29, iteration 54
 
-Phase: 10+ — polish backlog; DD6 settled as a read-only upstream handoff
+Phase: 10+ — polish backlog; BanjoRecomp pin verified current
 
-Done this iteration: audited DD6 against current N64ModernRuntime and plume upstream HEADs, validated the existing patches in isolated temporary trees, and created `docs/UPSTREAM-HANDOFF.md` without writing upstream. No production app behavior changed. Evidence:
+Done this iteration: performed the deliberate BanjoRecomp pin-drift gate before changing any build input and found that no pin bump exists to take. No production app behavior changed. Evidence:
 
-- Read-only `git fetch --depth=1 origin HEAD` confirmed current N64ModernRuntime is still `ae1ffbb909d9f93c88c41830deb539f7feef5ed2`; its timer set still compares mutable `OSTimer::timestamp` values and lacks the downstream fix.
-- The same read-only check confirmed current plume is still `d890ac899e505fb30040e037a4037cdeca68f033`; it has `PLUME_IOS` capability branches but no `plume_uikit.mm` or iOS CMake source selection.
-- `git apply --check --include=ultramodern/src/timer.cpp` proved that the timer-only hunk inside `patches/nmr/002-ios-runtime-gates-and-saves.patch` applies cleanly to current upstream. The handoff excludes that mixed patch's save and code-mod changes.
-- A clean temporary archive of current plume accepted patches `001` through `004` in order. The handoff classifies `002` as an independent correctness fix, `001` as the UIKit foundation, and `003`/`004` as downstream policies that need a general resize/lifecycle API before upstreaming.
-- All inspected build and reference checkouts retained `DISABLED` push URLs. No upstream branch, issue, pull request, push, source edit, ROM, save, or generated artifact was created.
+- Read-only `git fetch --depth=1 origin HEAD` returned `c20314cd1bcaefff7bdbce257a25ebcc30cc1cdc`, exactly the revision already declared by `scripts/fetch-sources.sh`.
+- The pinned and remote commit metadata match: authored `2026-07-26T09:47:11+10:00`, subject `jinjo saving: Fix jinjo unsynced display state (#310)`.
+- `git diff --name-status HEAD..FETCH_HEAD`, `git diff --stat HEAD..FETCH_HEAD`, and the `.gitmodules`/`lib` submodule delta were all empty.
+- Because source and submodule inputs are byte-for-byte unchanged, patch replay and build/package reruns would test the same graph already green in iteration 51. The pin, patch state, production app, IPA, ROM, saves, and generated sources were left untouched.
 
-Next goal: audit BanjoRecomp's current upstream HEAD against pinned `c20314c`; if it advanced, prove the complete patch series replays in isolation before deciding a deliberate, single-purpose pin bump.
+Next goal: audit RecompFrontend's current upstream HEAD against pinned `d0d90ba`; if it advanced, replay the frontend patch series in isolation and take only a deliberate, verified single-purpose bump.
 
 Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 
