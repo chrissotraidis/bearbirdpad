@@ -161,13 +161,24 @@ static void push_menu_toggle();
     self.layer.borderColor = (self.pressed ? _accentColor : border_color()).CGColor;
 }
 
+- (CGRect)interactionBounds {
+    static const CGFloat minimumTargetSize = 44.0;
+    CGFloat horizontalInset = MAX(6.0, (minimumTargetSize - self.bounds.size.width) * 0.5);
+    CGFloat verticalInset = MAX(6.0, (minimumTargetSize - self.bounds.size.height) * 0.5);
+    return CGRectInset(self.bounds, -horizontalInset, -verticalInset);
+}
+
 - (void)layoutSubviews {
     [super layoutSubviews];
     self.layer.cornerRadius = MIN(self.bounds.size.width, self.bounds.size.height) * 0.5;
 }
 
 - (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)event {
-    return CGRectContainsPoint(CGRectInset(self.bounds, -6.0, -6.0), point);
+    return CGRectContainsPoint([self interactionBounds], point);
+}
+
+- (CGRect)accessibilityFrame {
+    return UIAccessibilityConvertFrameToScreenCoordinates([self interactionBounds], self);
 }
 
 - (void)setPressed:(BOOL)pressed {

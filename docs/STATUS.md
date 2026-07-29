@@ -1,19 +1,18 @@
-# Status — updated 2026-07-29, iteration 27
+# Status — updated 2026-07-29, iteration 28
 
-Phase: 10+ — polish backlog; touch labels honor bounded Dynamic Type
+Phase: 10+ — polish backlog; touch controls expose minimum interaction targets
 
-Done this iteration: made native controller glyphs respond to Dynamic Type without changing touch geometry or allowing the largest accessibility category to break the game layout. Evidence:
+Done this iteration: made every persistent native button expose the same expanded interaction bounds to touch input and assistive technologies, without enlarging or moving the visible controller. Evidence:
 
-- At `accessibility-extra-extra-extra-large`, the pre-fix A/B/Z/R/Start/C labels remained at their fixed 15-point size; VoiceOver names worked, but the visible controller did not honor the low-vision text preference.
-- Controller labels now use `UIFontMetrics`, track content-size changes live, and cap at 22 points. Width fitting with a 75% minimum scale prevents the longer `START` label from clipping while short glyphs receive the full increase.
-- The existing button/stick frames, safe-area offsets, camera region, input masks, and hit testing are unchanged.
-- iPad Pro 11-inch (M4), iOS 18.5, passed at the maximum category with every glyph centered and the complete accessibility tree intact.
-- iPhone 16 Pro, iOS 18.5, passed the compact landscape layout at the same maximum category: no control overlaps, clipping, safe-area intrusion, or loss from the accessibility tree.
-- Restored both Simulators to their original `large` content-size category after the maximum-size test.
+- The compact 0.85 layout makes Start 34 points high, the C cluster and right Z trigger 39.1 points, and the left Z/R pills 37.4 points. The persistent menu is 38 points on every device. Their existing six-point hit expansion already produced minimum touch targets of 46, 51.1, 49.4, and 50 points respectively, but VoiceOver still received the smaller visible frames.
+- `BanjoPadTouchButton` now owns one `interactionBounds` calculation. `pointInside:` continues to use that exact area, while `accessibilityFrame` converts it to screen coordinates for VoiceOver, Voice Control, and Switch Control.
+- No visible frame, center, safe-area offset, label, controller mask, camera region, input timing, or menu behavior changed.
+- iPad Pro 11-inch (M4), iOS 18.5, launched the retail game in the Release build. Its live accessibility tree contained the menu, A/B, both Z triggers, R, Start, all four C buttons, and the adjustable stick after the change.
+- iPhone 16 Pro, iOS 18.5, passed the compact landscape launcher/menu check with the new Release build. Static layout verification gives its smallest gameplay target as 46 points and its persistent menu target as 50 points.
 - Simulator and unsigned device Release builds passed. `scripts/package-audit.sh` again found no ROM, ROM digest, or generated-source marker.
-- Refreshed `build/release/BanjoPad-0.1.0-unsigned.ipa`: 8.0 MB allocated size, SHA-256 `ef2d489941f276777e2b808e553cefbe1cccf7b427980c734ab0d038ec8d154a`.
+- Refreshed `build/release/BanjoPad-0.1.0-unsigned.ipa`: 8.1 MB allocated size, SHA-256 `f2aeaa40373ddf60f847bfb235f472a73d174bdee2d775b2bba5aef35aaf1a88`.
 
-Next goal: audit the persistent native menu control and smallest gameplay controls against a 44-point minimum interaction target, then enlarge only undersized hit and accessibility frames without moving the visual layout.
+Next goal: exercise touch cancellation and app/menu transitions in Simulator, then harden only any reproducible stuck-input path.
 
 Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 
