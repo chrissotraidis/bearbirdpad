@@ -1,19 +1,19 @@
-# Status — updated 2026-07-29, iteration 31
+# Status — updated 2026-07-29, iteration 32
 
-Phase: 10+ — polish backlog; adjustable stick announces VoiceOver actions
+Phase: 10+ — polish backlog; assistive stick actions mirror visible thumb movement
 
-Done this iteration: gave the adjustable control stick an explicit spoken/value state for every assistive action without changing its gameplay timing. Evidence:
+Done this iteration: mirrored every assistive directional stick action in the visible thumb without changing normal touch geometry or input timing. Evidence:
 
-- The live stick previously exposed its label, hint, adjustable trait, and five custom actions, but no `accessibilityValue`; users received the action name without a persistent centered-state cue.
-- The stick now starts at `Centered`. Up, Down, Left, and Right set the matching value and post `UIAccessibilityAnnouncementNotification`; Center posts `Centered`.
-- The existing generation guard and 160 ms gameplay pulse are unchanged. When a directional pulse expires, the N64 stick and accessibility value both return to centered; cancellation, menu transitions, and app interruptions also restore `Centered`.
-- iPad Pro 11-inch (M4), iOS 18.5, launched the retail game in the Release build. Its live tree reported `Control stick, Value: Centered` with Move up/down/left/right/Center actions. Move right executed and the tree returned to `Centered` after the pulse.
-- Iteration 30's next-goal wording said 120 ms, but source and all prior builds use 160 ms; this iteration preserves the authoritative implementation rather than silently changing input behavior to match stale prose.
+- Up, Down, Left, and Right now move the thumb to 30% of the stick width in the matching direction while their N64 input and spoken value are active. UIKit's downward-positive Y axis is inverted from the N64 stick's upward-positive Y axis at this visual boundary.
+- The existing generation guard and 160 ms gameplay pulse are unchanged. When a directional pulse expires, the N64 stick, accessibility value, and visible thumb all return to centered; Center also recenters all three immediately.
+- The normal `updateForTouch:` path is untouched, so direct-touch clamping, 30% thumb travel, N64 coordinate conversion, and release centering retain their previously verified behavior.
+- iPad Pro 11-inch (M4), iOS 18.5, launched the retail game in the Simulator Release build. Its live tree still reported `Control stick, Value: Centered` with Move up/down/left/right/Center actions. Move right executed and the tree returned to `Centered`.
+- Computer Use synchronizes after an accessibility action, so it could not capture the 160 ms transient thumb position; the live action/reset, unchanged normal-touch method, and both compiled Release targets are the verification boundary rather than a claimed transient screenshot.
 - The touch-state regression gate passed before both builds.
 - Simulator and unsigned device Release builds passed. `scripts/package-audit.sh` again found no ROM, ROM digest, or generated-source marker.
-- Refreshed `build/release/BanjoPad-0.1.0-unsigned.ipa`: 7.9 MB allocated size, SHA-256 `f3ac68b418ff20d86b11aed39f94e3c62044bd1d15de83ded47b1e835c5a2325`.
+- Refreshed `build/release/BanjoPad-0.1.0-unsigned.ipa`: 7.9 MB allocated size, SHA-256 `9999ff8ed3dbc284875a2ad9a87754cc05114087a9f5c8a20fa8907f40bb8f1d`.
 
-Next goal: mirror assistive stick pulses in the visible thumb position, then verify that normal touch movement and centering remain unchanged.
+Next goal: audit controller-connected touch-control fading with assistive technologies, then keep the visual fade while ensuring every enabled touch target remains discoverable and accurately described.
 
 Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 

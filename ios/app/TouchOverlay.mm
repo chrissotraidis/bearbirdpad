@@ -351,6 +351,9 @@ static void push_menu_toggle();
 
 - (void)pulseAccessibilityX:(float)x y:(float)y direction:(NSString *)direction {
     NSUInteger generation = ++self.accessibilityGeneration;
+    CGPoint center = CGPointMake(CGRectGetMidX(self.bounds), CGRectGetMidY(self.bounds));
+    CGFloat travel = self.bounds.size.width * 0.3;
+    self.thumb.center = CGPointMake(center.x + x * travel, center.y - y * travel);
     self.accessibilityValue = direction;
     UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, direction);
     BanjoPadTouch_SetStick(x, y);
@@ -359,6 +362,8 @@ static void push_menu_toggle();
         if (generation == self.accessibilityGeneration && self.activeTouch == nil) {
             BanjoPadTouch_SetStick(0.0f, 0.0f);
             self.accessibilityValue = @"Centered";
+            self.thumb.center =
+                CGPointMake(CGRectGetMidX(self.bounds), CGRectGetMidY(self.bounds));
         }
     });
 }
@@ -393,6 +398,7 @@ static void push_menu_toggle();
 
 - (BOOL)accessibilityCenter {
     ++self.accessibilityGeneration;
+    self.thumb.center = CGPointMake(CGRectGetMidX(self.bounds), CGRectGetMidY(self.bounds));
     self.accessibilityValue = @"Centered";
     UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, self.accessibilityValue);
     BanjoPadTouch_SetStick(0.0f, 0.0f);
