@@ -26,11 +26,28 @@ constexpr uint16_t ButtonCLeft = 0x0002;
 constexpr uint16_t ButtonCRight = 0x0001;
 
 UIColor *fill_color(BOOL pressed) {
+    if (UIAccessibilityIsReduceTransparencyEnabled()) {
+        return [UIColor colorWithWhite:pressed ? 0.24 : 0.04 alpha:1.0];
+    }
+    if (UIAccessibilityDarkerSystemColorsEnabled()) {
+        return [UIColor colorWithWhite:pressed ? 0.20 : 0.03 alpha:0.9];
+    }
     return [UIColor colorWithWhite:0.04 alpha:pressed ? 0.62 : 0.33];
 }
 
 UIColor *border_color() {
-    return [UIColor colorWithWhite:1.0 alpha:0.72];
+    BOOL strongerContrast =
+        UIAccessibilityIsReduceTransparencyEnabled() ||
+        UIAccessibilityDarkerSystemColorsEnabled();
+    return [UIColor colorWithWhite:1.0 alpha:strongerContrast ? 1.0 : 0.72];
+}
+
+UIColor *thumb_color() {
+    if (UIAccessibilityIsReduceTransparencyEnabled()) {
+        return [UIColor colorWithWhite:0.22 alpha:1.0];
+    }
+    return [UIColor colorWithWhite:0.16
+                             alpha:UIAccessibilityDarkerSystemColorsEnabled() ? 0.9 : 0.58];
 }
 
 UIWindow *active_window() {
@@ -75,6 +92,7 @@ static void push_menu_toggle();
                          pill:(BOOL)pill
                         color:(UIColor *)color;
 - (void)cancelInput;
+- (void)updateAccessibilityAppearance;
 
 @end
 
@@ -110,8 +128,32 @@ static void push_menu_toggle();
         _label.font = [UIFont systemFontOfSize:15.0 weight:UIFontWeightBold];
         _label.userInteractionEnabled = NO;
         [self addSubview:_label];
+
+        [NSNotificationCenter.defaultCenter
+            addObserver:self
+               selector:@selector(accessibilityAppearanceChanged:)
+                   name:UIAccessibilityDarkerSystemColorsStatusDidChangeNotification
+                 object:nil];
+        [NSNotificationCenter.defaultCenter
+            addObserver:self
+               selector:@selector(accessibilityAppearanceChanged:)
+                   name:UIAccessibilityReduceTransparencyStatusDidChangeNotification
+                 object:nil];
     }
     return self;
+}
+
+- (void)dealloc {
+    [NSNotificationCenter.defaultCenter removeObserver:self];
+}
+
+- (void)accessibilityAppearanceChanged:(NSNotification *)notification {
+    [self updateAccessibilityAppearance];
+}
+
+- (void)updateAccessibilityAppearance {
+    self.backgroundColor = fill_color(self.pressed);
+    self.layer.borderColor = (self.pressed ? _accentColor : border_color()).CGColor;
 }
 
 - (void)layoutSubviews {
@@ -128,8 +170,7 @@ static void push_menu_toggle();
         return;
     }
     _pressed = pressed;
-    self.backgroundColor = fill_color(pressed);
-    self.layer.borderColor = (pressed ? _accentColor : border_color()).CGColor;
+    [self updateAccessibilityAppearance];
     BanjoPadTouch_SetButton(self.buttonMask, pressed ? 1 : 0);
 }
 
@@ -194,6 +235,7 @@ static void push_menu_toggle();
 - (BOOL)accessibilityMoveLeft;
 - (BOOL)accessibilityMoveRight;
 - (BOOL)accessibilityCenter;
+- (void)updateAccessibilityAppearance;
 
 @end
 
@@ -232,11 +274,36 @@ static void push_menu_toggle();
         _thumb = [[UIView alloc] initWithFrame:CGRectZero];
         _thumb.userInteractionEnabled = NO;
         _thumb.layer.borderWidth = 2.0;
-        _thumb.layer.borderColor = border_color().CGColor;
-        _thumb.backgroundColor = [UIColor colorWithWhite:0.12 alpha:0.58];
         [self addSubview:_thumb];
+        [self updateAccessibilityAppearance];
+
+        [NSNotificationCenter.defaultCenter
+            addObserver:self
+               selector:@selector(accessibilityAppearanceChanged:)
+                   name:UIAccessibilityDarkerSystemColorsStatusDidChangeNotification
+                 object:nil];
+        [NSNotificationCenter.defaultCenter
+            addObserver:self
+               selector:@selector(accessibilityAppearanceChanged:)
+                   name:UIAccessibilityReduceTransparencyStatusDidChangeNotification
+                 object:nil];
     }
     return self;
+}
+
+- (void)dealloc {
+    [NSNotificationCenter.defaultCenter removeObserver:self];
+}
+
+- (void)accessibilityAppearanceChanged:(NSNotification *)notification {
+    [self updateAccessibilityAppearance];
+}
+
+- (void)updateAccessibilityAppearance {
+    self.backgroundColor = fill_color(NO);
+    self.layer.borderColor = border_color().CGColor;
+    self.thumb.backgroundColor = thumb_color();
+    self.thumb.layer.borderColor = border_color().CGColor;
 }
 
 - (void)layoutSubviews {

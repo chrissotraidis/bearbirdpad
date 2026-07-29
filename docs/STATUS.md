@@ -1,18 +1,19 @@
-# Status — updated 2026-07-29, iteration 25
+# Status — updated 2026-07-29, iteration 26
 
-Phase: 10+ — polish backlog; native gameplay controls exposed to accessibility
+Phase: 10+ — polish backlog; touch overlay honors accessibility display settings
 
-Done this iteration: added the smallest UIKit accessibility layer needed to identify and activate BanjoPad's native gameplay controls without changing their established visual layout. Evidence:
+Done this iteration: made the native touch overlay adapt live to iOS Increase Contrast and Reduce Transparency while preserving the normal translucent design. Evidence:
 
-- Before the fix, the running iPhone gameplay view appeared to macOS Accessibility as one anonymous container; none of the native stick, digital buttons, or menu control could be identified or invoked.
-- Every native digital control now exposes the button trait and a stable spoken name. The analog stick exposes the adjustable trait, increment/decrement, explicit up/down/left/right actions, and center. Accessibility actions use short input pulses and preserve an active touch.
-- The persistent native menu button is named `BanjoPad menu`, explains its open/close behavior, and activates the same toggle used by touch.
-- iPhone 16 Pro and iPad Pro 11-inch (M4), both on iOS 18.5, expose the expected visible gameplay set: menu, R shoulder, both Z controls, A, B, Start, four C buttons, and the adjustable control stick. Hidden D-pad and L controls correctly remain absent.
-- Accessibility activation of `BanjoPad menu` opened the rendered in-game menu on both device classes and removed the gameplay controls from the accessibility tree until gameplay resumes.
-- Simulator and unsigned device Release builds passed. The macOS canary remained green, and `scripts/package-audit.sh` found no ROM, ROM digest, or generated-source marker in the device app.
-- Refreshed `build/release/BanjoPad-0.1.0-unsigned.ipa`: 7.4 MB, SHA-256 `9bf69e8d53b1da9a0ca3ce161dd7f699a87603435d5225adb0497091cde13561`.
+- The overlay previously used fixed translucent fills and layer border colors, so custom controls did not adapt when the system requested stronger contrast or reduced transparency.
+- Button, stick, thumb, and persistent menu colors now resolve from the current accessibility settings. Increase Contrast uses darker 90%-opaque fills and fully opaque outlines; Reduce Transparency uses fully opaque fills and outlines.
+- Each native control observes both UIKit setting-change notifications, so existing controls update in place without rebuilding the overlay, interrupting gameplay, or changing input state.
+- On the running iPad Pro 11-inch (M4), iOS 18.5, `simctl ui ... increase_contrast enabled` visibly strengthened every control; disabling it restored the normal appearance without relaunch. The complete accessibility control tree remained present in both states.
+- Enabled Reduce Transparency through the real Settings > Accessibility > Display & Text Size switch, foregrounded the same running game process, and observed opaque controls with the accessibility tree intact. Restored the Simulator setting to its original disabled state after the test.
+- Reduce Motion does not require a visual branch: the native overlay has no decorative animation, and its short delayed releases are controller input timing rather than motion effects.
+- Simulator and unsigned device Release builds passed. The iOS-only edit does not enter the macOS target; the same-turn macOS canary remained green. `scripts/package-audit.sh` again found no ROM, ROM digest, or generated-source marker.
+- Refreshed `build/release/BanjoPad-0.1.0-unsigned.ipa`: 7.9 MB allocated size, SHA-256 `e7d435fb99b72d410f2e30ff2da51e670148b7fd4179901fc097708f0763316d`.
 
-Next goal: audit the native touch overlay against iOS accessibility display settings, then make only evidence-backed contrast or motion adjustments that preserve the current layout and normal gameplay behavior.
+Next goal: audit native gameplay controls at the largest accessibility text-size category and verify touch targets, labels, and safe-area placement remain usable without scaling the game HUD or disturbing the established layout.
 
 Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 
