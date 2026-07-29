@@ -1,18 +1,18 @@
-# Status — updated 2026-07-29, iteration 61
+# Status — updated 2026-07-29, iteration 62
 
-Phase: 10+ — polish backlog; package audit fails closed
+Phase: 10+ — polish backlog; unused iOS motion access disabled
 
-Done this iteration: exercised the package-audit rejection paths with isolated temporary app fixtures, improved generated-marker diagnostics, and closed a signed-package fail-open that accepted ad-hoc signatures with arbitrary nonempty provisioning files. No game or renderer behavior changed. Evidence:
+Done this iteration: audited the source and built distribution metadata against Files import, controller, device-family, orientation, and lifecycle behavior; then disabled SDL's unused iOS accelerometer-as-joystick default instead of adding a misleading motion permission. Evidence:
 
-- A copy of the known generated ROM renamed to neutral `Assets.dat` was rejected by SHA-1 `1fb13cad402518d3ae9a8dc4b52c5c54b2a4adc7`, proving digest detection is independent of filename.
-- A fixture containing `RecompiledFuncs.cpp` was rejected by path, and a neutral `Notes.txt` containing generated-source markers was rejected by content. Marker failures now report the relative path as `Forbidden package marker: ...` instead of an unexplained absolute filename.
-- An unsigned fixture was rejected under `REQUIRE_SIGNED=1`, and `REQUIRE_SIGNED=2` was rejected as invalid configuration.
-- A deliberately ad-hoc-signed app with a copied plist named `embedded.mobileprovision` initially passed, proving the old nonempty-file check was insufficient.
-- `REQUIRE_SIGNED=1` now rejects ad-hoc signatures, requires `embedded.mobileprovision` to decode as CMS, and requires the profile Team ID to match the signing Team ID. The same fake fixture now fails with the explicit non-ad-hoc-identity error.
-- `sh -n scripts/package-audit.sh` passed. The untouched device app still passes the unsigned audit, and a full positive packaging replay retained 54 entries, 7,547,634 bytes, and SHA-256 `bdc914b8983bf30fbe1ba460e4aae31a2999ead9257f04103933bcf75a516f9f`.
-- No Apple provisioning profile is installed locally, so the real non-ad-hoc success path remains part of the signed physical-device `HUMAN-VERIFY` gate.
+- The built plist exposes the app's Documents directory and opens provider documents in place, declares `.z64`/`.v64`/`.n64` ROMs plus `.rtz`/`.nrm` mods, advertises the extended-gamepad profile, targets iPhone and iPad, requires arm64/Metal, and retains landscape-only full-screen policy. Those declarations match the iOS picker and SDL drop-file paths.
+- The unsigned local build has no signing entitlements; none are required for the declared Files/document-picker and GameController flows. Real signing-entitlement verification remains part of the physical package gate.
+- SDL 2.32.10 defaults `SDL_HINT_ACCELEROMETER_AS_JOYSTICK` to enabled and registers the device accelerometer during joystick initialization. BanjoPad initializes SDL joystick support but does not use device motion, and its plist correctly has no `NSMotionUsageDescription`.
+- `ios/app/ios_main.mm` now sets `SDL_HINT_ACCELEROMETER_AS_JOYSTICK=0` before the game initializes SDL, avoiding an unused Core Motion path and permission/crash risk without presenting a false permission rationale.
+- `scripts/build-ios.sh --device --app --config Release` passed the touch tests, recompiled `ios_main.mm`, relinked the arm64 iOS 16.0 executable, and completed with `** BUILD SUCCEEDED **`.
+- The rebuilt plist and template pass `plutil -lint`; Files/open-in-place/full-screen remain true; `NSMotionUsageDescription` remains absent; and the executable contains the explicit `SDL_ACCELEROMETER_AS_JOYSTICK` hint.
+- Package audit passed. Two fresh IPA packages were byte-for-byte identical: 54 entries, 7,545,434 bytes, SHA-256 `5eb788e3e1cf5a483405e662f4966c4f49b4cfe3f7937d14a630bd7641ef26bf`; `unzip -tq` passed.
 
-Next goal: audit the built app's distribution-facing plist and entitlements against the documented iOS feature set, then correct only a locally provable mismatch.
+Next goal: audit app-reachable iOS privacy-sensitive framework paths against usage-description coverage, disabling unused SDL facilities instead of adding unnecessary permission prompts.
 
 Blockers: no local build blocker. Hosted CI is supplemental and intentionally excluded from the active gate per the project owner. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 
