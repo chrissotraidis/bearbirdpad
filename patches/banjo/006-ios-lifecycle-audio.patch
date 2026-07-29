@@ -1,0 +1,143 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 8ef866b..32d7877 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -189,12 +189,14 @@ if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
+     list(APPEND SOURCES
+         ${BANJOPAD_IOS_DIR}/ios_main.mm
+         ${BANJOPAD_IOS_DIR}/IosFileDialog.mm
++        ${BANJOPAD_IOS_DIR}/IosLifecycle.mm
+         ${BANJOPAD_IOS_DIR}/NullRendererContext.cpp
+         ${BANJOPAD_IOS_DIR}/TouchInputShim.cpp
+         ${BANJOPAD_IOS_DIR}/TouchOverlay.mm
+     )
+     set_source_files_properties(
+         ${BANJOPAD_IOS_DIR}/IosFileDialog.mm
++        ${BANJOPAD_IOS_DIR}/IosLifecycle.mm
+         ${BANJOPAD_IOS_DIR}/TouchOverlay.mm
+         PROPERTIES COMPILE_FLAGS "-fobjc-arc"
+     )
+diff --git a/src/main/main.cpp b/src/main/main.cpp
+index 3f02a2d..9bf4ac3 100644
+--- a/src/main/main.cpp
++++ b/src/main/main.cpp
+@@ -9,6 +9,7 @@
+ #include <optional>
+ #include <stdexcept>
+ #include <cinttypes>
++#include <mutex>
+ 
+ #if defined(__APPLE__)
+ #include <TargetConditionals.h>
+@@ -230,6 +231,10 @@ void update_gfx(void*) {
+ 
+ static SDL_AudioCVT audio_convert;
+ static SDL_AudioDeviceID audio_device = 0;
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++static std::mutex ios_audio_mutex;
++static bool ios_audio_active = true;
++#endif
+ 
+ // Samples per channel per second.
+ static uint32_t sample_rate = 48000;
+@@ -248,6 +253,12 @@ static uint32_t discarded_output_frames;
+ constexpr uint32_t bytes_per_frame = input_channels * sizeof(float);
+ 
+ void queue_samples(int16_t* audio_data, size_t sample_count) {
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++    std::lock_guard audio_lock{ios_audio_mutex};
++    if (!ios_audio_active || audio_device == 0) {
++        return;
++    }
++#endif
+     // Buffer for holding the output of swapping the audio channels. This is reused across
+     // calls to reduce runtime allocations.
+     static std::vector<float> swap_buffer;
+@@ -313,6 +324,12 @@ void queue_samples(int16_t* audio_data, size_t sample_count) {
+ }
+ 
+ size_t get_frames_remaining() {
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++    std::lock_guard audio_lock{ios_audio_mutex};
++    if (!ios_audio_active || audio_device == 0) {
++        return 0;
++    }
++#endif
+     constexpr float buffer_offset_frames = 1.0f;
+     // Get the number of remaining buffered audio bytes.
+     uint64_t buffered_byte_count = SDL_GetQueuedAudioSize(audio_device);
+@@ -348,12 +365,15 @@ void update_audio_converter() {
+ }
+ 
+ void set_frequency(uint32_t freq) {
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++    std::lock_guard audio_lock{ios_audio_mutex};
++#endif
+     sample_rate = freq;
+     
+     update_audio_converter();
+ }
+ 
+-bool reset_audio(uint32_t output_freq) {
++static bool open_audio_device(uint32_t output_freq, bool show_error) {
+     SDL_AudioSpec spec_desired{
+         .freq = (int)output_freq,
+         .format = AUDIO_F32,
+@@ -368,8 +388,16 @@ bool reset_audio(uint32_t output_freq) {
+ 
+     audio_device = SDL_OpenAudioDevice(nullptr, false, &spec_desired, nullptr, 0);
+     if (audio_device == 0) {
+-        std::string audio_error = std::string("No audio device could be found. Please make sure an audio device is available.\nError opening audio device: ") + std::string(SDL_GetError());
+-        recompui::message_box(audio_error.c_str());
++        std::string audio_error =
++            std::string("No audio device could be found. Please make sure an audio device is available.\n"
++                        "Error opening audio device: ") +
++            std::string(SDL_GetError());
++        if (show_error) {
++            recompui::message_box(audio_error.c_str());
++        }
++        else {
++            std::fprintf(stderr, "BANJOPAD_IOS audio reopen failed: %s\n", SDL_GetError());
++        }
+         return false;
+     }
+ 
+@@ -381,6 +409,38 @@ bool reset_audio(uint32_t output_freq) {
+     return true;
+ }
+ 
++bool reset_audio(uint32_t output_freq) {
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++    std::lock_guard audio_lock{ios_audio_mutex};
++    output_sample_rate = output_freq;
++    update_audio_converter();
++    if (!ios_audio_active) {
++        return true;
++    }
++#endif
++    return open_audio_device(output_freq, true);
++}
++
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++extern "C" int BanjoPadAudio_SetActive(int active) {
++    std::lock_guard audio_lock{ios_audio_mutex};
++    ios_audio_active = active != 0;
++    if (!ios_audio_active) {
++        if (audio_device != 0) {
++            SDL_PauseAudioDevice(audio_device, 1);
++            SDL_ClearQueuedAudio(audio_device);
++            SDL_CloseAudioDevice(audio_device);
++            audio_device = 0;
++        }
++        return 1;
++    }
++    if (audio_device != 0) {
++        return 1;
++    }
++    return open_audio_device(output_sample_rate, false) ? 1 : 0;
++}
++#endif
++
+ extern RspUcodeFunc n_aspMain;
+ 
+ RspUcodeFunc* get_rsp_microcode(const OSTask* task) {

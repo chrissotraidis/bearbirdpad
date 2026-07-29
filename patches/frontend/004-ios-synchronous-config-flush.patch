@@ -1,0 +1,40 @@
+diff --git a/recompui/src/config/ui_config.cpp b/recompui/src/config/ui_config.cpp
+index 6c84c05..01ea733 100644
+--- a/recompui/src/config/ui_config.cpp
++++ b/recompui/src/config/ui_config.cpp
+@@ -6,6 +6,10 @@
+ #include "util/file.h"
+ #include "librecomp/game.hpp"
+ 
++#if defined(__APPLE__)
++#include <TargetConditionals.h>
++#endif
++
+ static std::vector<std::pair<std::string, recomp::config::Config>> configs;
+ 
+ struct PendingTab {
+@@ -121,6 +125,24 @@ namespace recompui {
+         loaded_configs = true;
+     }
+ 
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++    extern "C" int BanjoPadFrontend_FlushConfigs(void) {
++        if (!loaded_configs) {
++            return 1;
++        }
++
++        bool saved = true;
++        for (auto &[id, config] : configs) {
++            (void)id;
++            saved = config.save_config_json(config.get_json_config()) && saved;
++        }
++        saved = recompinput::profiles::save_controls_config(
++                    recomp::get_config_path() / (config::controls::id + ".json")) &&
++                saved;
++        return saved ? 1 : 0;
++    }
++#endif
++
+     void config::set_tab_visible(const std::string &id, bool is_visible) {
+         if (config_modal == nullptr) {
+             for (auto &tab : pending_tabs) {

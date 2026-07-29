@@ -1,0 +1,46 @@
+diff --git a/ultramodern/include/ultramodern/ultramodern.hpp b/ultramodern/include/ultramodern/ultramodern.hpp
+index b96be75..04b516e 100644
+--- a/ultramodern/include/ultramodern/ultramodern.hpp
++++ b/ultramodern/include/ultramodern/ultramodern.hpp
+@@ -139,6 +139,9 @@ struct gfx_callbacks_t {
+ };
+ 
+ bool is_game_started();
++// Pauses VI scheduling without claiming to freeze the emulated clock or timers.
++void set_vi_scheduler_paused(bool paused);
++bool is_vi_scheduler_paused();
+ void quit();
+ void join_event_threads();
+ void join_thread_cleaner_thread();
+diff --git a/ultramodern/src/events.cpp b/ultramodern/src/events.cpp
+index 90cccbb..60bfb8b 100644
+--- a/ultramodern/src/events.cpp
++++ b/ultramodern/src/events.cpp
+@@ -19,6 +19,15 @@
+ #include "ultramodern/renderer_context.hpp"
+ 
+ static ultramodern::events::callbacks_t events_callbacks{};
++static std::atomic_bool vi_scheduler_paused{false};
++
++void ultramodern::set_vi_scheduler_paused(bool paused) {
++    vi_scheduler_paused.store(paused, std::memory_order_release);
++}
++
++bool ultramodern::is_vi_scheduler_paused() {
++    return vi_scheduler_paused.load(std::memory_order_acquire);
++}
+ 
+ void ultramodern::events::set_callbacks(const ultramodern::events::callbacks_t& callbacks) {
+     events_callbacks = callbacks;
+@@ -189,6 +198,11 @@ void vi_thread_func() {
+     int remaining_retraces = 1;
+ 
+     while (!exited) {
++        if (ultramodern::is_vi_scheduler_paused()) {
++            ultramodern::sleep_milliseconds(16);
++            continue;
++        }
++
+         // Determine the next VI time (more accurate than adding 16ms each VI interrupt)
+         auto next = ultramodern::get_start() + (total_vis * 1000000us) / (60 * ultramodern::get_speed_multiplier());
+         //if (next > std::chrono::high_resolution_clock::now()) {

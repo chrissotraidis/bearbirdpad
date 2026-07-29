@@ -1,0 +1,84 @@
+diff --git a/plume_metal.cpp b/plume_metal.cpp
+index 48c1a86..118e524 100644
+--- a/plume_metal.cpp
++++ b/plume_metal.cpp
+@@ -15,10 +15,19 @@
+ #include <CoreFoundation/CoreFoundation.h>
+ 
+ #include <algorithm>
++#include <atomic>
+ #include <mutex>
+ 
+ #include "plume_metal.h"
+ 
++#if PLUME_IOS
++static std::atomic_bool iosSwapchainAvailable{true};
++
++extern "C" void plume_set_ios_swapchain_available(int available) {
++    iosSwapchainAvailable.store(available != 0, std::memory_order_release);
++}
++#endif
++
+ extern "C" {
+     void *objc_autoreleasePoolPush(void);
+     void objc_autoreleasePoolPop(void *pool);
+@@ -1938,6 +1947,11 @@ namespace plume {
+     }
+ 
+     bool MetalSwapChain::present(const uint32_t textureIndex, RenderCommandSemaphore **waitSemaphores, const uint32_t waitSemaphoreCount) {
++#if PLUME_IOS
++        if (!iosSwapchainAvailable.load(std::memory_order_acquire)) {
++            return false;
++        }
++#endif
+         assert(layer != nullptr && "Cannot present without a valid layer.");
+ 
+         MetalAutoreleasePool releasePool;
+@@ -1992,6 +2006,11 @@ namespace plume {
+     }
+ 
+     bool MetalSwapChain::resize() {
++#if PLUME_IOS
++        if (!iosSwapchainAvailable.load(std::memory_order_acquire)) {
++            return false;
++        }
++#endif
+         MetalAutoreleasePool releasePool;
+         getWindowSize(width, height);
+ 
+@@ -2014,6 +2033,11 @@ namespace plume {
+     }
+ 
+     bool MetalSwapChain::needsResize() const {
++#if PLUME_IOS
++        if (!iosSwapchainAvailable.load(std::memory_order_acquire)) {
++            return false;
++        }
++#endif
+         MetalAutoreleasePool releasePool;
+         uint32_t windowWidth, windowHeight;
+         getWindowSize(windowWidth, windowHeight);
+@@ -2052,6 +2076,11 @@ namespace plume {
+     }
+ 
+     bool MetalSwapChain::acquireTexture(RenderCommandSemaphore *signalSemaphore, uint32_t *textureIndex) {
++#if PLUME_IOS
++        if (!iosSwapchainAvailable.load(std::memory_order_acquire)) {
++            return false;
++        }
++#endif
+         assert(signalSemaphore != nullptr);
+         assert(textureIndex != nullptr);
+         assert(*textureIndex < MAX_DRAWABLES);
+@@ -2098,6 +2127,11 @@ namespace plume {
+     }
+ 
+     bool MetalSwapChain::isEmpty() const {
++#if PLUME_IOS
++        if (!iosSwapchainAvailable.load(std::memory_order_acquire)) {
++            return true;
++        }
++#endif
+         return layer == nullptr || width == 0 || height == 0;
+     }
+ 
