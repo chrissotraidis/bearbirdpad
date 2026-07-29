@@ -1,20 +1,22 @@
-# Status — updated 2026-07-29, iteration 34
+# Status — updated 2026-07-29, iteration 35
 
-Phase: 10+ — polish backlog; repeated assistive button pulses retain full duration
+Phase: 10+ — polish backlog; controller fade honors Reduce Transparency
 
-Done this iteration: protected rapid repeated assistive button activations from stale delayed releases without changing direct-touch timing. Evidence:
+Done this iteration: preserved the default controller-connected fade while making the overlay honor the live Reduce Transparency setting. Evidence:
 
-- Each gameplay button now increments an accessibility generation token before its existing 120 ms pulse. A delayed release applies only if its token is still current, so an older timeout cannot shorten a newer activation.
-- The delayed release also requires no active direct touch. `cancelInput` invalidates every queued assistive release before clearing the held state, so direct-touch holds, menu transitions, setting changes, and app interruptions remain authoritative.
-- No direct-touch event path or 120 ms gameplay duration changed.
+- Controller presentation now belongs to `BanjoPadTouchOverlay`: connected plus normal transparency uses the planned 40% alpha; disconnected or Reduce Transparency enabled uses full opacity.
+- The overlay observes `UIAccessibilityReduceTransparencyStatusDidChangeNotification`, updates in place, and unregisters on teardown. Existing child controls still update their opaque fills and borders from the same system change.
+- No input, controller detection, accessibility label/action, hit-testing, or camera path changed.
 - The touch-state regression gate passed before both builds.
 - Simulator and unsigned device Release builds passed after compiling and linking the changed Objective-C++ overlay.
-- iPad Pro 11-inch (M4), iOS 18.5, installed the new Simulator Release app and auto-started its existing retail ROM through the documented launch path. Gameplay rendered, the complete touch accessibility tree remained present, and A accepted activation.
-- Computer Use serializes accessibility actions, so it cannot issue two activations inside 120 ms; the generation comparison, cancellation path, compiled targets, and single live activation are the verification boundary rather than a claimed rapid-input recording.
+- iPad Pro 11-inch (M4), iOS 18.5, installed the new Simulator Release app and auto-started its existing retail ROM through the documented launch path.
+- The running game exercised the production exported controller-connected state: Reduce Transparency off visibly produced the default 40% fade; enabling the setting in Settings → Accessibility → Display & Text Size restored full-opacity, opaque controls; disabling it restored the 40% fade. The Simulator setting and injected controller state were returned to their original values afterward.
+- All 11 enabled gameplay targets and the stick's value/actions remained present in the live accessibility tree through both presentation states.
+- This proves the production presentation state transition, not physical controller pairing; pair/unpair and rumble remain in the Phase 6 `HUMAN-VERIFY` gate.
 - `scripts/package-audit.sh` found no ROM, ROM digest, or generated-source marker.
-- Refreshed `build/release/BanjoPad-0.1.0-unsigned.ipa`: 7.6 MB allocated size, SHA-256 `51a863bcd00c9919c3aa27bb17ac958c32d9f3de3f911f6d7cf737ab7a39f8bf`.
+- Refreshed `build/release/BanjoPad-0.1.0-unsigned.ipa`: 8.1 MB allocated size, SHA-256 `86f885faaeb4525fee56509bf76709c1abb4a7a0b774c5da31ed0718ca5aa634`.
 
-Next goal: make the controller-connected visual cue honor Reduce Transparency while preserving the default 40% fade and live accessibility tree.
+Next goal: apply the same full-opacity controller presentation under Increase Contrast, then verify its live toggle through the Simulator-supported override.
 
 Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 

@@ -464,8 +464,10 @@ static void push_menu_toggle();
 @property(nonatomic, strong) BanjoPadTouchButton *dDown;
 @property(nonatomic, strong) BanjoPadTouchButton *dLeft;
 @property(nonatomic, strong) BanjoPadTouchButton *dRight;
+@property(nonatomic, assign) BOOL controllerConnected;
 
 - (void)cancelAllInputs;
+- (void)updateControllerAppearance;
 
 @end
 
@@ -476,6 +478,11 @@ static void push_menu_toggle();
     if (self != nil) {
         self.backgroundColor = UIColor.clearColor;
         self.multipleTouchEnabled = YES;
+        [NSNotificationCenter.defaultCenter
+            addObserver:self
+               selector:@selector(accessibilityAppearanceChanged:)
+                   name:UIAccessibilityReduceTransparencyStatusDidChangeNotification
+                 object:nil];
 
         UIColor *blue = [UIColor colorWithRed:0.36 green:0.72 blue:1.0 alpha:1.0];
         UIColor *green = [UIColor colorWithRed:0.43 green:0.92 blue:0.54 alpha:1.0];
@@ -575,6 +582,24 @@ static void push_menu_toggle();
         _dRight.hidden = YES;
     }
     return self;
+}
+
+- (void)dealloc {
+    [NSNotificationCenter.defaultCenter removeObserver:self];
+}
+
+- (void)accessibilityAppearanceChanged:(NSNotification *)notification {
+    [self updateControllerAppearance];
+}
+
+- (void)setControllerConnected:(BOOL)controllerConnected {
+    _controllerConnected = controllerConnected;
+    [self updateControllerAppearance];
+}
+
+- (void)updateControllerAppearance {
+    self.alpha =
+        self.controllerConnected && !UIAccessibilityIsReduceTransparencyEnabled() ? 0.4 : 1.0;
 }
 
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
@@ -835,7 +860,7 @@ static void apply_overlay_state() {
         sOverlay.frame = window.bounds;
         [window addSubview:sOverlay];
     }
-    sOverlay.alpha = sControllerConnected.load() ? 0.4 : 1.0;
+    sOverlay.controllerConnected = sControllerConnected.load();
     sCameraGesture.enabled = YES;
     [window bringSubviewToFront:sOverlay];
     [window bringSubviewToFront:sMenuButton];
