@@ -1,17 +1,18 @@
-# Status — updated 2026-07-29, iteration 21
+# Status — updated 2026-07-29, iteration 22
 
-Phase: 10+ — polish backlog; iPhone scale pass complete on launcher and live gameplay
+Phase: 10+ — polish backlog; UIKit startup-warning ownership isolated
 
-Done this iteration: audited the current Release build on a fresh iPhone 16 Pro Simulator from first launch through live gameplay and found no layout change warranted. Evidence:
+Done this iteration: isolated the repeated UIKit appearance-transition warning without changing production behavior. Evidence:
 
-- Booted a clean iPhone 16 Pro, iOS 18.5 Simulator, installed `build-ios-app-simulator/Release/BanjoRecompiled.app`, and launched with an empty app container.
-- After normal renderer initialization, the no-ROM launcher rendered correctly in landscape. The Banjo/Kazooie art, five actions, version, menu button, Dynamic Island, and home-indicator safe areas are visible with no clipping or overlap; action text remains readable at native resolution.
-- Copied the user-supplied ROM only to the Simulator's temporary container, reverified runtime XXH3-64 `1B67585D56E07F8C`, and launched through `--rom ... --auto-start`.
-- Console proof repeated: ROM imported, UIKit video and 48 kHz audio initialized, Apple iOS simulator GPU selected, recomp heap initialized, and no validation, renderer, or game-thread failure appeared.
-- Captured native 2622×1206 landscape launcher and gameplay frames plus the visible Simulator window. The 0.85 compact scale keeps the stick, dual Z, A/B, R, Start, and four C buttons within safe areas without control-to-control overlap. An initially downscaled preview looked denser than the native frame; the native evidence does not justify a speculative layout rewrite.
-- The two startup appearance-transition warnings reproduced exactly as on iPad, making them the next concrete cross-idiom polish issue.
+- A binary-identical Simulator app with `UILaunchStoryboardName` removed still emitted exactly two `Unbalanced calls to begin/end appearance transitions` warnings, excluding the branded launch storyboard.
+- A temporary build with `BanjoPadTouch_Install()` removed emitted the same two warnings, excluding the touch overlay and native menu button.
+- A second temporary build with both `BanjoPadLifecycle_Install()` and `BanjoPadTouch_Install()` removed emitted the same two warnings, excluding BanjoPad's application shell and lifecycle hooks.
+- The pinned SDL 2.32.10 UIKit backend resets `UIWindow.rootViewController` twice in `SDL_uikitview.m` while replacing its generic view. BanjoRecomp then calls `SDL_Metal_CreateView`, so the two SDL resets match the two warnings and explain why every BanjoPad-disabled comparison reproduced them.
+- Restored the production entry point, rebuilt the Release Simulator app, and installed it on the iPhone 16 Pro, iOS 18.5 Simulator. Console proof shows BanjoPad launcher init, UIKit video, 48 kHz audio, foreground lifecycle handling, and Apple iOS simulator GPU initialization.
+- Captured the restored no-ROM launcher at native resolution and confirmed the Banjo/Kazooie art, all five actions, native menu button, Dynamic Island clearance, and home-indicator clearance remain intact.
+- No production patch was made: the warning is a nonfunctional diagnostic in pinned SDL code, while bypassing its view-controller reset would alter renderer attachment and orientation behavior.
 
-Next goal: isolate the repeated UIKit `Unbalanced calls to begin/end appearance transitions` startup warning, determine whether BanjoPad's overlay/launch timing causes it, and make the narrowest fix if the warning is under app control.
+Next goal: exercise the existing data-only texture-pack path on both iPad and iPhone, verify foreground rescanning and visible enable/disable behavior, then document one tested recommendation without redistributing pack data.
 
 Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 
