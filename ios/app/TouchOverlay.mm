@@ -125,7 +125,12 @@ static void push_menu_toggle();
         _label.text = label;
         _label.textAlignment = NSTextAlignmentCenter;
         _label.textColor = color ?: UIColor.whiteColor;
-        _label.font = [UIFont systemFontOfSize:15.0 weight:UIFontWeightBold];
+        UIFont *baseFont = [UIFont systemFontOfSize:15.0 weight:UIFontWeightBold];
+        _label.font =
+            [UIFontMetrics.defaultMetrics scaledFontForFont:baseFont maximumPointSize:22.0];
+        _label.adjustsFontForContentSizeCategory = YES;
+        _label.adjustsFontSizeToFitWidth = YES;
+        _label.minimumScaleFactor = 0.75;
         _label.userInteractionEnabled = NO;
         [self addSubview:_label];
 
