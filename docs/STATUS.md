@@ -1,19 +1,18 @@
-# Status — updated 2026-07-29, iteration 32
+# Status — updated 2026-07-29, iteration 33
 
-Phase: 10+ — polish backlog; assistive stick actions mirror visible thumb movement
+Phase: 10+ — polish backlog; controller fade preserves touch accessibility
 
-Done this iteration: mirrored every assistive directional stick action in the visible thumb without changing normal touch geometry or input timing. Evidence:
+Done this iteration: audited the controller-connected touch fade in the live retail game and proved that it remains a visual cue rather than an accessibility or input disable. No app-source correction was needed. Evidence:
 
-- Up, Down, Left, and Right now move the thumb to 30% of the stick width in the matching direction while their N64 input and spoken value are active. UIKit's downward-positive Y axis is inverted from the N64 stick's upward-positive Y axis at this visual boundary.
-- The existing generation guard and 160 ms gameplay pulse are unchanged. When a directional pulse expires, the N64 stick, accessibility value, and visible thumb all return to centered; Center also recenters all three immediately.
-- The normal `updateForTouch:` path is untouched, so direct-touch clamping, 30% thumb travel, N64 coordinate conversion, and release centering retain their previously verified behavior.
-- iPad Pro 11-inch (M4), iOS 18.5, launched the retail game in the Simulator Release build. Its live tree still reported `Control stick, Value: Centered` with Move up/down/left/right/Center actions. Move right executed and the tree returned to `Centered`.
-- Computer Use synchronizes after an accessibility action, so it could not capture the 160 ms transient thumb position; the live action/reset, unchanged normal-touch method, and both compiled Release targets are the verification boundary rather than a claimed transient screenshot.
-- The touch-state regression gate passed before both builds.
-- Simulator and unsigned device Release builds passed. `scripts/package-audit.sh` again found no ROM, ROM digest, or generated-source marker.
-- Refreshed `build/release/BanjoPad-0.1.0-unsigned.ipa`: 7.9 MB allocated size, SHA-256 `9999ff8ed3dbc284875a2ad9a87754cc05114087a9f5c8a20fa8907f40bb8f1d`.
+- Source inspection confirmed that controller presence changes only `sOverlay.alpha` between `1.0` and `0.4`; it does not change `hidden`, `userInteractionEnabled`, accessibility labels, traits, values, actions, or the camera gesture.
+- The running iPad Pro 11-inch (M4), iOS 18.5, Simulator Release process exercised the exported production `BanjoPadTouch_SetControllerConnected` path directly. The retail game visibly faded every gameplay touch control to 40%.
+- In the faded state, the live accessibility tree still exposed all 11 enabled gameplay targets: A, B, both Z controls, R, Start, four C controls, and the adjustable stick with `Value: Centered` plus all five directional/Center actions. Hidden-by-default L and D-pad controls remained correctly absent.
+- The faded A target accepted activation. Switching the same production state back to disconnected restored full opacity, with the same accessibility tree intact.
+- Because the tested commit and app source were unchanged from iteration 32, the already-passed Simulator and unsigned device Release builds remain the exact binaries under test; this verification-only iteration did not rebuild identical source.
+- The touch-state regression gate and device-app package audit passed again. No ROM, ROM digest, or generated-source marker was present.
+- Existing `build/release/BanjoPad-0.1.0-unsigned.ipa`: 7.9 MB allocated size, SHA-256 `9999ff8ed3dbc284875a2ad9a87754cc05114087a9f5c8a20fa8907f40bb8f1d`.
 
-Next goal: audit controller-connected touch-control fading with assistive technologies, then keep the visual fade while ensuring every enabled touch target remains discoverable and accurately described.
+Next goal: protect rapid repeated assistive button activations with the same generation-token pattern used by the stick, so an older 120 ms release cannot shorten a newer activation.
 
 Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 
