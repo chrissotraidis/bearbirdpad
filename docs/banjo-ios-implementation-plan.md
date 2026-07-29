@@ -276,7 +276,7 @@ Acceptance: stable 60 (or the framerate-cap setting honored) on iPad primary; no
 **Goal (observable):** a tagged banjopad release from which a competent developer goes clone → device install using only the docs; CI proves the ROM-free invariant on every push.
 
 Changes: `scripts/package-audit.sh` (HarkinianPad `package-ios.sh` pattern: scan the built .app for `.z64/.v64/.n64`, `RecompiledFuncs`, `banjo.us`, ROM hashes; `REQUIRE_SIGNED=1` enforces a valid signature + embedded profile before IPA wrap); `docs/BUILDING-IOS.md` (toolchain versions, ROM prep, signing with a personal team, simulator notes); GitHub Actions on `macos-15`: fetch pins → apply patches → build host tools → **stub-mode** iOS build (no ROM in CI; the full-game target stays local-only unless a private-inputs repo is configured — both modes scripted, mirroring `banjo:.github/workflows/validate.yml`'s secret-repo pattern and the Android probe/runtime split) → package-audit must pass.
-Acceptance: green CI on a clean runner; an unsigned IPA artifact that installs via personal signing (AltStore/Sideloadly path documented, per `harkinianpad:docs/INSTALL_IPA.md` precedent); tag `v0.1.0`.
+Acceptance: the clean local Release build and package-audit pass; a reproducible unsigned IPA artifact is ready for personal signing (AltStore/Sideloadly path documented, per `harkinianpad:docs/INSTALL_IPA.md` precedent). Hosted CI is supplemental rather than a release blocker. Tag `v0.1.0` only after the signed physical-device package gate passes.
 
 ---
 

@@ -1,19 +1,19 @@
-# Status — updated 2026-07-29, iteration 59
+# Status — updated 2026-07-29, iteration 60
 
-Phase: 10+ — polish backlog; unsigned generic-device release gate green
+Phase: 10+ — polish backlog; distribution version and release policy aligned
 
-Done this iteration: rebuilt the real unsigned Release app for a generic arm64 iOS device from the final pinned source state, audited it, and proved that both the device build and deterministic packager reproduce the previously verified IPA exactly. No game or renderer behavior changed. Evidence:
+Done this iteration: audited the release-version identity from source templates through the freshly rebuilt device artifact and corrected stale documentation that still treated hosted GitHub Actions as a release blocker. No app source or artifact changed. Evidence:
 
-- `scripts/build-ios.sh --device --app --config Release` first passed the touch-input shim tests, then completed with `** BUILD SUCCEEDED **` using `generic/platform=iOS`, arm64, iOS 16.0, and `CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO`.
-- The rebuilt product is `build-ios-app-device/Release/BanjoRecompiled.app`; `file` and `lipo` report one arm64 Mach-O executable, its plist reports `DTPlatformName=iphoneos` and `MinimumOSVersion=16.0`, and `codesign` confirms that it is intentionally unsigned.
-- `scripts/package-audit.sh build-ios-app-device/Release/BanjoRecompiled.app` passed with no ROM files/digests or generated-source paths/markers.
-- Two fresh packages of the rebuilt app were byte-for-byte identical: 54 entries, 7,547,634 bytes, SHA-256 `bdc914b8983bf30fbe1ba460e4aae31a2999ead9257f04103933bcf75a516f9f`.
-- That SHA-256 is also identical to iteration 58's package from the pre-rebuild app, providing evidence that the Release link and package paths are reproducible across a real device rebuild, not only across two ZIP invocations.
-- `unzip -tq` passed, and the final IPA contains no ROM, generated-source, shader-trace, or Metal-archive entries.
+- `plutil -lint` passed for the full app, Metal smoke app, and CI-stub plist templates.
+- All three templates and `build-ios-app-device/Release/BanjoRecompiled.app/Info.plist` report `CFBundleShortVersionString=0.1.0` and `CFBundleVersion=1`.
+- `scripts/package-ios.sh` and `docs/BUILDING-IOS.md` agree on the default artifact identity `BanjoPad-0.1.0-unsigned.ipa`.
+- No local `v0.1.0` tag exists, which is correct while the signed physical-device package gate remains `HUMAN-VERIFY`.
+- `README.md`, the implementation plan, and the execution loop now agree with the project owner's direction: hosted CI is supplemental and does not block continued local release work; the signed physical-device package gate remains the honest boundary for cutting `v0.1.0`.
+- The iteration 59 unsigned generic-device Release build and deterministic IPA remain the current artifact evidence; rebuilding unchanged binaries for this documentation-only correction would add no verification value.
 
-Next goal: audit release-version metadata and the remaining local distribution path against the freshly reproducible device artifact; make only a concrete, evidence-backed correction.
+Next goal: exercise the package-audit rejection paths with isolated negative controls so the ROM/generated-source/signature guard is proven to fail closed, without touching the verified app bundle.
 
-Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
+Blockers: no local build blocker. Hosted CI is supplemental and intentionally excluded from the active gate per the project owner. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 
 ref/ additions: none this iteration.
 

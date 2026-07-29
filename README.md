@@ -34,4 +34,4 @@ Pinned upstream source trees and ROM-derived build outputs live only in ignored 
 
 ## Verification status
 
-[STATUS.md](docs/STATUS.md) is the evidence ledger and physical-device queue. [perf-baseline.md](docs/perf-baseline.md) defines the M-series iPad and A13 measurement contract. A `v0.1.0` tag will be cut only after the public GitHub Actions gate is able to run and passes.
+[STATUS.md](docs/STATUS.md) is the evidence ledger and physical-device queue. [perf-baseline.md](docs/perf-baseline.md) defines the M-series iPad and A13 measurement contract. Hosted CI is supplemental and does not block local release work; the `v0.1.0` tag waits for the signed physical-device package gate.

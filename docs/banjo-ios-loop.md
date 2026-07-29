@@ -35,7 +35,7 @@ Exit criteria are the plan's acceptance lists — summarized here; the plan sect
 | 6 | Playable with MFi controller AND the §5 touch overlay (talon trot / eggs / wonderwing combos pass) | Phase 6 |
 | 7 | Suspend/kill/relaunch matrix loses nothing; zero watchdog kills | Phase 7 |
 | 8 | Perf baselines measured and recorded in `docs/perf-baseline.md`; defaults tuned | Phase 8 |
-| 9 | CI green; package-audit passes; unsigned IPA + BUILDING-IOS.md; tag `v0.1.0` | Phase 9 |
+| 9 | Local release gate green; package-audit passes; unsigned IPA + BUILDING-IOS.md; hosted CI supplemental; tag after the signed physical-device package gate | Phase 9 |
 | 10+ | Polish backlog: curated texture-pack recommendations (from `ref/`), iPhone scale tuning, DD1/DD3/DD5 items, pin-bump to current upstream | Plan §2 DDs |
 
 ## ref/ — the reference folder
@@ -83,4 +83,4 @@ On 3 consecutive failures of one goal, or a structural surprise (e.g. plume-Meta
 
 ## Definition of Done
 
-Phases 0-9 complete: `v0.1.0` tagged on `chrissotraidis/banjopad`; CI green including package-audit; an unsigned IPA a user can sideload; the HUMAN-VERIFY queue contains only device-gated confirmations with exact reproduction steps; STATUS.md's final entry says so. Then work the Phase 10+ polish backlog until stopped.
+Phases 0-9 local implementation complete: the local release build and package-audit are green; a reproducible unsigned IPA is ready for personal signing; the HUMAN-VERIFY queue contains only device-gated confirmations with exact reproduction steps; STATUS.md's final entry says so. Hosted CI is supplemental and does not block continued work. Cut `v0.1.0` only after the signed physical-device package gate, then work the Phase 10+ polish backlog until stopped.
