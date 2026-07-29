@@ -1,16 +1,16 @@
-# Status — updated 2026-07-29, iteration 69
+# Status — updated 2026-07-29, iteration 70
 
-Phase: 10+ — local round-up complete; touch-control settings lifecycle verified
+Phase: 10+ — touch-control polish; rounded hit-target geometry verified
 
-Done this iteration: closed the remaining local touch-settings lifecycle gate on an iPhone 16 Pro, iOS 18.5 Simulator. Evidence:
+Done this iteration: aligned button acquisition and slide-release hit testing with the visible circle/pill geometry instead of invisible rectangles. Evidence:
 
-- Exercising the exported `BanjoPadTouch_SetEnabled` seam used by the Controls-tab callback changed `ios-controls.json` to `false`, removed every gameplay control, and left the always-available `•••` menu as the sole app accessibility element. The disabled state remained after terminating and relaunching the process from its app-private normalized retail ROM.
-- Restoring the same setting changed `ios-controls.json` to `true` and immediately returned the complete 12-element gameplay-control tree. A second process restart loaded the enabled state and returned the same tree over live retail-ROM rendering.
-- `scripts/test-touch-input.sh` passed, including multi-press reference counting and `release_all()` zeroing held buttons, stick, and camera values without disturbing stock input. The setter's disable branch calls `cancel_all_inputs()`, so the tested state transition reaches that release primitive before removing the overlay.
-- The plan audit clarified that `Hide when controller connected` is optional and is not part of the implemented v1 acceptance gate. Required controller behavior remains the existing 40% fade/restore and stays in the physical-device queue for a real paired controller.
-- No source change was justified. The iteration 67 Simulator/device builds, macOS canary, patch-ledger replay, and deterministic package audit remain current; the unsigned IPA is 54 entries, 7,544,887 bytes, SHA-256 `56cacea4fb72cc2e8284ca1960e77c6d4ad28bccbf9dc1c091770741ef140013`.
+- `BanjoPadTouchButton` now uses the same rounded `UIBezierPath` for the +6 pt/minimum-44 pt acquisition target and the +20 pt slide-release margin. Circles reject diagonal corner touches outside their radius; pills retain a capsule-shaped target.
+- At the iPhone 0.85 scale, the old expanded rectangles for diagonal C buttons overlapped by 6.9 pt in both axes even though the intended circular targets do not touch. The rounded paths leave 11.4 pt of diagonal separation while preserving the full expanded edge target.
+- `scripts/build-ios.sh --simulator --app --config Release` passed, including `scripts/test-touch-input.sh`. The exact Release app installed on an iPhone 16 Pro, iOS 18.5 Simulator, rendered from its app-private normalized retail ROM, exposed the complete 12-control accessibility tree, hid to the menu-only tree, and restored the identical full tree.
+- `scripts/build-ios.sh --device --app --config Release` passed for arm64 iPhoneOS 16.0. `cmake --build build-macos --target BanjoRecompiled -j 4` passed and `codesign --verify --deep --strict build-macos/BanjoRecompiled.app` accepted the desktop canary.
+- `scripts/package-ios.sh` passed twice with identical output: 54 entries, 7,545,266 bytes, SHA-256 `ad47b54d542eabc20e9859dce3756230f6e5189fd48e8d49643cec2a427da4e5`; the audit found no ROM or generated-source content and `unzip -tq` passed.
 
-Next goal: begin the owner-directed touch-controls iteration; no further local round-up work remains before that pass.
+Next goal: verify the right-half camera-drag threshold, control exclusion, and sensitivity path against §5.3 on iPhone; change code only if the live/source evidence shows a mismatch.
 
 Blockers: no local source, build, or package blocker. The owner confirmed that no iPad is attached to this Mac and physical-device testing will happen on another machine, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, deterministic IPA generation, and the macOS canary are green.
 

@@ -175,6 +175,13 @@ static void push_menu_toggle();
     return CGRectInset(self.bounds, -horizontalInset, -verticalInset);
 }
 
+- (UIBezierPath *)hitPathForBounds:(CGRect)bounds {
+    CGFloat cornerRadius = _pill
+        ? CGRectGetHeight(bounds) * 0.5
+        : MIN(CGRectGetWidth(bounds), CGRectGetHeight(bounds)) * 0.5;
+    return [UIBezierPath bezierPathWithRoundedRect:bounds cornerRadius:cornerRadius];
+}
+
 - (void)layoutSubviews {
     [super layoutSubviews];
     CGFloat cornerRadius = MIN(self.bounds.size.width, self.bounds.size.height) * 0.5;
@@ -184,7 +191,7 @@ static void push_menu_toggle();
 }
 
 - (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)event {
-    return CGRectContainsPoint([self interactionBounds], point);
+    return [[self hitPathForBounds:[self interactionBounds]] containsPoint:point];
 }
 
 - (CGRect)accessibilityFrame {
@@ -227,7 +234,8 @@ static void push_menu_toggle();
 - (void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
     if (self.activeTouch != nil && [touches containsObject:self.activeTouch]) {
         CGPoint point = [self.activeTouch locationInView:self];
-        if (!CGRectContainsPoint(CGRectInset(self.bounds, -20.0, -20.0), point)) {
+        CGRect releaseBounds = CGRectInset(self.bounds, -20.0, -20.0);
+        if (![[self hitPathForBounds:releaseBounds] containsPoint:point]) {
             [self cancelInput];
         }
     }
