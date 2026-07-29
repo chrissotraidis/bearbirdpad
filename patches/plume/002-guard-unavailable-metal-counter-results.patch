@@ -1,0 +1,16 @@
+diff --git a/plume_metal.cpp b/plume_metal.cpp
+index 3ebc2cb..48c1a86 100644
+--- a/plume_metal.cpp
++++ b/plume_metal.cpp
+@@ -2226,7 +2226,10 @@ namespace plume {
+     void MetalQueryPool::queryResults() {
+         MetalAutoreleasePool releasePool;
+         const NS::Data* data = sampleBuffer->resolveCounterRange(NS::Range(0, results.size()));
+-        std::memcpy(results.data(), data->mutableBytes(), results.size() * sizeof(uint64_t));
++        const size_t resultBytes = results.size() * sizeof(uint64_t);
++        if ((data != nullptr) && (data->mutableBytes() != nullptr) && (data->length() >= resultBytes)) {
++            std::memcpy(results.data(), data->mutableBytes(), resultBytes);
++        }
+     }
+ 
+     const uint64_t *MetalQueryPool::getResults() const {

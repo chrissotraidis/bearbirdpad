@@ -24,6 +24,10 @@ while [[ $# -gt 0 ]]; do
             PRODUCT="stub"
             shift
             ;;
+        --app)
+            PRODUCT="app"
+            shift
+            ;;
         --config)
             CONFIG="${2:-}"
             if [[ "$CONFIG" != "Debug" && "$CONFIG" != "Release" ]]; then
@@ -33,7 +37,7 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         *)
-            echo "Usage: scripts/build-ios.sh [--device|--simulator] [--stub] [--config Debug|Release]" >&2
+            echo "Usage: scripts/build-ios.sh [--device|--simulator] [--stub|--app] [--config Debug|Release]" >&2
             exit 2
             ;;
     esac
@@ -152,9 +156,15 @@ if [[ ! -f "$FREETYPE_PREFIX/lib/libfreetype.a" ]]; then
         -- -destination "$DESTINATION" CODE_SIGNING_ALLOWED=NO
 fi
 
-if [[ "$PRODUCT" == "stub" ]]; then
+if [[ "$PRODUCT" != "smoke" ]]; then
     METAL_COMPILER="$(xcrun -f metal)"
     METALLIB_COMPILER="$(dirname "$METAL_COMPILER")/metallib"
+    STUB_RENDERER="OFF"
+    PRODUCT_LABEL="Phase 4 app"
+    if [[ "$PRODUCT" == "stub" ]]; then
+        STUB_RENDERER="ON"
+        PRODUCT_LABEL="Phase 3 stub app"
+    fi
 
     cmake \
         -S "$ROOT/sources/banjo" \
@@ -168,7 +178,7 @@ if [[ "$PRODUCT" == "stub" ]]; then
         -DSDL2_DIR="$SDL_PREFIX/lib/cmake/SDL2" \
         -DFreetype_DIR="$FREETYPE_PREFIX/lib/cmake/freetype" \
         -DBANJOPAD_IOS_DIR="$ROOT/ios/app" \
-        -DBANJO_MOBILE_RENDERER_STUB=ON \
+        -DBANJO_MOBILE_RENDERER_STUB="$STUB_RENDERER" \
         -DDXC_PATH="$ROOT/sources/banjo/lib/rt64/src/contrib/dxc/bin/arm64/dxc-macos" \
         -DSPIRV_CROSS_MSL_PATH="$ROOT/build-host/bin/spirv_cross_msl" \
         -DFILE_TO_C_PATH="$ROOT/build-host/bin/file_to_c" \
@@ -185,7 +195,7 @@ if [[ "$PRODUCT" == "stub" ]]; then
     "$@"
 
     echo
-    echo "Built Phase 3 stub app:"
+    echo "Built $PRODUCT_LABEL:"
     echo "  $APP_BUILD/$CONFIG/BanjoRecompiled.app"
     exit
 fi
