@@ -1,18 +1,18 @@
-# Status — updated 2026-07-29, iteration 28
+# Status — updated 2026-07-29, iteration 29
 
-Phase: 10+ — polish backlog; touch controls expose minimum interaction targets
+Phase: 10+ — polish backlog; touch input cancels across interruptions
 
-Done this iteration: made every persistent native button expose the same expanded interaction bounds to touch input and assistive technologies, without enlarging or moving the visible controller. Evidence:
+Done this iteration: closed the remaining stuck-input seam between UIKit touch objects and the thread-safe controller state. Evidence:
 
-- The compact 0.85 layout makes Start 34 points high, the C cluster and right Z trigger 39.1 points, and the left Z/R pills 37.4 points. The persistent menu is 38 points on every device. Their existing six-point hit expansion already produced minimum touch targets of 46, 51.1, 49.4, and 50 points respectively, but VoiceOver still received the smaller visible frames.
-- `BanjoPadTouchButton` now owns one `interactionBounds` calculation. `pointInside:` continues to use that exact area, while `accessibilityFrame` converts it to screen coordinates for VoiceOver, Voice Control, and Switch Control.
-- No visible frame, center, safe-area offset, label, controller mask, camera region, input timing, or menu behavior changed.
-- iPad Pro 11-inch (M4), iOS 18.5, launched the retail game in the Release build. Its live accessibility tree contained the menu, A/B, both Z triggers, R, Start, all four C buttons, and the adjustable stick after the change.
-- iPhone 16 Pro, iOS 18.5, passed the compact landscape launcher/menu check with the new Release build. Static layout verification gives its smallest gameplay target as 46 points and its persistent menu target as 50 points.
+- Background handling already cleared the atomic button/stick/camera state, while UIKit normally delivered `touchesCancelled:` separately. An interruption arriving between those paths could leave a button or the persistent menu retaining an old `activeTouch` and pressed appearance even though gameplay input was neutral.
+- One main-thread `cancel_all_inputs` path now clears every overlay control, the persistent menu button, and the shared controller state. Menu transitions and disabling touch controls reuse the same path.
+- `BanjoPadTouch_Install` registers one `UIApplicationWillResignActiveNotification` observer, so Control Center, alerts, Home, and other inactive transitions cancel UIKit state before a stale touch can survive.
+- iPad Pro 11-inch (M4), iOS 18.5, passed a Release retail-game transition: move the adjustable stick right, press Home, foreground BanjoPad from its icon, move left, open the in-game menu, and close it. The complete gameplay accessibility tree returned after both foregrounding and menu close, and the post-resume stick action succeeded.
+- Button masks, visual layout, safe-area placement, camera gesture region, and game/menu input mappings are unchanged.
 - Simulator and unsigned device Release builds passed. `scripts/package-audit.sh` again found no ROM, ROM digest, or generated-source marker.
-- Refreshed `build/release/BanjoPad-0.1.0-unsigned.ipa`: 8.1 MB allocated size, SHA-256 `f2aeaa40373ddf60f847bfb235f472a73d174bdee2d775b2bba5aef35aaf1a88`.
+- Refreshed `build/release/BanjoPad-0.1.0-unsigned.ipa`: 7.3 MB allocated size, SHA-256 `68a9ca26aabeaf995a32e26e6982f0c64bbb26f637b8910861b2c01462a34470`.
 
-Next goal: exercise touch cancellation and app/menu transitions in Simulator, then harden only any reproducible stuck-input path.
+Next goal: add a narrow automated regression gate for overlapping touch-button reference counts and `release_all`, without pulling UIKit into the host test target.
 
 Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 

@@ -619,10 +619,17 @@ static BanjoPadTouchOverlay *sOverlay;
 static BanjoPadTouchButton *sMenuButton;
 static UIPanGestureRecognizer *sCameraGesture;
 static BanjoPadCameraGestureDelegate *sCameraDelegate;
+static id sResignObserver;
 static std::atomic_bool sEnabled(true);
 static std::atomic_bool sMenuVisible(true);
 static std::atomic_bool sControllerConnected(false);
 static NSUInteger sCameraGeneration;
+
+static void cancel_all_inputs() {
+    [sOverlay cancelAllInputs];
+    [sMenuButton cancelInput];
+    BanjoPadTouch_ReleaseAll();
+}
 
 @implementation BanjoPadCameraGestureDelegate
 
@@ -793,7 +800,7 @@ static void apply_overlay_state() {
     install_menu_button(window);
 
     if (!sEnabled.load() || sMenuVisible.load()) {
-        [sOverlay cancelAllInputs];
+        cancel_all_inputs();
         [sOverlay removeFromSuperview];
         sOverlay = nil;
         sCameraGesture.enabled = NO;
@@ -826,6 +833,15 @@ extern "C" int BanjoPadTouch_Enabled(void) {
 
 extern "C" void BanjoPadTouch_Install(void) {
     dispatch_async(dispatch_get_main_queue(), ^{
+        if (sResignObserver == nil) {
+            sResignObserver = [NSNotificationCenter.defaultCenter
+                addObserverForName:UIApplicationWillResignActiveNotification
+                            object:nil
+                             queue:NSOperationQueue.mainQueue
+                        usingBlock:^(NSNotification *) {
+                            cancel_all_inputs();
+                        }];
+        }
         load_enabled_setting();
         install_when_ready();
     });
@@ -835,7 +851,7 @@ extern "C" void BanjoPadTouch_SetEnabled(int enabled) {
     sEnabled.store(enabled != 0);
     dispatch_async(dispatch_get_main_queue(), ^{
         if (!sEnabled.load()) {
-            BanjoPadTouch_ReleaseAll();
+            cancel_all_inputs();
         }
         save_enabled_setting();
         apply_overlay_state();
