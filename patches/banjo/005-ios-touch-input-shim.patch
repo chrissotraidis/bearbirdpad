@@ -1,0 +1,101 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 38fdd69..8ef866b 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -52,7 +52,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
+     if (NOT EXISTS "${BANJOPAD_IOS_DIR}/ios_main.mm")
+         message(FATAL_ERROR "BANJOPAD_IOS_DIR must contain ios_main.mm")
+     endif()
+-    add_compile_definitions(BANJO_IOS_NO_CODE_MODS=1)
++    add_compile_definitions(BANJO_IOS_NO_CODE_MODS=1 BANJO_IOS_TOUCH=1)
+     if (BANJO_MOBILE_RENDERER_STUB)
+         add_compile_definitions(BANJO_MOBILE_RENDERER_STUB=1)
+     endif()
+@@ -190,9 +190,12 @@ if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
+         ${BANJOPAD_IOS_DIR}/ios_main.mm
+         ${BANJOPAD_IOS_DIR}/IosFileDialog.mm
+         ${BANJOPAD_IOS_DIR}/NullRendererContext.cpp
++        ${BANJOPAD_IOS_DIR}/TouchInputShim.cpp
++        ${BANJOPAD_IOS_DIR}/TouchOverlay.mm
+     )
+     set_source_files_properties(
+         ${BANJOPAD_IOS_DIR}/IosFileDialog.mm
++        ${BANJOPAD_IOS_DIR}/TouchOverlay.mm
+         PROPERTIES COMPILE_FLAGS "-fobjc-arc"
+     )
+ endif()
+diff --git a/src/game/config.cpp b/src/game/config.cpp
+index 2eca355..f12f48f 100644
+--- a/src/game/config.cpp
++++ b/src/game/config.cpp
+@@ -18,6 +18,7 @@
+ #include <unistd.h>
+ #include <pwd.h>
+ #elif defined(__APPLE__)
++#include <TargetConditionals.h>
+ #include "apple/rt64_apple.h"
+ #endif
+
+@@ -47,7 +48,11 @@ static void add_general_options(recomp::config::Config &config) {
+         "Analog Camera",
+         "Enables the analog camera.",
+         analog_cam_mode_options,
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++        banjo::AnalogCamMode::On
++#else
+         banjo::AnalogCamMode::Off
++#endif
+     );
+     config.add_number_option(
+         banjo::configkeys::general::analog_camera_sensitivity,
+diff --git a/src/game/recomp_api.cpp b/src/game/recomp_api.cpp
+index 52c7e10..ad271f8 100644
+--- a/src/game/recomp_api.cpp
++++ b/src/game/recomp_api.cpp
+@@ -16,6 +16,10 @@
+ #include "ultramodern/config.hpp"
+ #include "../lib/N64ModernRuntime/thirdparty/xxHash/xxh3.h"
+
++#if defined(BANJO_IOS_TOUCH)
++#include "TouchInputShim.hpp"
++#endif
++
+ extern "C" void recomp_update_inputs(uint8_t* rdram, recomp_context* ctx) {
+     recompinput::poll_inputs();
+ }
+@@ -223,6 +227,9 @@ extern "C" void recomp_get_right_analog_inputs(uint8_t* rdram, recomp_context* c
+
+     // TODO: Use controller number.
+     recompinput::get_right_analog(0, x_out, y_out);
++#if defined(BANJO_IOS_TOUCH)
++    banjopad::touch::merge_right_analog(x_out, y_out);
++#endif
+ }
+
+ extern "C" void recomp_set_right_analog_suppressed(uint8_t* rdram, recomp_context* ctx) {
+diff --git a/src/main/main.cpp b/src/main/main.cpp
+index 1a16aee..3f02a2d 100644
+--- a/src/main/main.cpp
++++ b/src/main/main.cpp
+@@ -59,6 +59,9 @@
+ #if defined(BANJO_MOBILE_RENDERER_STUB)
+ #include "NullRendererContext.hpp"
+ #endif
++#if defined(BANJO_IOS_TOUCH)
++#include "TouchInputShim.hpp"
++#endif
+
+ #include "../../patches/graphics.h"
+ #include "../../patches/input.h"
+@@ -846,7 +849,11 @@ int banjo_recomp_main(int argc, char** argv) {
+
+     ultramodern::input::callbacks_t input_callbacks{
+         .poll_input = recompinput::poll_inputs,
++#if defined(BANJO_IOS_TOUCH)
++        .get_input = banjopad::touch::get_n64_input,
++#else
+         .get_input = recompinput::profiles::get_n64_input,
++#endif
+         .set_rumble = recompinput::set_rumble,
+         .get_connected_device_info = get_connected_device_info,
+     };
