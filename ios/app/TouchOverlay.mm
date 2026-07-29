@@ -60,6 +60,8 @@ NSString *settings_path() {
 
 } // namespace
 
+static void push_menu_toggle();
+
 @interface BanjoPadTouchButton : UIView
 
 @property(nonatomic, readonly) uint16_t buttonMask;
@@ -68,6 +70,7 @@ NSString *settings_path() {
 @property(nonatomic, assign) BOOL pressed;
 
 - (instancetype)initWithLabel:(NSString *)label
+           accessibilityLabel:(NSString *)accessibilityLabel
                          mask:(uint16_t)mask
                          pill:(BOOL)pill
                         color:(UIColor *)color;
@@ -81,6 +84,7 @@ NSString *settings_path() {
 }
 
 - (instancetype)initWithLabel:(NSString *)label
+           accessibilityLabel:(NSString *)accessibilityLabel
                          mask:(uint16_t)mask
                          pill:(BOOL)pill
                         color:(UIColor *)color {
@@ -94,6 +98,9 @@ NSString *settings_path() {
         self.layer.borderWidth = 2.0;
         self.layer.borderColor = border_color().CGColor;
         self.backgroundColor = fill_color(NO);
+        self.isAccessibilityElement = YES;
+        self.accessibilityLabel = accessibilityLabel;
+        self.accessibilityTraits = UIAccessibilityTraitButton;
 
         _label = [[UILabel alloc] initWithFrame:self.bounds];
         _label.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
@@ -124,6 +131,20 @@ NSString *settings_path() {
     self.backgroundColor = fill_color(pressed);
     self.layer.borderColor = (pressed ? _accentColor : border_color()).CGColor;
     BanjoPadTouch_SetButton(self.buttonMask, pressed ? 1 : 0);
+}
+
+- (BOOL)accessibilityActivate {
+    if (self.buttonMask == 0) {
+        push_menu_toggle();
+        return YES;
+    }
+
+    self.pressed = YES;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 120 * NSEC_PER_MSEC),
+                   dispatch_get_main_queue(), ^{
+        self.pressed = NO;
+    });
+    return YES;
 }
 
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
@@ -165,8 +186,14 @@ NSString *settings_path() {
 
 @property(nonatomic, strong) UIView *thumb;
 @property(nonatomic, assign) UITouch *activeTouch;
+@property(nonatomic, assign) NSUInteger accessibilityGeneration;
 
 - (void)cancelInput;
+- (BOOL)accessibilityMoveUp;
+- (BOOL)accessibilityMoveDown;
+- (BOOL)accessibilityMoveLeft;
+- (BOOL)accessibilityMoveRight;
+- (BOOL)accessibilityCenter;
 
 @end
 
@@ -179,6 +206,28 @@ NSString *settings_path() {
         self.layer.borderWidth = 2.0;
         self.layer.borderColor = border_color().CGColor;
         self.backgroundColor = fill_color(NO);
+        self.isAccessibilityElement = YES;
+        self.accessibilityLabel = @"Control stick";
+        self.accessibilityHint =
+            @"Swipe up or down for vertical movement. Use Actions for every direction.";
+        self.accessibilityTraits = UIAccessibilityTraitAdjustable;
+        self.accessibilityCustomActions = @[
+            [[UIAccessibilityCustomAction alloc] initWithName:@"Move up"
+                                                       target:self
+                                                     selector:@selector(accessibilityMoveUp)],
+            [[UIAccessibilityCustomAction alloc] initWithName:@"Move down"
+                                                       target:self
+                                                     selector:@selector(accessibilityMoveDown)],
+            [[UIAccessibilityCustomAction alloc] initWithName:@"Move left"
+                                                       target:self
+                                                     selector:@selector(accessibilityMoveLeft)],
+            [[UIAccessibilityCustomAction alloc] initWithName:@"Move right"
+                                                       target:self
+                                                     selector:@selector(accessibilityMoveRight)],
+            [[UIAccessibilityCustomAction alloc] initWithName:@"Center"
+                                                       target:self
+                                                     selector:@selector(accessibilityCenter)],
+        ];
 
         _thumb = [[UIView alloc] initWithFrame:CGRectZero];
         _thumb.userInteractionEnabled = NO;
@@ -216,6 +265,51 @@ NSString *settings_path() {
     BanjoPadTouch_SetStick(dx / travel, -dy / travel);
 }
 
+- (void)pulseAccessibilityX:(float)x y:(float)y {
+    NSUInteger generation = ++self.accessibilityGeneration;
+    BanjoPadTouch_SetStick(x, y);
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 160 * NSEC_PER_MSEC),
+                   dispatch_get_main_queue(), ^{
+        if (generation == self.accessibilityGeneration && self.activeTouch == nil) {
+            BanjoPadTouch_SetStick(0.0f, 0.0f);
+        }
+    });
+}
+
+- (void)accessibilityIncrement {
+    [self pulseAccessibilityX:0.0f y:1.0f];
+}
+
+- (void)accessibilityDecrement {
+    [self pulseAccessibilityX:0.0f y:-1.0f];
+}
+
+- (BOOL)accessibilityMoveUp {
+    [self pulseAccessibilityX:0.0f y:1.0f];
+    return YES;
+}
+
+- (BOOL)accessibilityMoveDown {
+    [self pulseAccessibilityX:0.0f y:-1.0f];
+    return YES;
+}
+
+- (BOOL)accessibilityMoveLeft {
+    [self pulseAccessibilityX:-1.0f y:0.0f];
+    return YES;
+}
+
+- (BOOL)accessibilityMoveRight {
+    [self pulseAccessibilityX:1.0f y:0.0f];
+    return YES;
+}
+
+- (BOOL)accessibilityCenter {
+    ++self.accessibilityGeneration;
+    BanjoPadTouch_SetStick(0.0f, 0.0f);
+    return YES;
+}
+
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
     if (self.activeTouch == nil) {
         self.activeTouch = touches.anyObject;
@@ -242,6 +336,7 @@ NSString *settings_path() {
 }
 
 - (void)cancelInput {
+    ++self.accessibilityGeneration;
     self.activeTouch = nil;
     self.thumb.center = CGPointMake(CGRectGetMidX(self.bounds), CGRectGetMidY(self.bounds));
     BanjoPadTouch_SetStick(0.0f, 0.0f);
@@ -287,22 +382,82 @@ NSString *settings_path() {
         UIColor *red = [UIColor colorWithRed:1.0 green:0.45 blue:0.42 alpha:1.0];
 
         _stick = [[BanjoPadTouchStick alloc] initWithFrame:CGRectZero];
-        _buttonA = [[BanjoPadTouchButton alloc] initWithLabel:@"A" mask:ButtonA pill:NO color:blue];
-        _buttonB = [[BanjoPadTouchButton alloc] initWithLabel:@"B" mask:ButtonB pill:NO color:green];
-        _buttonZLeft = [[BanjoPadTouchButton alloc] initWithLabel:@"Z" mask:ButtonZ pill:YES color:nil];
-        _buttonZRight = [[BanjoPadTouchButton alloc] initWithLabel:@"Z" mask:ButtonZ pill:NO color:nil];
-        _buttonL = [[BanjoPadTouchButton alloc] initWithLabel:@"L" mask:ButtonL pill:YES color:nil];
-        _buttonR = [[BanjoPadTouchButton alloc] initWithLabel:@"R" mask:ButtonR pill:YES color:nil];
+        _buttonA = [[BanjoPadTouchButton alloc] initWithLabel:@"A"
+                                         accessibilityLabel:@"A button"
+                                                       mask:ButtonA
+                                                       pill:NO
+                                                      color:blue];
+        _buttonB = [[BanjoPadTouchButton alloc] initWithLabel:@"B"
+                                         accessibilityLabel:@"B button"
+                                                       mask:ButtonB
+                                                       pill:NO
+                                                      color:green];
+        _buttonZLeft = [[BanjoPadTouchButton alloc] initWithLabel:@"Z"
+                                             accessibilityLabel:@"Left Z trigger"
+                                                           mask:ButtonZ
+                                                           pill:YES
+                                                          color:nil];
+        _buttonZRight = [[BanjoPadTouchButton alloc] initWithLabel:@"Z"
+                                              accessibilityLabel:@"Right Z trigger"
+                                                            mask:ButtonZ
+                                                            pill:NO
+                                                           color:nil];
+        _buttonL = [[BanjoPadTouchButton alloc] initWithLabel:@"L"
+                                         accessibilityLabel:@"L shoulder button"
+                                                       mask:ButtonL
+                                                       pill:YES
+                                                      color:nil];
+        _buttonR = [[BanjoPadTouchButton alloc] initWithLabel:@"R"
+                                         accessibilityLabel:@"R shoulder button"
+                                                       mask:ButtonR
+                                                       pill:YES
+                                                      color:nil];
         _buttonStart =
-            [[BanjoPadTouchButton alloc] initWithLabel:@"START" mask:ButtonStart pill:YES color:red];
-        _cUp = [[BanjoPadTouchButton alloc] initWithLabel:@"▲" mask:ButtonCUp pill:NO color:amber];
-        _cDown = [[BanjoPadTouchButton alloc] initWithLabel:@"▼" mask:ButtonCDown pill:NO color:amber];
-        _cLeft = [[BanjoPadTouchButton alloc] initWithLabel:@"◀" mask:ButtonCLeft pill:NO color:amber];
-        _cRight = [[BanjoPadTouchButton alloc] initWithLabel:@"▶" mask:ButtonCRight pill:NO color:amber];
-        _dUp = [[BanjoPadTouchButton alloc] initWithLabel:@"▲" mask:ButtonDpadUp pill:NO color:nil];
-        _dDown = [[BanjoPadTouchButton alloc] initWithLabel:@"▼" mask:ButtonDpadDown pill:NO color:nil];
-        _dLeft = [[BanjoPadTouchButton alloc] initWithLabel:@"◀" mask:ButtonDpadLeft pill:NO color:nil];
-        _dRight = [[BanjoPadTouchButton alloc] initWithLabel:@"▶" mask:ButtonDpadRight pill:NO color:nil];
+            [[BanjoPadTouchButton alloc] initWithLabel:@"START"
+                                  accessibilityLabel:@"Start button"
+                                                mask:ButtonStart
+                                                pill:YES
+                                               color:red];
+        _cUp = [[BanjoPadTouchButton alloc] initWithLabel:@"▲"
+                                      accessibilityLabel:@"C Up button"
+                                                    mask:ButtonCUp
+                                                    pill:NO
+                                                   color:amber];
+        _cDown = [[BanjoPadTouchButton alloc] initWithLabel:@"▼"
+                                        accessibilityLabel:@"C Down button"
+                                                      mask:ButtonCDown
+                                                      pill:NO
+                                                     color:amber];
+        _cLeft = [[BanjoPadTouchButton alloc] initWithLabel:@"◀"
+                                        accessibilityLabel:@"C Left button"
+                                                      mask:ButtonCLeft
+                                                      pill:NO
+                                                     color:amber];
+        _cRight = [[BanjoPadTouchButton alloc] initWithLabel:@"▶"
+                                         accessibilityLabel:@"C Right button"
+                                                       mask:ButtonCRight
+                                                       pill:NO
+                                                      color:amber];
+        _dUp = [[BanjoPadTouchButton alloc] initWithLabel:@"▲"
+                                      accessibilityLabel:@"D-pad Up"
+                                                    mask:ButtonDpadUp
+                                                    pill:NO
+                                                   color:nil];
+        _dDown = [[BanjoPadTouchButton alloc] initWithLabel:@"▼"
+                                        accessibilityLabel:@"D-pad Down"
+                                                      mask:ButtonDpadDown
+                                                      pill:NO
+                                                     color:nil];
+        _dLeft = [[BanjoPadTouchButton alloc] initWithLabel:@"◀"
+                                        accessibilityLabel:@"D-pad Left"
+                                                      mask:ButtonDpadLeft
+                                                      pill:NO
+                                                     color:nil];
+        _dRight = [[BanjoPadTouchButton alloc] initWithLabel:@"▶"
+                                         accessibilityLabel:@"D-pad Right"
+                                                       mask:ButtonDpadRight
+                                                       pill:NO
+                                                      color:nil];
 
         _buttons = @[
             _buttonA, _buttonB, _buttonZLeft, _buttonZRight, _buttonL, _buttonR, _buttonStart,
@@ -501,8 +656,12 @@ static void install_menu_button(UIWindow *window) {
     if (sMenuButton == nil) {
         sMenuTapTarget = [[BanjoPadMenuTapTarget alloc] init];
         sMenuButton =
-            [[BanjoPadTouchButton alloc] initWithLabel:@"•••" mask:0 pill:NO color:nil];
-        sMenuButton.accessibilityLabel = @"Open BanjoPad menu";
+            [[BanjoPadTouchButton alloc] initWithLabel:@"•••"
+                                  accessibilityLabel:@"BanjoPad menu"
+                                                mask:0
+                                                pill:NO
+                                               color:nil];
+        sMenuButton.accessibilityHint = @"Opens or closes the BanjoPad menu.";
         [sMenuButton addGestureRecognizer:
             [[UITapGestureRecognizer alloc] initWithTarget:sMenuTapTarget action:@selector(tapped)]];
     }

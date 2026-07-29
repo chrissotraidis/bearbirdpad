@@ -1,18 +1,18 @@
-# Status — updated 2026-07-29, iteration 24
+# Status — updated 2026-07-29, iteration 25
 
-Phase: 10+ — polish backlog; upstream pin-drift audit complete
+Phase: 10+ — polish backlog; native gameplay controls exposed to accessibility
 
-Done this iteration: audited every iOS-critical upstream pin and kept the current graph because it is already current on each owning branch. Evidence:
+Done this iteration: added the smallest UIKit accessibility layer needed to identify and activate BanjoPad's native gameplay controls without changing their established visual layout. Evidence:
 
-- BanjoRecomp `main` and local pin are both `c20314cd1bcaefff7bdbce257a25ebcc30cc1cdc`; there is no parent-project drift.
-- RT64 `main` and the nested pin are both `6f1c2d99a4ea571c139f449c326fd176ba8f3496`. Plume `main` and its nested pin are both `d890ac899e505fb30040e037a4037cdeca68f033`, so the patched Metal renderer bases are current.
-- N64ModernRuntime's active `gamemodes` branch and BanjoRecomp's pin are both `ca568b6ad79b9029d14077f0c3ffa757727c5559`. Its separate `main` head is not a drop-in replacement for BanjoRecomp's game-mode integration.
-- N64Recomp `2b6f05688de2abc7d86da5b4a89b84c2c6acbabe` is the exact nested commit recorded by that current `gamemodes` head; it is parent-owned rather than an independent BanjoPad pin.
-- RecompFrontend `main` is `9ef9cdfdead7649247ab4957f43517f44c33931d`, but the pinned `d0d90ba49f46f4896aaeda362056c21b1e342561` is two commits ahead on upstream's active `include-order-fix` branch. The only delta reorders runtime include paths ahead of RT64 and defines `__PRFCHWINTRIN_H`; moving to `main` would remove the build fixes rather than upgrade functionality.
-- No iOS renderer, input, lifecycle, or texture-pack behavior differs between the audited upstream heads and the pinned owning branches. A pin change would therefore be cross-branch churn with no acceptance benefit.
-- Consolidated all nested revision literals at the top of `scripts/fetch-sources.sh`; checkout validation behavior and the patch-state contract remain unchanged.
+- Before the fix, the running iPhone gameplay view appeared to macOS Accessibility as one anonymous container; none of the native stick, digital buttons, or menu control could be identified or invoked.
+- Every native digital control now exposes the button trait and a stable spoken name. The analog stick exposes the adjustable trait, increment/decrement, explicit up/down/left/right actions, and center. Accessibility actions use short input pulses and preserve an active touch.
+- The persistent native menu button is named `BanjoPad menu`, explains its open/close behavior, and activates the same toggle used by touch.
+- iPhone 16 Pro and iPad Pro 11-inch (M4), both on iOS 18.5, expose the expected visible gameplay set: menu, R shoulder, both Z controls, A, B, Start, four C buttons, and the adjustable control stick. Hidden D-pad and L controls correctly remain absent.
+- Accessibility activation of `BanjoPad menu` opened the rendered in-game menu on both device classes and removed the gameplay controls from the accessibility tree until gameplay resumes.
+- Simulator and unsigned device Release builds passed. The macOS canary remained green, and `scripts/package-audit.sh` found no ROM, ROM digest, or generated-source marker in the device app.
+- Refreshed `build/release/BanjoPad-0.1.0-unsigned.ipa`: 7.4 MB, SHA-256 `9bf69e8d53b1da9a0ca3ce161dd7f699a87603435d5225adb0497091cde13561`.
 
-Next goal: audit iOS launcher and settings accessibility metadata, then add the smallest semantics needed for VoiceOver to identify and activate the native shell controls without changing the established visual design.
+Next goal: audit the native touch overlay against iOS accessibility display settings, then make only evidence-backed contrast or motion adjustments that preserve the current layout and normal gameplay behavior.
 
 Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 
