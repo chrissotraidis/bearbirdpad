@@ -56,8 +56,12 @@ apply_series() {
                     continue
                 fi
                 if grep -Fq "  $relative_patch" "$patch_state"; then
+                    if git -C "$checkout" apply --reverse --check "$patch" >/dev/null 2>&1; then
+                        echo "Already applied (verified patch correction): $relative_patch"
+                        continue
+                    fi
                     echo "Applied patch changed in place: $relative_patch" >&2
-                    echo "Patch files are append-only; recreate sources/ to replay a changed patch." >&2
+                    echo "The updated patch does not match the cached source tree; recreate sources/ to replay it." >&2
                     exit 1
                 fi
             fi

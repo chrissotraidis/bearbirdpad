@@ -67,7 +67,7 @@ index 1ceb2ce..dccaf08 100644
      uint RDPMipLevels[2];
 @@ -356,4 +364,4 @@ float4 sampleTexture(OtherMode otherMode, RenderFlags renderFlags, float2 inputU
      }
-
+     
      return textureColor;
 -}
 \ No newline at end of file
@@ -79,7 +79,7 @@ index d1c5273..6407095 100644
 @@ -852,8 +852,9 @@ namespace RT64 {
              postProcess.pipeline = device->createGraphicsPipeline(pipelineDesc);
          }
-
+         
 -        // Raytracing debug.
 -        {
 +        // Raytracing debug. Avoid creating its oversized descriptor layout on
