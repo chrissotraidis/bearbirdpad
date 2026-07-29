@@ -1,16 +1,16 @@
-# Status — updated 2026-07-29, iteration 55
+# Status — updated 2026-07-29, iteration 56
 
-Phase: 10+ — polish backlog; RecompFrontend pin verified as the current parent-selected revision
+Phase: 10+ — polish backlog; current-upstream pin inventory complete with no valid bump
 
-Done this iteration: audited RecompFrontend's standalone default branch and the revision selected by current BanjoRecomp, then rejected a false "upgrade" that would actually downgrade the build input. No production app behavior changed. Evidence:
+Done this iteration: finished the current-upstream pin inventory by distinguishing N64ModernRuntime's parent-selected `gamemodes` line from its incompatible standalone `main` line. No production app behavior changed. Evidence:
 
-- Read-only `git fetch --depth=1 origin HEAD` and `git ls-remote --symref origin HEAD` confirmed standalone `main` is `9ef9cdfdead7649247ab4957f43517f44c33931d`.
-- The pinned `d0d90ba49f46f4896aaeda362056c21b1e342561` is the tip of upstream branch `include-order-fix`, not a stale local commit. It is newer than `main`.
-- Current remote BanjoRecomp HEAD still selects `d0d90ba` for `lib/RecompFrontend`, matching `scripts/fetch-sources.sh` and the local build input exactly.
-- The only pinned-versus-main content delta is `recompui/CMakeLists.txt`: the selected revision adds `__PRFCHWINTRIN_H` and moves N64ModernRuntime include directories ahead of RT64 includes. Replacing it with default `main` would remove that build workaround.
-- No pin, patch, source, submodule, build product, production app, IPA, ROM, save, or generated artifact changed. Patch replay and rebuild were not run because the authoritative parent-selected input remains byte-for-byte identical.
+- Read-only `git ls-remote --heads origin` confirmed `gamemodes` still points exactly to pinned `ca568b6ad79b9029d14077f0c3ffa757727c5559`; there is no same-branch advance.
+- Current remote BanjoRecomp HEAD still selects that same `ca568b6` revision, matching `scripts/fetch-sources.sh` and the local build input.
+- Standalone N64ModernRuntime `main` is `ae1ffbb909d9f93c88c41830deb539f7feef5ed2`, but moving to it would be a branch migration: `27 files changed, 11105 insertions(+), 12426 deletions(-)`, including deleted config APIs and an N64Recomp submodule move from `2b6f056` to `81213c1`.
+- Together with iterations 53-55, every audited upstream boundary is current for its intended line: BanjoRecomp `c20314c`, RecompFrontend `include-order-fix` `d0d90ba`, N64ModernRuntime `gamemodes` `ca568b6`, RT64 `6f1c2d9`, and plume `d890ac8`.
+- No pin, branch, patch, source, submodule, build product, production app, IPA, ROM, save, or generated artifact changed. A rebuild was not run because every authoritative build input remains identical.
 
-Next goal: finish the pin-current inventory by auditing N64ModernRuntime's parent-selected `gamemodes` revision `ca568b6` against standalone `main`, without treating a branch change as a routine pin bump.
+Next goal: audit DD2 against current N64ModernRuntime/N64Recomp code for a text-patch-free base-function replacement seam; keep iOS code mods gated unless the required lookup path now exists.
 
 Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 

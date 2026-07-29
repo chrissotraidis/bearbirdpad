@@ -425,6 +425,8 @@ Simulator: same + `-DCMAKE_OSX_SYSROOT=iphonesimulator` (shader SDK follows, Pha
 | R10 | Legal/takedown posture shift upstream (no LICENSE at banjo root; recompiled-code artifact) | Low | Distribution | Source-first + unsigned-IPA + audit script; never bundle ROM; track upstream posture; feasibility L1-L3 |
 | R11 | A user-visible mod ecosystem expectation gap (code mods absent on iOS) | Medium | Community friction | Clear in-app messaging on gated mods; docs state the platform limitation and why (text-patching + JIT, not a choice) |
 
+Pin audit 2026-07-29: current remote BanjoRecomp remains exactly `c20314c` and selects the same submodule revisions used by this port. RecompFrontend's selected `d0d90ba` is still the tip of `include-order-fix`; its default branch is older. N64ModernRuntime's selected `ca568b6` is still the tip of `gamemodes`; moving to standalone `main` would change 27 files, remove config APIs, and bump N64Recomp rather than perform a same-line update. RT64 and plume remote HEADs still match `6f1c2d9` and `d890ac8`. Therefore no valid pin bump exists; keep the current pins until an authoritative parent or selected branch advances.
+
 ---
 
 ## 9. Rollback and recovery, per phase
