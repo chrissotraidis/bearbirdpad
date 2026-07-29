@@ -1,21 +1,21 @@
-# Status — updated 2026-07-29, iteration 37
+# Status — updated 2026-07-29, iteration 38
 
-Phase: 10+ — polish backlog; Touch Controls lifecycle is accessible and persistent
+Phase: 10+ — polish backlog; menu transitions release all touch input and restore access
 
-Done this iteration: audited the production Touch Controls off/on lifecycle for release, persistence, menu access, and no-relaunch restoration. No app-source correction was needed. Evidence:
+Done this iteration: audited the production BanjoPad menu open/close lifecycle against the Phase 6 requirement that every held touch input be released while the menu is visible. No app-source correction was needed. Evidence:
 
-- iPad Pro 11-inch (M4), iOS 18.5, ran the Simulator Release build with its existing retail ROM. The production shim reported an intentionally held A bit as `32768` before disabling touch controls.
-- Calling the production `BanjoPadTouch_SetEnabled(0)` path immediately reduced merged touch buttons to `0`, returned `BanjoPadTouch_Enabled() == 0`, removed the gameplay overlay, and left the always-installed, labeled BanjoPad menu as the only app accessibility target.
-- `Documents/BanjoRecompiled/ios-controls.json` persisted `touch_controls: false`.
-- Re-enabling in the same process returned `BanjoPadTouch_Enabled() == 1`, kept merged input neutral, restored all 11 enabled gameplay targets plus the stick's value/actions, and persisted `touch_controls: true`.
-- A second off transition followed by process termination and retail-ROM auto-start proved the new process loaded the persisted disabled state: gameplay rendered with only the BanjoPad menu target. Re-enabling again restored the complete tree without another relaunch.
-- The Simulator was returned to `touch_controls: true`.
-- Because app source remained identical to iteration 36, this verification-only iteration reused that exact installed Simulator/device Release build instead of rebuilding identical binaries.
+- iPad Pro 11-inch (M4), iOS 18.5, ran the exact installed Simulator Release build with its existing retail ROM. The in-game config menu visibly opened from the native, labeled BanjoPad menu button and closed through the same button.
+- Before the first open, the production shim reported an intentionally held A bit as `32768`. Opening the menu through the real UI and SDL event path immediately reduced merged buttons to `0`.
+- A stronger second cycle simultaneously staged A `32768`, stick `(0.75, -0.5)`, and camera `(0.625, -0.375)` through the production touch functions. After opening the menu, merged buttons, stick, and camera all read exactly zero.
+- While the menu was visible, the gameplay overlay disappeared and the native accessibility tree retained the BanjoPad menu as its only app target, so menu access did not depend on gameplay controls.
+- Closing the menu restored all 11 enabled gameplay targets plus the centered stick and its four direction actions in the same process. Merged gameplay input remained neutral rather than replaying any pre-menu hold.
+- `Documents/BanjoRecompiled/ios-controls.json` remained `touch_controls: true` with the same SHA-256 before and after both cycles, proving menu transitions did not mutate the persisted preference.
+- Because app source remained identical to iteration 36, this verification-only iteration reused the exact installed Simulator Release build and existing device/IPA artifacts instead of rebuilding identical binaries.
 - The touch-state regression and device-app package audit passed again.
 - `scripts/package-audit.sh` found no ROM, ROM digest, or generated-source marker.
-- Existing `build/release/BanjoPad-0.1.0-unsigned.ipa`: 7.6 MB allocated size, SHA-256 `9992b326d9fb8e346fb8ca059d1ff80d04bda61dd86d7039c13bb01e8f6bd9e2`.
+- Existing `build/release/BanjoPad-0.1.0-unsigned.ipa`: 7.2 MB allocated size, SHA-256 `9992b326d9fb8e346fb8ca059d1ff80d04bda61dd86d7039c13bb01e8f6bd9e2`.
 
-Next goal: audit menu open/close transitions with held input, proving immediate release, gameplay-overlay removal, persistent menu access, and neutral full-tree restoration.
+Next goal: audit resign-active/background transitions with held button, stick, and camera input, proving immediate release and neutral restoration when gameplay becomes active again.
 
 Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 
