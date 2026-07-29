@@ -1,16 +1,16 @@
-# Status — updated 2026-07-29, iteration 68
+# Status — updated 2026-07-29, iteration 69
 
-Phase: 10+ — touch-control polish; iPhone 0.85-scale layout accepted
+Phase: 10+ — local round-up complete; touch-control settings lifecycle verified
 
-Done this iteration: replayed the retail-ROM touch matrix on an iPhone 16 Pro, iOS 18.5 Simulator and accepted the existing 0.85-scale geometry without a speculative layout change. Evidence:
+Done this iteration: closed the remaining local touch-settings lifecycle gate on an iPhone 16 Pro, iOS 18.5 Simulator. Evidence:
 
-- The iteration 67 Release Simulator app installed on the isolated iPhone 16 Pro and auto-started from a retail `.n64` copied only into that Simulator's private app container. Runtime normalization produced `bk.n64.us.1.0.z64`; the temporary import duplicate was deleted after confirming both the normalized copy and the owner's original Downloads file remained.
-- In landscape, the stick, left Z pill, A/B/R cluster, right Z, Start, and C diamond stayed inside the safe-area canvas with visible separation between every control. The Dynamic Island/right inset and left sensor housing did not intersect a visual or expanded hit target.
-- The complete 12-element accessibility tree was present at the 0.85 scale. Activating Start advanced the intro, the control-stick `Move up` action dispatched successfully, opening the BanjoPad menu removed all gameplay controls except the menu button, and closing it restored the same tree.
-- The dual-tone contrast edge remained legible over both the forest intro and the pale-blue boot frame at iPhone scale; no geometry or opacity adjustment was justified by the live evidence.
-- No source changed after the already-green iteration 67 Simulator/device builds, macOS canary, patch-ledger replay, and deterministic package audit. The current unsigned IPA remains 54 entries, 7,544,887 bytes, SHA-256 `56cacea4fb72cc2e8284ca1960e77c6d4ad28bccbf9dc1c091770741ef140013`.
+- Exercising the exported `BanjoPadTouch_SetEnabled` seam used by the Controls-tab callback changed `ios-controls.json` to `false`, removed every gameplay control, and left the always-available `•••` menu as the sole app accessibility element. The disabled state remained after terminating and relaunching the process from its app-private normalized retail ROM.
+- Restoring the same setting changed `ios-controls.json` to `true` and immediately returned the complete 12-element gameplay-control tree. A second process restart loaded the enabled state and returned the same tree over live retail-ROM rendering.
+- `scripts/test-touch-input.sh` passed, including multi-press reference counting and `release_all()` zeroing held buttons, stick, and camera values without disturbing stock input. The setter's disable branch calls `cancel_all_inputs()`, so the tested state transition reaches that release primitive before removing the overlay.
+- The plan audit clarified that `Hide when controller connected` is optional and is not part of the implemented v1 acceptance gate. Required controller behavior remains the existing 40% fade/restore and stays in the physical-device queue for a real paired controller.
+- No source change was justified. The iteration 67 Simulator/device builds, macOS canary, patch-ledger replay, and deterministic package audit remain current; the unsigned IPA is 54 entries, 7,544,887 bytes, SHA-256 `56cacea4fb72cc2e8284ca1960e77c6d4ad28bccbf9dc1c091770741ef140013`.
 
-Next goal: verify the Touch Controls off/on and Hide With Controller settings on iPhone, including held-input release and persistence across relaunch, while keeping the always-available menu button reachable.
+Next goal: begin the owner-directed touch-controls iteration; no further local round-up work remains before that pass.
 
 Blockers: no local source, build, or package blocker. The owner confirmed that no iPad is attached to this Mac and physical-device testing will happen on another machine, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, deterministic IPA generation, and the macOS canary are green.
 
