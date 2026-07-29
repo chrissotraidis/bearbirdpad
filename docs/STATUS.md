@@ -1,16 +1,17 @@
-# Status — updated 2026-07-29, iteration 70
+# Status — updated 2026-07-29, iteration 71
 
-Phase: 10+ — touch-control polish; rounded hit-target geometry verified
+Phase: 10+ — touch-control polish; explicit camera-drag threshold verified
 
-Done this iteration: aligned button acquisition and slide-release hit testing with the visible circle/pill geometry instead of invisible rectangles. Evidence:
+Done this iteration: replaced `UIPanGestureRecognizer`'s undocumented activation hysteresis with the touch specification's explicit 8 pt camera-drag threshold. Evidence:
 
-- `BanjoPadTouchButton` now uses the same rounded `UIBezierPath` for the +6 pt/minimum-44 pt acquisition target and the +20 pt slide-release margin. Circles reject diagonal corner touches outside their radius; pills retain a capsule-shaped target.
-- At the iPhone 0.85 scale, the old expanded rectangles for diagonal C buttons overlapped by 6.9 pt in both axes even though the intended circular targets do not touch. The rounded paths leave 11.4 pt of diagonal separation while preserving the full expanded edge target.
-- `scripts/build-ios.sh --simulator --app --config Release` passed, including `scripts/test-touch-input.sh`. The exact Release app installed on an iPhone 16 Pro, iOS 18.5 Simulator, rendered from its app-private normalized retail ROM, exposed the complete 12-control accessibility tree, hid to the menu-only tree, and restored the identical full tree.
-- `scripts/build-ios.sh --device --app --config Release` passed for arm64 iPhoneOS 16.0. `cmake --build build-macos --target BanjoRecompiled -j 4` passed and `codesign --verify --deep --strict build-macos/BanjoRecompiled.app` accepted the desktop canary.
-- `scripts/package-ios.sh` passed twice with identical output: 54 entries, 7,545,266 bytes, SHA-256 `ad47b54d542eabc20e9859dce3756230f6e5189fd48e8d49643cec2a427da4e5`; the audit found no ROM or generated-source content and `unzip -tq` passed.
+- `BanjoPadCameraGesture` remains possible below 8 pt so ordinary taps continue to SDL, begins at the exact radial threshold, emits the threshold-crossing displacement plus incremental deltas, and zeros camera input on end/cancel/failure. `cancelsTouchesInView`, `delaysTouchesBegan`, and `delaysTouchesEnded` are all disabled.
+- The existing delegate still rejects touches beginning on any `BanjoPadTouchButton` or `BanjoPadTouchStick`, rejects the left half, and rejects menu-visible/disabled-overlay states. Only an unobstructed right-half touch can become a camera drag.
+- The sensitivity trace reaches `recomp_get_right_analog_inputs` → `banjopad::touch::merge_right_analog` → `recomp_analog_camera_get_x()` → `recomp_get_analog_cam_sensitivity() * 40 * time_getDelta()`. UIKit therefore keeps normalized `translation / 60` input and does not double-apply the existing setting; the private iPhone config had Analog Camera `On` and sensitivity `3`.
+- `scripts/build-ios.sh --simulator --app --config Release` and `scripts/build-ios.sh --device --app --config Release` passed, including the touch-shim merge/clamp/release tests. The exact Simulator build installed on an iPhone 16 Pro, iOS 18.5, loaded its app-private normalized retail ROM, reached a playable new-game scene, and retained the complete 12-control tree.
+- Simulator desktop pointer capture moves a mouse cursor rather than synthesizing UIKit touch drags, so it cannot honestly approve physical drag feel or the exact threshold. That remains in the existing Phase 6 `HUMAN-VERIFY` gate; no product failure was inferred from the unavailable input modality.
+- The macOS canary build and strict bundle-signature check passed. `scripts/package-ios.sh` passed twice with identical output: 54 entries, 7,545,383 bytes, SHA-256 `053bf221157d0d9f449f15d9db8fadae025ef0ad514007d29e88a318bf99fec8`; the audit found no ROM/generated content and `unzip -tq` passed.
 
-Next goal: verify the right-half camera-drag threshold, control exclusion, and sensitivity path against §5.3 on iPhone; change code only if the live/source evidence shows a mismatch.
+Next goal: add the missing persisted visibility controls for the hidden-by-default L button and D-pad promised by §5.1, while preserving the default 12-control layout.
 
 Blockers: no local source, build, or package blocker. The owner confirmed that no iPad is attached to this Mac and physical-device testing will happen on another machine, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, deterministic IPA generation, and the macOS canary are green.
 

@@ -1,4 +1,5 @@
 #import <UIKit/UIKit.h>
+#import <UIKit/UIGestureRecognizerSubclass.h>
 
 #include <algorithm>
 #include <atomic>
@@ -686,12 +687,98 @@ static void push_menu_toggle();
 
 @end
 
+@interface BanjoPadCameraGesture : UIGestureRecognizer
+
+- (CGPoint)consumeTranslation;
+
+@end
+
+@implementation BanjoPadCameraGesture {
+    UITouch *_activeTouch;
+    CGPoint _startPoint;
+    CGPoint _lastPoint;
+    CGPoint _pendingTranslation;
+}
+
+- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    if (_activeTouch != nil) {
+        return;
+    }
+    _activeTouch = touches.anyObject;
+    _startPoint = [_activeTouch locationInView:self.view];
+    _lastPoint = _startPoint;
+    _pendingTranslation = CGPointZero;
+}
+
+- (void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    if (_activeTouch == nil || ![touches containsObject:_activeTouch]) {
+        return;
+    }
+
+    CGPoint point = [_activeTouch locationInView:self.view];
+    if (self.state == UIGestureRecognizerStatePossible) {
+        static const CGFloat activationDistance = 8.0;
+        CGFloat dx = point.x - _startPoint.x;
+        CGFloat dy = point.y - _startPoint.y;
+        if (hypot(dx, dy) < activationDistance) {
+            return;
+        }
+        _pendingTranslation = CGPointMake(dx, dy);
+        _lastPoint = point;
+        self.state = UIGestureRecognizerStateBegan;
+        return;
+    }
+
+    if (self.state == UIGestureRecognizerStateBegan ||
+        self.state == UIGestureRecognizerStateChanged) {
+        _pendingTranslation.x += point.x - _lastPoint.x;
+        _pendingTranslation.y += point.y - _lastPoint.y;
+        _lastPoint = point;
+        self.state = UIGestureRecognizerStateChanged;
+    }
+}
+
+- (void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    if (_activeTouch == nil || ![touches containsObject:_activeTouch]) {
+        return;
+    }
+    _activeTouch = nil;
+    self.state = self.state == UIGestureRecognizerStatePossible
+        ? UIGestureRecognizerStateFailed
+        : UIGestureRecognizerStateEnded;
+}
+
+- (void)touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    if (_activeTouch != nil && [touches containsObject:_activeTouch]) {
+        _activeTouch = nil;
+        self.state = self.state == UIGestureRecognizerStatePossible
+            ? UIGestureRecognizerStateFailed
+            : UIGestureRecognizerStateCancelled;
+    }
+}
+
+- (void)reset {
+    [super reset];
+    _activeTouch = nil;
+    _startPoint = CGPointZero;
+    _lastPoint = CGPointZero;
+    _pendingTranslation = CGPointZero;
+}
+
+- (CGPoint)consumeTranslation {
+    CGPoint translation = _pendingTranslation;
+    _pendingTranslation = CGPointZero;
+    return translation;
+}
+
+@end
+
 @interface BanjoPadCameraGestureDelegate : NSObject <UIGestureRecognizerDelegate>
 @end
 
 static BanjoPadTouchOverlay *sOverlay;
 static BanjoPadTouchButton *sMenuButton;
-static UIPanGestureRecognizer *sCameraGesture;
+static BanjoPadCameraGesture *sCameraGesture;
 static BanjoPadCameraGestureDelegate *sCameraDelegate;
 static id sResignObserver;
 static std::atomic_bool sEnabled(true);
@@ -767,13 +854,10 @@ static void push_menu_toggle() {
     SDL_PushEvent(&event);
 }
 
-static void handle_camera_pan(UIPanGestureRecognizer *gesture) {
-    if (gesture.state == UIGestureRecognizerStateBegan) {
-        [gesture setTranslation:CGPointZero inView:gesture.view];
-    }
-    if (gesture.state == UIGestureRecognizerStateChanged) {
-        CGPoint translation = [gesture translationInView:gesture.view];
-        [gesture setTranslation:CGPointZero inView:gesture.view];
+static void handle_camera_pan(BanjoPadCameraGesture *gesture) {
+    if (gesture.state == UIGestureRecognizerStateBegan ||
+        gesture.state == UIGestureRecognizerStateChanged) {
+        CGPoint translation = [gesture consumeTranslation];
         float x = std::clamp(static_cast<float>(translation.x / 60.0), -1.0f, 1.0f);
         float y = std::clamp(static_cast<float>(-translation.y / 60.0), -1.0f, 1.0f);
         BanjoPadTouch_SetCamera(x, y);
@@ -798,7 +882,7 @@ static void handle_camera_pan(UIPanGestureRecognizer *gesture) {
 @end
 
 @interface BanjoPadCameraTarget : NSObject
-- (void)panned:(UIPanGestureRecognizer *)gesture;
+- (void)panned:(BanjoPadCameraGesture *)gesture;
 @end
 
 static BanjoPadMenuTapTarget *sMenuTapTarget;
@@ -811,7 +895,7 @@ static BanjoPadCameraTarget *sCameraTarget;
 @end
 
 @implementation BanjoPadCameraTarget
-- (void)panned:(UIPanGestureRecognizer *)gesture {
+- (void)panned:(BanjoPadCameraGesture *)gesture {
     handle_camera_pan(gesture);
 }
 @end
@@ -857,11 +941,12 @@ static void install_when_ready() {
         sCameraDelegate = [[BanjoPadCameraGestureDelegate alloc] init];
         sCameraTarget = [[BanjoPadCameraTarget alloc] init];
         sCameraGesture =
-            [[UIPanGestureRecognizer alloc] initWithTarget:sCameraTarget action:@selector(panned:)];
+            [[BanjoPadCameraGesture alloc] initWithTarget:sCameraTarget action:@selector(panned:)];
         [window addGestureRecognizer:sCameraGesture];
         sCameraGesture.delegate = sCameraDelegate;
         sCameraGesture.cancelsTouchesInView = NO;
-        sCameraGesture.maximumNumberOfTouches = 1;
+        sCameraGesture.delaysTouchesBegan = NO;
+        sCameraGesture.delaysTouchesEnded = NO;
     }
     apply_overlay_state();
 }
