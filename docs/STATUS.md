@@ -1,19 +1,19 @@
-# Status — updated 2026-07-29, iteration 26
+# Status — updated 2026-07-29, iteration 27
 
-Phase: 10+ — polish backlog; touch overlay honors accessibility display settings
+Phase: 10+ — polish backlog; touch labels honor bounded Dynamic Type
 
-Done this iteration: made the native touch overlay adapt live to iOS Increase Contrast and Reduce Transparency while preserving the normal translucent design. Evidence:
+Done this iteration: made native controller glyphs respond to Dynamic Type without changing touch geometry or allowing the largest accessibility category to break the game layout. Evidence:
 
-- The overlay previously used fixed translucent fills and layer border colors, so custom controls did not adapt when the system requested stronger contrast or reduced transparency.
-- Button, stick, thumb, and persistent menu colors now resolve from the current accessibility settings. Increase Contrast uses darker 90%-opaque fills and fully opaque outlines; Reduce Transparency uses fully opaque fills and outlines.
-- Each native control observes both UIKit setting-change notifications, so existing controls update in place without rebuilding the overlay, interrupting gameplay, or changing input state.
-- On the running iPad Pro 11-inch (M4), iOS 18.5, `simctl ui ... increase_contrast enabled` visibly strengthened every control; disabling it restored the normal appearance without relaunch. The complete accessibility control tree remained present in both states.
-- Enabled Reduce Transparency through the real Settings > Accessibility > Display & Text Size switch, foregrounded the same running game process, and observed opaque controls with the accessibility tree intact. Restored the Simulator setting to its original disabled state after the test.
-- Reduce Motion does not require a visual branch: the native overlay has no decorative animation, and its short delayed releases are controller input timing rather than motion effects.
-- Simulator and unsigned device Release builds passed. The iOS-only edit does not enter the macOS target; the same-turn macOS canary remained green. `scripts/package-audit.sh` again found no ROM, ROM digest, or generated-source marker.
-- Refreshed `build/release/BanjoPad-0.1.0-unsigned.ipa`: 7.9 MB allocated size, SHA-256 `e7d435fb99b72d410f2e30ff2da51e670148b7fd4179901fc097708f0763316d`.
+- At `accessibility-extra-extra-extra-large`, the pre-fix A/B/Z/R/Start/C labels remained at their fixed 15-point size; VoiceOver names worked, but the visible controller did not honor the low-vision text preference.
+- Controller labels now use `UIFontMetrics`, track content-size changes live, and cap at 22 points. Width fitting with a 75% minimum scale prevents the longer `START` label from clipping while short glyphs receive the full increase.
+- The existing button/stick frames, safe-area offsets, camera region, input masks, and hit testing are unchanged.
+- iPad Pro 11-inch (M4), iOS 18.5, passed at the maximum category with every glyph centered and the complete accessibility tree intact.
+- iPhone 16 Pro, iOS 18.5, passed the compact landscape layout at the same maximum category: no control overlaps, clipping, safe-area intrusion, or loss from the accessibility tree.
+- Restored both Simulators to their original `large` content-size category after the maximum-size test.
+- Simulator and unsigned device Release builds passed. `scripts/package-audit.sh` again found no ROM, ROM digest, or generated-source marker.
+- Refreshed `build/release/BanjoPad-0.1.0-unsigned.ipa`: 8.0 MB allocated size, SHA-256 `ef2d489941f276777e2b808e553cefbe1cccf7b427980c734ab0d038ec8d154a`.
 
-Next goal: audit native gameplay controls at the largest accessibility text-size category and verify touch targets, labels, and safe-area placement remain usable without scaling the game HUD or disturbing the established layout.
+Next goal: audit the persistent native menu control and smallest gameplay controls against a 44-point minimum interaction target, then enlarge only undersized hit and accessibility frames without moving the visual layout.
 
 Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 
