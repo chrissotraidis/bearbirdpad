@@ -1,22 +1,22 @@
-# Status — updated 2026-07-29, iteration 42
+# Status — updated 2026-07-29, iteration 43
 
-Phase: 10+ — polish backlog; App Switcher transitions release all touch input
+Phase: 10+ — polish backlog; force-close relaunch restores neutral stored-ROM gameplay
 
-Done this iteration: audited the production App Switcher lifecycle against the Phase 7 background/foreground requirement and the touch overlay's stuck-input invariant. No app-source correction was needed. Evidence:
+Done this iteration: audited the production App Switcher force-close and normal stored-ROM relaunch lifecycle against the Phase 7 force-kill/relaunch requirement and the touch overlay's stuck-input invariant. No app-source correction was needed. Evidence:
 
 - iPad Pro 11-inch (M4), iOS 18.5, ran the exact installed Simulator Release build with its existing retail ROM. Before switching, the production touch functions simultaneously staged A `32768`, stick `(0.75, -0.5)`, and camera `(0.625, -0.375)` and read those exact values back.
-- Simulator's real Device → App Switcher command displayed the resident BanjoPad app card. PID `68191` and unique PID `8322853` remained unchanged while UIKit reported `UIApplicationStateInactive` (`1`).
-- In the switcher, production merged buttons, stick, and camera all read exactly zero: every held touch channel released.
-- Selecting the actual BanjoPad app card restored UIKit to `UIApplicationStateActive` (`0`) in the same process.
-- Rendered retail-ROM gameplay resumed and continued advancing. The complete 12-target native accessibility tree returned: the BanjoPad menu, 10 gameplay buttons, and the centered stick plus its four direction actions.
-- Production merged buttons, stick, and camera stayed zero after app-card restoration, proving the pre-switcher hold was not replayed.
+- Simulator's real Device → App Switcher command displayed the resident BanjoPad app card with UIKit inactive. Before close, production merged buttons, stick, and camera all read exactly zero.
+- The system-provided `Close BanjoPad` app-card action removed the BanjoPad card and terminated PID `68191`; `launchctl procinfo` then returned `No such process`.
+- A normal `simctl launch` supplied no `--rom` argument or private path and created PID `75723`. The launcher displayed `Start Game` rather than `Load ROM`, proving the stored ROM was discovered through the normal path.
+- Activating that visible launcher option through its production Return-key path reached rendered retail-ROM gameplay. UIKit reported `UIApplicationStateActive` (`0`) and `BanjoPadTouch_Enabled() == 1`.
+- The new process began with buttons `0`, stick `(0, 0)`, and camera `(0, 0)`. The complete 12-target native accessibility tree returned: the BanjoPad menu, 10 gameplay buttons, and the centered stick plus its four direction actions.
 - `Documents/BanjoRecompiled/ios-controls.json` remained `touch_controls: true` with SHA-256 `f9417c1ac93f257c45249aad6252877e5768cf1f562048c99c71f34f917b9bcb`.
 - Because app source remained identical to iteration 36, this verification-only iteration reused the exact installed Simulator Release build and existing device/IPA artifacts instead of rebuilding identical binaries.
 - The touch-state regression and device-app package audit passed again.
 - `scripts/package-audit.sh` found no ROM, ROM digest, or generated-source marker.
 - Existing `build/release/BanjoPad-0.1.0-unsigned.ipa`: 7.2 MB allocated size, SHA-256 `9992b326d9fb8e346fb8ca059d1ff80d04bda61dd86d7039c13bb01e8f6bd9e2`.
 
-Next goal: force-close BanjoPad from the App Switcher after held-input release, then relaunch the stored-ROM path and prove neutral controls, preserved preferences, and complete rendering/accessibility restoration.
+Next goal: snapshot the primary save, backup, and absence of orphaned temporary files; repeat background → app-card force-close → normal stored-ROM relaunch; then prove save hashes and atomic-file invariants remain intact.
 
 Blockers: no local build blocker. GitHub-hosted Actions remains unavailable because of account billing/spending capacity, but the project owner explicitly deprioritized it. A signed physical device is still unavailable, so all device-only acceptance remains `HUMAN-VERIFY`; local builds, iPad/iPhone retail-ROM rendering, package audit, IPA generation, and macOS canary are green.
 
