@@ -13,6 +13,14 @@ RecompiledFuncs/
 RecompiledPatches/
 rsp/n_aspMain.cpp
 
+# Local game saves — never committed
+*.eep
+*.sav
+*.sra
+*.srm
+bk.n64.*.bin
+bk.n64.*.bin.bak
+
 # ref/ is local-only reference material (ROM, cloned repos, texture packs).
 # Only its README is tracked.
 ref/*
