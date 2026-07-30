@@ -32,6 +32,10 @@ The gameplay screenshot at
 and is not offered under the BearBirdPad GPL license. Project names, logos, and
 trademarks are likewise outside the software license.
 
+The BearBirdPad app icon at `ios/app/BearBirdPadIcon.png` is original project
+artwork. It does not contain or claim rights to Banjo-Kazooie character art,
+logos, or other game assets.
+
 The compiled program necessarily contains recompiled game code, as upstream
 BanjoRecomp builds do. Anyone distributing a binary is responsible for
 reviewing the complete source, corresponding-source, third-party notice,

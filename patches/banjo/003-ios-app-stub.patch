@@ -120,7 +120,7 @@ index f868b10..e5f5d15 100644
  target_include_directories(BanjoRecompiled PRIVATE
      ${CMAKE_SOURCE_DIR}/include
      ${CMAKE_SOURCE_DIR}/lib/N64ModernRuntime/N64Recomp/include
-@@ -179,9 +210,22 @@ target_include_directories(BanjoRecompiled PRIVATE
+@@ -179,9 +210,24 @@ target_include_directories(BanjoRecompiled PRIVATE
      ${CMAKE_CURRENT_BINARY_DIR}
  )
  
@@ -135,14 +135,17 @@ index f868b10..e5f5d15 100644
 +        message(FATAL_ERROR "FILE_TO_C_PATH must name the macOS host file_to_c executable")
 +    endif()
 +    set(BANJO_FILE_TO_C "${FILE_TO_C_PATH}")
++    set(APP_ICON_SOURCE "${BEARBIRDPAD_IOS_DIR}/BearBirdPadIcon.png")
 +else()
 +    set(BANJO_FILE_TO_C file_to_c)
++    set(APP_ICON_SOURCE "${CMAKE_SOURCE_DIR}/icons/app.png")
 +endif()
 +
  add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/icon_bytes.c ${CMAKE_CURRENT_BINARY_DIR}/icon_bytes.h
 -    COMMAND file_to_c ${CMAKE_SOURCE_DIR}/icons/app.png icon_bytes ${CMAKE_CURRENT_BINARY_DIR}/icon_bytes.c ${CMAKE_CURRENT_BINARY_DIR}/icon_bytes.h
-+    COMMAND ${BANJO_FILE_TO_C} ${CMAKE_SOURCE_DIR}/icons/app.png icon_bytes ${CMAKE_CURRENT_BINARY_DIR}/icon_bytes.c ${CMAKE_CURRENT_BINARY_DIR}/icon_bytes.h
-     DEPENDS ${CMAKE_SOURCE_DIR}/icons/app.png
++    COMMAND ${BANJO_FILE_TO_C} ${APP_ICON_SOURCE} icon_bytes ${CMAKE_CURRENT_BINARY_DIR}/icon_bytes.c ${CMAKE_CURRENT_BINARY_DIR}/icon_bytes.h
+-    DEPENDS ${CMAKE_SOURCE_DIR}/icons/app.png
++    DEPENDS ${APP_ICON_SOURCE}
  )
  
 @@ -203,7 +247,7 @@ endif()
