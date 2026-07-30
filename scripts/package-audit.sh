@@ -57,7 +57,19 @@ if [ -s "$violations" ]; then
     exit 1
 fi
 
-if [ "$require_signed" = 1 ]; then
+has_signature_material=0
+if [ -d "$app_path/_CodeSignature" ] ||
+   [ -f "$app_path/embedded.mobileprovision" ]; then
+    has_signature_material=1
+fi
+
+if [ "$has_signature_material" = 1 ]; then
+    if [ ! -d "$app_path/_CodeSignature" ] ||
+       [ ! -s "$app_path/embedded.mobileprovision" ]; then
+        echo "Package contains incomplete or stale signing material" >&2
+        exit 1
+    fi
+
     codesign --verify --deep --strict --verbose=2 "$app_path"
     codesign -d --verbose=4 "$app_path" 2> "$signature_info"
 
@@ -83,13 +95,16 @@ if [ "$require_signed" = 1 ]; then
         echo "Signed package TeamIdentifier does not match embedded.mobileprovision" >&2
         exit 1
     fi
+elif [ "$require_signed" = 1 ]; then
+    echo "REQUIRE_SIGNED=1, but the app has no signature or provisioning profile" >&2
+    exit 1
 fi
 
 echo "Package audit passed: $app_path"
 echo "  ROM files/digests: absent"
 echo "  Generated-source paths/markers: absent"
-if [ "$require_signed" = 1 ]; then
+if [ "$has_signature_material" = 1 ]; then
     echo "  Non-ad-hoc signature and provisioning TeamIdentifier: valid"
 else
-    echo "  Signature requirement: skipped (REQUIRE_SIGNED=0)"
+    echo "  Signing material: absent"
 fi

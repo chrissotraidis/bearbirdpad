@@ -1439,10 +1439,13 @@ static void install_menu_button(UIWindow *window) {
         [window addSubview:sMenuButton];
     }
     CGFloat size = 38.0;
+    CGFloat edgeInset = 20.0;
+    CGFloat halfSize = size * 0.5;
     UIEdgeInsets safe = window.safeAreaInsets;
     sMenuButton.bounds = CGRectMake(0.0, 0.0, size, size);
-    sMenuButton.center =
-        CGPointMake(window.bounds.size.width - safe.right - 36.0, safe.top + 24.0);
+    sMenuButton.center = CGPointMake(
+        window.bounds.size.width - safe.right - edgeInset - halfSize,
+        safe.top + edgeInset + halfSize);
 }
 
 static void apply_overlay_state();

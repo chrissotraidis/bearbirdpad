@@ -24,11 +24,27 @@ positioned and sized.
 Layouts are saved automatically in separate phone and tablet profiles using
 normalized positions, so they survive relaunches and adapt to different
 landscape sizes. They remain app-private preferences and are not packaged into
-the app.
+the app. Do not copy a tablet profile over a phone profile: the control sizes
+and safe-area geometry are deliberately independent.
 
-## Physical-device check
+The `•••` menu button is not part of the movable gameplay layout. It remains
+available when touch controls are hidden and is clamped inside the active
+window's safe area.
 
-Simulator verification covers selection, movement, both size limits,
-hide/show, Reset, save/relaunch restoration, and menu recovery. Before release,
-repeat those actions on the target iPhone or iPad and check multi-finger comfort,
-safe-area clearance, and the Z-plus-C compound moves with real touch input.
+## Verification
+
+The layout editor was exercised in iPhone Simulator for selection, movement,
+both size limits, hide/show, Reset, save/relaunch restoration, and menu
+recovery.
+
+The current Release build was then installed and played on a 12.9-inch iPad
+Pro (6th generation) and an iPhone 14. Physical testing confirmed that:
+
+- gameplay touches reach the high-DPI Metal interface correctly;
+- the `•••` button remains inside the top-right safe area;
+- an iPad layout does not replace the iPhone layout;
+- restoring the phone defaults removes the transferred tablet geometry; and
+- save/config data survives an in-place app update.
+
+Comfort, simultaneous-touch combinations, and optional controls should still
+be rechecked whenever the default geometry changes.

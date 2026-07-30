@@ -21,6 +21,9 @@ jobs:
       - name: Check out BanjoPad
         uses: actions/checkout@v4
 
+      - name: Check repository safety
+        run: scripts/check-repo-safety.sh
+
       - name: Install build tools
         run: brew install ninja
 

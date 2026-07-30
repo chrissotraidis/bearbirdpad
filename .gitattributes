@@ -1,0 +1,2 @@
+# Unified diffs encode blank context lines as a single leading space.
+*.patch whitespace=-trailing-space
