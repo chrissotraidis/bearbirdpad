@@ -88,6 +88,11 @@ scripts/package-ios.sh \
 
 The script audits the app before wrapping `Payload/BanjoRecompiled.app`, normalizes archive timestamps and entry order, verifies the ZIP, and prints its SHA-256. Packaging the same app bundle twice therefore produces the same IPA bytes. An unsigned IPA cannot install directly: a personal-team workflow or sideloading tool must sign it for the destination device. To package an already signed app, set `REQUIRE_SIGNED=1`; the audit rejects ad-hoc signatures, missing or undecodable provisioning profiles, and signing Team IDs that do not match the embedded profile.
 
+When `DEVELOPMENT_TEAM` is not set, the build script removes stale
+`_CodeSignature` and `embedded.mobileprovision` entries from that build
+output. The package audit also rejects incomplete or invalid signing material,
+so an old signed build cannot be mislabeled as a clean unsigned archive.
+
 Never add a ROM, generated source, save, mod, provisioning profile, certificate, or Instruments trace to Git.
 
 ## ROM-free CI mode

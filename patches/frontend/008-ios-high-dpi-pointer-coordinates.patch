@@ -1,0 +1,69 @@
+diff --git a/recompui/src/base/ui_state.cpp b/recompui/src/base/ui_state.cpp
+--- a/recompui/src/base/ui_state.cpp
++++ b/recompui/src/base/ui_state.cpp
+@@ -650,6 +650,38 @@ void recompui::activate_mouse() {
+     ui_state->update_focus(true, false);
+ }
+ 
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++static void scale_pointer_event_to_pixels(SDL_Window* window, SDL_Event& event) {
++    int window_width = 0;
++    int window_height = 0;
++    int pixel_width = 0;
++    int pixel_height = 0;
++    SDL_GetWindowSize(window, &window_width, &window_height);
++    SDL_GetWindowSizeInPixels(window, &pixel_width, &pixel_height);
++
++    if (window_width <= 0 || window_height <= 0) {
++        return;
++    }
++
++    auto scale_x = [window_width, pixel_width](int x) {
++        return x * pixel_width / window_width;
++    };
++    auto scale_y = [window_height, pixel_height](int y) {
++        return y * pixel_height / window_height;
++    };
++
++    if (event.type == SDL_MOUSEMOTION) {
++        event.motion.x = scale_x(event.motion.x);
++        event.motion.y = scale_y(event.motion.y);
++    }
++    else if (event.type == SDL_MOUSEBUTTONDOWN ||
++             event.type == SDL_MOUSEBUTTONUP) {
++        event.button.x = scale_x(event.button.x);
++        event.button.y = scale_y(event.button.y);
++    }
++}
++#endif
++
+ void draw_hook(plume::RenderCommandList* command_list, plume::RenderFramebuffer* swap_chain_framebuffer) {
+ 
+     apply_background_input_mode();
+@@ -687,6 +719,10 @@ void draw_hook(plume::RenderCommandList* command_list, plume::RenderFramebuffer*
+     bool all_input_is_disabled = recompinput::all_input_disabled();
+ 
+     while (recompui::try_deque_event(cur_event)) {
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++        scale_pointer_event_to_pixels(window, cur_event);
++#endif
++
+         bool context_capturing_input = recompui::is_context_capturing_input();
+         bool context_capturing_mouse = recompui::is_context_capturing_mouse();
+ 
+@@ -809,6 +845,15 @@ void draw_hook(plume::RenderCommandList* command_list, plume::RenderFramebuffer*
+             // Send the event to RmlUi if this type of event is being captured.
+             if (is_mouse_input) {
+                 if (context_capturing_mouse) {
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++                    if (cur_event.type == SDL_MOUSEBUTTONDOWN ||
++                        cur_event.type == SDL_MOUSEBUTTONUP) {
++                        ui_state->context->ProcessMouseMove(
++                            cur_event.button.x,
++                            cur_event.button.y,
++                            0);
++                    }
++#endif
+                     RmlSDL::InputEventHandler(ui_state->context, cur_event);
+                 }
+             }

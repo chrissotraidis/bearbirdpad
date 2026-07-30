@@ -1,32 +1,72 @@
-# Status — updated 2026-07-29, iteration 76
+# BanjoPad status
 
-Phase: 10+ — customizable touch-layout editor complete
+Updated 2026-07-30. Current phase: stable physical-device development build;
+public developer-preview packaging has not been released.
 
-Done this iteration: adapted the useful parts of SpaghettiPad's touch-layout architecture to BanjoPad's existing UIKit/N64 control overlay while preserving BanjoPad's input semantics. Evidence:
+## Current result
 
-- Added **Customize Touch Layout** to the in-game Controls settings. The launcher copy is visibly disabled until gameplay begins, avoiding a deferred or silent action before a gameplay overlay exists.
-- Added a live native editor for all 16 stable control IDs. Controls can be selected accessibly, dragged within safe-area bounds, scaled from 70–150%, hidden/shown, reset, and saved. The stick cannot be hidden; Settings-owned optional L/D-pad controls remain visible but dimmed in the editor and show a disabled **Settings** visibility action.
-- Saved layouts use normalized centers and separate `phone-v1` / `tablet-v1` `NSUserDefaults` profiles. On the iPhone 16 Pro, iOS 18.5 Simulator, B was moved, scaled to `1.5`, and hidden; the saved plist contained normalized center `[0.5720823798627003, 0.746268656716418]`, scale `1.5`, and hidden ID `b`. After terminate/relaunch, selecting B restored slider `1.5` and **Show**. Reset restored the default layout and the finalized build removed the empty profile record entirely.
-- The editor suppresses gameplay input and camera drag while active, retains BanjoPad's duplicated-Z reference-count behavior, highlights the selected control without replacing the existing shadow system, closes safely on menu/overlay transitions, and restores the permanent `•••` menu button after **Done**.
-- `scripts/test-touch-input.sh` passed; the maintained frontend controls hunk passed focused reverse-apply checking; `git diff --check` passed.
-- `scripts/build-ios.sh --simulator --app --config Release` and `scripts/build-ios.sh --device --app --config Release` both succeeded. `cmake --build build-macos --target BanjoRecompiled` also succeeded as the shared-frontend desktop canary.
-- `scripts/package-audit.sh build-ios-app-device/Release/BanjoRecompiled.app` passed with ROM files/digests and generated-source markers absent. Two independent package runs were byte-identical: 54 entries, 7,565,009 bytes, SHA-256 `7146c8ffe3439d9bbfaf7f80cd5c9d924c165fa91fe9a55f3c6a01a8cabaf1b4`.
+BanjoPad builds as a universal arm64 iPhone/iPad app with an iOS 16.0
+deployment target. The regular play path is stable in current owner testing:
+supported-ROM loading, Metal rendering, touch gameplay, settings, saves,
+in-place updates, and separate phone/tablet control layouts are working.
 
-Next goal: owner-directed touch feel/layout iteration, followed by signed physical-device acceptance on the owner's other Mac/iPad.
+The latest focused fixes keep the persistent `•••` menu button inside the
+active safe area and scale iOS pointer events from UIKit/SDL logical
+coordinates into the Retina pixel coordinate space expected by
+RecompFrontend. Together they fix the clipped menu and unresponsive
+high-DPI menu taps observed on physical hardware.
 
-Blockers: no local source, build, or package blocker. The owner confirmed that no iPad is attached to this Mac and physical-device testing will happen on another machine, so tactile comfort and real-device multi-touch remain `HUMAN-VERIFY`; Simulator behavior, both Release targets, package audit, deterministic IPA generation, and the macOS canary are green.
+## Physical-device evidence
 
-ref/ additions: none this iteration.
+| Device | OS | Verified |
+|---|---|---|
+| 12.9-inch iPad Pro (6th generation), `iPad14,5` | iPadOS 26.5.2 | Signed install, local ROM loading, gameplay, touch controls, menu access, save creation/reload, save export, settings persistence, and in-place update |
+| iPhone 14, `iPhone14,7` | iOS 26.5.2 | Signed install, local ROM loading, gameplay, touch controls, safe-area menu placement, imported iPad save, phone-default layout restoration, and in-place update |
 
-HUMAN-VERIFY queue:
+Both devices used the same universal application bundle. The iPad save was
+backed up before the iPhone transfer, then copied into the iPhone app
+container with its `.bak` companion. The original iPad save remained intact.
 
-- Phase 2 physical iPad present/lifecycle/trace — connect an iPad running iPadOS 16 or newer; run `DEVELOPMENT_TEAM=<team-id> scripts/build-ios.sh --device`; install `build-ios-smoke-device/Release-iphoneos/BanjoPadMetalSmoke.app` with Xcode or `xcrun devicectl device install app`; confirm the animated blue/teal clear remains landscape; perform 20 Home/app background-foreground cycles and confirm the app neither crashes nor receives a GPU-watchdog kill; record a Metal System Trace showing steady present cadence; confirm the console logs drawable acquisition disabled throughout every background interval and contains no assertion failure.
-- Phase 3 physical full-app/stub gate — connect a paired-controller iPad, sign and install `scripts/build-ios.sh --device --stub --config Debug`, confirm the launcher/config/audio/controller logs above, compare the pulled config JSONs, run 10 minutes idle plus ten Home/app cycles, and place a code-bearing `.nrm` in `Documents/BanjoRecompiled/mods` to confirm the distinct unsupported-platform error and disabled toggle rather than a crash.
-- Phase 4 physical renderer/menu gate — sign and install `scripts/build-ios.sh --device --app --config Debug`; tap all launcher actions and every Settings tab on an iPad and iPhone in landscape; confirm readable scaling, 30 minutes of actively rendered menu idle without leak growth in Instruments, no Metal API Validation errors, and one Metal frame capture containing the RmlUi draw pass in RT64's swapchain framebuffer.
-- Phase 5 device ROM/mod/audio gate — sign and install the Release app; use Files to copy a retail ROM and `.rtz` into the exposed Documents directory, foreground the app and confirm the mod appears without relaunch, then import all three ROM byte orders through providers other than On My iPad; reach the title screen and confirm music is audible through device speakers without crackle or underruns.
-- Phase 6 physical input/layout gate — sign and install the Release app on an iPad 11-inch, iPad 13-inch, and iPhone 15-class device; confirm the default lower-half controls have no overlaps and the editor panel clears every safe area; move, resize to both limits, hide/show, save/relaunch, and Reset one control on each device class; confirm the phone and tablet layouts remain independent and comfortable; perform a 10-finger mash and verify no stuck input; open/close the menu and toggle Touch Controls off/on across relaunch; pair and unpair an actual PS/Xbox/MFi controller mid-session and confirm 40% fade/restore plus supported rumble; in Spiral Mountain verify move, jump (A), attack (B), talon trot (left Z + C-Left), eggs (right Z + C-Up), wonderwing (Z + C-Right), first-person (C-Up), camera drag with Analog Camera on, and R-center; record device and controller models.
-- Phase 7 physical lifecycle/save gate — sign and install the Release app, make an identifiable in-game save, and record the device model/iOS version. Run each case five times during gameplay: Home then foreground, background then force-kill then relaunch, phone call or Siri interruption, and lock/unlock; also run one 30-minute suspend. Confirm rendering and speaker audio resume, settings remain intact, and the save reloads. Pull `Documents/BanjoRecompiled/saves/bk.n64.us.1.0.bin` plus `.bak`, record both hashes, compare the primary save with a desktop save made at the same point, and inspect device crash logs for zero watchdog/jetsam terminations.
-- Phase 8 physical performance/thermal gate — follow `docs/perf-baseline.md` on one M-series iPad and one A13 device using signed Release builds. Capture three cold-start Metal traces, five steady minutes each in Spiral Mountain and Mumbo's Mountain, peak Game Memory, and one 20-minute Power Profiler soak; fill every `HUMAN-VERIFY` cell with exact device/OS/commit, median/1%-low/minimum FPS, worst hitch, peak footprint, thermal transitions, and jetsam/watchdog result. Trigger DD5 only if all three traces attribute an objectionable hitch to PSO compilation.
-- Phase 9 signed-package gate — on a separate clean Apple-silicon Mac, follow `docs/BUILDING-IOS.md` with a personal Team ID, run `REQUIRE_SIGNED=1 scripts/package-audit.sh`, install with `devicectl`, import the retail ROM, and reach the title screen. Record the Mac/Xcode/device/OS versions, signature authority, provisioning expiration, installed bundle version, and audit result.
+## Current feature evidence
 
-Deviations from plan: 2026-07-28 — the plan inherited BanjoRecomp's incorrect `1fe163...` decompressed-output SHA-1; that is the normalized retail ROM's SHA-1. The pinned bk-decomp target and generated output both use `1fb13cad402518d3ae9a8dc4b52c5c54b2a4adc7`, so the preparation gate and docs now use the verified generated hash. 2026-07-28 — bk-decomp's pinned n64splat submodule appears worktree-dirty immediately after checkout because upstream tracks one CRLF file while declaring `text eol=lf`; the diff is line-ending-only and no source logic was changed. 2026-07-28 — Xcode 26.6 downloaded Metal Toolchain 17F109 but `xcrun metal` could not mount it, so Phase 0 used the compiler and metallib binaries from the locally mounted signed toolchain through configurable CMake cache variables. 2026-07-28 — Homebrew's SDL2 compatibility library loads SDL3 dynamically, which CMake BundleUtilities cannot discover from Mach-O dependencies; the macOS bundle patch now copies the discovered SDL3 runtime explicitly. 2026-07-28 — plume is a separately pinned nested Git tree, so its UIKit patch lives in `patches/plume/` and `fetch-sources.sh` applies that series directly instead of pretending nested-source edits belong to RT64's parent worktree. 2026-07-28 — Savannah's FreeType download endpoint repeatedly returned HTTP 502 while SourceForge's official 2.13.3 mirror supplied the same release archive and published SHA-256; the build script uses the verified SourceForge URL. 2026-07-28 — the iOS path seam fits the existing `support_apple.mm`, so a separate `IosPaths.mm` was unnecessary; the app entry files live together under `ios/app/`. 2026-07-28 — `FailedToLoadCode` does not exist in the pinned `CodeModLoadError` enum, so the iOS gate adds the explicit `UnsupportedPlatform` value and message. 2026-07-28 — the empty modern `UILaunchScreen` dictionary was sufficient for bring-up, then iteration 19 replaced it with the compiled, visually verified branded storyboard. 2026-07-29 — RT64 patch 003's functional changes were correct but two blank context lines did not preserve the pinned upstream whitespace, so the patch was context-corrected in place after a clean replay proved the failure; cached trees accept the new digest only after exact reverse-apply verification. 2026-07-29 — owner-directed Phase 10 feedback resolved DD1's touch-layout-editor portion before release; haptics and custom art remain deferred to physical-device feel testing.
+| Area | Evidence |
+|---|---|
+| Source graph | Pinned BanjoRecomp, N64ModernRuntime, RT64, Plume, RecompFrontend, and nested dependencies replay through `scripts/fetch-sources.sh` |
+| Builds | Release Simulator and physical-device app targets have completed locally |
+| Rendering | Plume/RT64 Metal output runs on Simulator, physical iPad, and physical iPhone |
+| ROM handling | NTSC-U 1.0 validation accepts `.z64`, `.v64`, and `.n64`; stored ROM loading reaches gameplay |
+| Touch | Full N64 overlay, simultaneous touches, duplicated-Z reference counting, editor, optional controls, and persistent menu |
+| Layout persistence | Normalized `phone-v1` and `tablet-v1` preferences survive relaunch and remain independent |
+| Pointer input | Logical SDL pointer coordinates are scaled to the drawable's Retina pixel space on iOS |
+| Saves | Primary and `.bak` save files load after relaunch, transfer between devices, and survive in-place installs |
+| Mods | `.rtz` texture packs can be imported through Files or the Mods picker |
+| Packaging | App audit rejects ROM paths/digests and generated-source markers; signed mode verifies the signature and provisioning Team ID |
+| Repository safety | Local gate rejects proprietary/game data, generated source, packaged output, signing material, large files, likely credentials, invalid patches, and broken local documentation links |
+
+## Remaining release checks
+
+These are breadth and distribution gates, not known blockers in the regular
+touch play path:
+
+- complete the physical controller reconnect, rumble, and model matrix;
+- exercise headphones, Bluetooth audio, calls/Siri, and longer interruption
+  recovery;
+- record a repeatable FPS, hitch, memory, and thermal matrix on the target
+  device range;
+- install and validate the exact final distributable IPA rather than only the
+  local signed `.app`; and
+- review corresponding-source and third-party notice obligations before
+  publishing a binary.
+
+The GitHub Actions workflow is configured to build a ROM-free Simulator stub,
+audit it, and upload a proof artifact. Hosted jobs are currently prevented
+from starting by the repository owner's GitHub Actions billing/spending state;
+this is an account-level limitation rather than a source or build failure.
+
+## Publication boundary
+
+No ROM, generated recompilation input, save, texture pack, device backup,
+provisioning profile, certificate, signed application, or IPA belongs in Git.
+The first public IPA, if approved, must pass
+[`docs/RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) on the exact tagged
+artifact.

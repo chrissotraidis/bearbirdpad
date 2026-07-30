@@ -14,6 +14,15 @@ DEPS_ROOT="$ROOT/build-ios-deps"
 DOWNLOAD_ROOT="$DEPS_ROOT/downloads"
 SOURCE_ROOT="$DEPS_ROOT/sources"
 
+remove_stale_signing_material() {
+    local app_path="$1"
+
+    if [[ -z "${DEVELOPMENT_TEAM:-}" ]]; then
+        rm -rf -- "$app_path/_CodeSignature"
+        rm -f -- "$app_path/embedded.mobileprovision"
+    fi
+}
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --device|--simulator)
@@ -183,9 +192,12 @@ if [[ "$PRODUCT" == "stub" ]]; then
     fi
     "$@"
 
+    stub_app="$CI_STUB_BUILD/$CONFIG-$XCODE_OUTPUT_SUFFIX/BanjoPadCIStub.app"
+    remove_stale_signing_material "$stub_app"
+
     echo
     echo "Built ROM-free CI stub:"
-    echo "  $CI_STUB_BUILD/$CONFIG-$XCODE_OUTPUT_SUFFIX/BanjoPadCIStub.app"
+    echo "  $stub_app"
     exit
 fi
 
@@ -223,9 +235,12 @@ if [[ "$PRODUCT" == "app" ]]; then
     fi
     "$@"
 
+    app_path="$APP_BUILD/$CONFIG/BanjoRecompiled.app"
+    remove_stale_signing_material "$app_path"
+
     echo
     echo "Built $PRODUCT_LABEL:"
-    echo "  $APP_BUILD/$CONFIG/BanjoRecompiled.app"
+    echo "  $app_path"
     exit
 fi
 
@@ -263,10 +278,9 @@ if [[ -z "${DEVELOPMENT_TEAM:-}" ]]; then
 fi
 "$@"
 
+smoke_app="$SMOKE_BUILD/Release-$XCODE_OUTPUT_SUFFIX/BanjoPadMetalSmoke.app"
+remove_stale_signing_material "$smoke_app"
+
 echo
 echo "Built Phase 2 smoke app:"
-if [[ "$PLATFORM" == "device" ]]; then
-    echo "  $SMOKE_BUILD/Release-iphoneos/BanjoPadMetalSmoke.app"
-else
-    echo "  $SMOKE_BUILD/Release-iphonesimulator/BanjoPadMetalSmoke.app"
-fi
+echo "  $smoke_app"
