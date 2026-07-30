@@ -1,4 +1,4 @@
-# Contributing to BanjoPad
+# Contributing to BearBirdPad
 
 Thanks for helping make the iPhone and iPad port better.
 
@@ -6,7 +6,7 @@ Thanks for helping make the iPhone and iPad port better.
 
 - Search existing issues first.
 - Reproduce the problem on the latest `main` build when practical.
-- Include the BanjoPad commit, Apple device model, OS version, install method,
+- Include the BearBirdPad commit, Apple device model, OS version, install method,
   input method, and exact reproduction steps.
 - Attach logs or screenshots only after checking that they contain no personal
   paths, signing information, ROM data, saves, or generated game material.
@@ -20,7 +20,7 @@ Simulator, physical-device, touch, controller, lifecycle, and signing issues.
 1. Run `scripts/check-repo-safety.sh`.
 2. Keep changes in this repository. `sources/` contains disposable, fetched
    upstream inputs.
-3. Edit maintained patches or BanjoPad-owned iOS/scripts/docs rather than
+3. Edit maintained patches or BearBirdPad-owned iOS/scripts/docs rather than
    committing a generated upstream tree.
 4. Run the focused validation for the change:
 
@@ -44,7 +44,7 @@ app's Documents container.
 
 ## Licensing
 
-By contributing BanjoPad-owned material, you agree that it may be distributed
+By contributing BearBirdPad-owned material, you agree that it may be distributed
 under GPL-3.0-or-later. Do not submit code or assets unless you have the right
 to contribute them under those terms.
 

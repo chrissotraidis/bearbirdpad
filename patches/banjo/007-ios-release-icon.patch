@@ -8,7 +8,7 @@ index 32d7877..9fac229 100644
              "$<TARGET_BUNDLE_DIR:BanjoRecompiled>/recompcontrollerdb.txt"
 +        COMMAND ${CMAKE_COMMAND} -E copy_if_different
 +            "${CMAKE_SOURCE_DIR}/icons/app.png"
-+            "$<TARGET_BUNDLE_DIR:BanjoRecompiled>/BanjoPadIcon.png"
-         COMMENT "Copying BanjoPad iOS resources"
++            "$<TARGET_BUNDLE_DIR:BanjoRecompiled>/BearBirdPadIcon.png"
+         COMMENT "Copying BearBirdPad iOS resources"
      )
  elseif (APPLE)

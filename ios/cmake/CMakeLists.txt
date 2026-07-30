@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.24)
-project(BanjoPadRT64IOS LANGUAGES C CXX OBJC OBJCXX)
+project(BearBirdPadRT64IOS LANGUAGES C CXX OBJC OBJCXX)
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
     message(FATAL_ERROR "This harness must be configured with -DCMAKE_SYSTEM_NAME=iOS")
 endif()
 
-get_filename_component(BANJOPAD_ROOT "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
-set(RT64_SOURCE_DIR "${BANJOPAD_ROOT}/sources/banjo/lib/rt64")
+get_filename_component(BEARBIRDPAD_ROOT "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
+set(RT64_SOURCE_DIR "${BEARBIRDPAD_ROOT}/sources/banjo/lib/rt64")
 
 foreach(host_tool DXC_PATH SPIRV_CROSS_MSL_PATH FILE_TO_C_PATH)
     if(NOT DEFINED ${host_tool} OR NOT EXISTS "${${host_tool}}")

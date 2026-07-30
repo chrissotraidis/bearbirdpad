@@ -4,7 +4,7 @@
 extern "C" {
 #endif
 
-void BanjoPadLifecycle_Install(void);
+void BearBirdPadLifecycle_Install(void);
 
 #ifdef __cplusplus
 }

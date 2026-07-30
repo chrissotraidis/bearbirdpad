@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="23504" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="BanjoPadLaunchController">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="23504" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="BearBirdPadLaunchController">
     <device id="retina6_12" orientation="landscape" appearance="dark"/>
     <dependencies>
         <deployment identifier="iOS"/>
@@ -9,23 +9,23 @@
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
-        <scene sceneID="BanjoPadLaunchScene">
+        <scene sceneID="BearBirdPadLaunchScene">
             <objects>
-                <viewController id="BanjoPadLaunchController" sceneMemberID="viewController">
-                    <view key="view" contentMode="scaleToFill" id="BanjoPadLaunchView">
+                <viewController id="BearBirdPadLaunchController" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="BearBirdPadLaunchView">
                         <rect key="frame" x="0.0" y="0.0" width="844" height="390"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="7" translatesAutoresizingMaskIntoConstraints="NO" id="BanjoPadLaunchStack">
+                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="7" translatesAutoresizingMaskIntoConstraints="NO" id="BearBirdPadLaunchStack">
                                 <rect key="frame" x="297" y="151" width="250" height="88"/>
                                 <subviews>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" text="BANJOPAD" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumScaleFactor="0.75" translatesAutoresizingMaskIntoConstraints="NO" id="BanjoPadLaunchTitle">
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" text="BEARBIRDPAD" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumScaleFactor="0.75" translatesAutoresizingMaskIntoConstraints="NO" id="BearBirdPadLaunchTitle">
                                         <rect key="frame" x="0.0" y="0.0" width="250" height="58"/>
                                         <fontDescription key="fontDescription" type="system" weight="black" pointSize="48"/>
                                         <color key="textColor" red="0.9843137255" green="0.8509803922" blue="0.2235294118" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                         <nil key="highlightedColor"/>
                                     </label>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" text="NATIVE iOS PORT" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" translatesAutoresizingMaskIntoConstraints="NO" id="BanjoPadLaunchSubtitle">
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" text="NATIVE iOS PORT" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" translatesAutoresizingMaskIntoConstraints="NO" id="BearBirdPadLaunchSubtitle">
                                         <rect key="frame" x="0.0" y="65" width="250" height="23"/>
                                         <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="16"/>
                                         <color key="textColor" systemColor="secondaryLabelColor"/>
@@ -34,16 +34,16 @@
                                 </subviews>
                             </stackView>
                         </subviews>
-                        <viewLayoutGuide key="safeArea" id="BanjoPadLaunchSafeArea"/>
+                        <viewLayoutGuide key="safeArea" id="BearBirdPadLaunchSafeArea"/>
                         <color key="backgroundColor" red="0.01960784314" green="0.1058823529" blue="0.1058823529" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
-                            <constraint firstItem="BanjoPadLaunchStack" firstAttribute="centerX" secondItem="BanjoPadLaunchSafeArea" secondAttribute="centerX" id="BanjoPadLaunchCenterX"/>
-                            <constraint firstItem="BanjoPadLaunchStack" firstAttribute="centerY" secondItem="BanjoPadLaunchSafeArea" secondAttribute="centerY" id="BanjoPadLaunchCenterY"/>
-                            <constraint firstItem="BanjoPadLaunchStack" firstAttribute="width" constant="250" id="BanjoPadLaunchWidth"/>
+                            <constraint firstItem="BearBirdPadLaunchStack" firstAttribute="centerX" secondItem="BearBirdPadLaunchSafeArea" secondAttribute="centerX" id="BearBirdPadLaunchCenterX"/>
+                            <constraint firstItem="BearBirdPadLaunchStack" firstAttribute="centerY" secondItem="BearBirdPadLaunchSafeArea" secondAttribute="centerY" id="BearBirdPadLaunchCenterY"/>
+                            <constraint firstItem="BearBirdPadLaunchStack" firstAttribute="width" constant="250" id="BearBirdPadLaunchWidth"/>
                         </constraints>
                     </view>
                 </viewController>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="BanjoPadLaunchResponder" sceneMemberID="firstResponder"/>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="BearBirdPadLaunchResponder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="128" y="104"/>
         </scene>

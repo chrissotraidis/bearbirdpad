@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-OUTPUT="${TMPDIR:-/tmp}/banjopad-touch-input-shim-test"
+OUTPUT="${TMPDIR:-/tmp}/bearbirdpad-touch-input-shim-test"
 
 xcrun --sdk macosx clang++ \
     -std=c++20 \

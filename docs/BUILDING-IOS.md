@@ -1,6 +1,6 @@
-# Building BanjoPad for iOS
+# Building BearBirdPad for iOS
 
-BanjoPad builds BanjoRecomp as a native arm64 iPhone/iPad app. The repository never contains or downloads Banjo-Kazooie ROM data. You must supply your own complete NTSC-U 1.0 cartridge dump for the local full-game build and again on first launch.
+BearBirdPad builds BanjoRecomp as a native arm64 iPhone/iPad app. The repository never contains or downloads Banjo-Kazooie ROM data. You must supply your own complete NTSC-U 1.0 cartridge dump for the local full-game build and again on first launch.
 
 ## Verified toolchain
 
@@ -36,7 +36,7 @@ The unsigned device app is:
 build-ios-app-device/Release/BanjoRecompiled.app
 ```
 
-The build-time ROM and generated source files are not copied into the app. BanjoPad still asks the user to import a legally obtained retail ROM on first launch; the same runtime hash gate validates it.
+The build-time ROM and generated source files are not copied into the app. BearBirdPad still asks the user to import a legally obtained retail ROM on first launch; the same runtime hash gate validates it.
 
 ## Simulator
 
@@ -45,7 +45,7 @@ Build the arm64 Simulator app:
 ```sh
 scripts/build-ios.sh --simulator --app --config Release
 xcrun simctl install booted build-ios-app-simulator/Release/BanjoRecompiled.app
-xcrun simctl launch booted com.chrissotraidis.banjopad
+xcrun simctl launch booted com.chrissotraidis.bearbirdpad
 ```
 
 Simulator proves UI, import, rendering, input, and lifecycle behavior. It does not provide valid iPhone/iPad FPS, memory, thermal, speaker, controller, interruption, or watchdog evidence; use the physical matrix in [perf-baseline.md](perf-baseline.md) and [STATUS.md](STATUS.md).
@@ -83,7 +83,7 @@ Create the ROM-free unsigned archive:
 ```sh
 scripts/package-ios.sh \
   build-ios-app-device/Release/BanjoRecompiled.app \
-  build/release/BanjoPad-0.1.0-unsigned.ipa
+  build/release/BearBirdPad-0.1.0-unsigned.ipa
 ```
 
 The script audits the app before wrapping `Payload/BanjoRecompiled.app`, normalizes archive timestamps and entry order, verifies the ZIP, and prints its SHA-256. Packaging the same app bundle twice therefore produces the same IPA bytes. An unsigned IPA cannot install directly: a personal-team workflow or sideloading tool must sign it for the destination device. To package an already signed app, set `REQUIRE_SIGNED=1`; the audit rejects ad-hoc signatures, missing or undecodable provisioning profiles, and signing Team IDs that do not match the embedded profile.
@@ -104,7 +104,7 @@ scripts/fetch-sources.sh
 scripts/build-host-tools.sh
 scripts/build-ios.sh --simulator --stub --config Release
 scripts/package-audit.sh \
-  build-ios-ci-stub-simulator/Release-iphonesimulator/BanjoPadCIStub.app
+  build-ios-ci-stub-simulator/Release-iphonesimulator/BearBirdPadCIStub.app
 ```
 
 The full-game Release build remains a local, user-ROM-derived operation. CI must never substitute, download, or publish those inputs.

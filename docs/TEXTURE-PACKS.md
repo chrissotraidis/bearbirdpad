@@ -1,15 +1,15 @@
 # Texture packs
 
-BanjoPad supports RT64 data-only texture packs in `.rtz` format. Packs contain replacement images and metadata; they do not add executable code.
+BearBirdPad supports RT64 data-only texture packs in `.rtz` format. Packs contain replacement images and metadata; they do not add executable code.
 
 ## Install
 
 1. Obtain a Banjo-Kazooie RT64 `.rtz` pack from its author.
-2. In Files, place it in **On My iPhone/iPad → BanjoPad → BanjoRecompiled → mods** while BanjoPad is in the background. You can also use **Mods → Install** in the launcher.
-3. Return to BanjoPad. The app rescans the folder immediately.
+2. In Files, place it in **On My iPhone/iPad → BearBirdPad → BanjoRecompiled → mods** while BearBirdPad is in the background. You can also use **Mods → Install** in the launcher.
+3. Return to BearBirdPad. The app rescans the folder immediately.
 4. Open **Mods**, enable the pack, and start the game.
 
-Keep packs outside the app bundle and repository. BanjoPad does not redistribute community pack data.
+Keep packs outside the app bundle and repository. BearBirdPad does not redistribute community pack data.
 
 ## Tested recommendation
 

@@ -13,9 +13,9 @@ index f868b10..e5f5d15 100644
 +    find_package(Freetype REQUIRED CONFIG)
 +    get_target_property(SDL2_INCLUDE_DIRS SDL2::SDL2-static INTERFACE_INCLUDE_DIRECTORIES)
 +    option(BANJO_MOBILE_RENDERER_STUB "Use a no-op renderer for mobile bring-up." OFF)
-+    set(BANJOPAD_IOS_DIR "" CACHE PATH "Path to BanjoPad's tracked iOS sources")
-+    if (NOT EXISTS "${BANJOPAD_IOS_DIR}/ios_main.mm")
-+        message(FATAL_ERROR "BANJOPAD_IOS_DIR must contain ios_main.mm")
++    set(BEARBIRDPAD_IOS_DIR "" CACHE PATH "Path to BearBirdPad's tracked iOS sources")
++    if (NOT EXISTS "${BEARBIRDPAD_IOS_DIR}/ios_main.mm")
++        message(FATAL_ERROR "BEARBIRDPAD_IOS_DIR must contain ios_main.mm")
 +    endif()
 +    add_compile_definitions(BANJO_IOS_NO_CODE_MODS=1)
 +    if (BANJO_MOBILE_RENDERER_STUB)
@@ -112,8 +112,8 @@ index f868b10..e5f5d15 100644
  
 +if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
 +    list(APPEND SOURCES
-+        ${BANJOPAD_IOS_DIR}/ios_main.mm
-+        ${BANJOPAD_IOS_DIR}/NullRendererContext.cpp
++        ${BEARBIRDPAD_IOS_DIR}/ios_main.mm
++        ${BEARBIRDPAD_IOS_DIR}/NullRendererContext.cpp
 +    )
 +endif()
 +
@@ -126,7 +126,7 @@ index f868b10..e5f5d15 100644
  
 -# Generate icon_bytes.c from the app icon PNG.
 +if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
-+    target_include_directories(BanjoRecompiled PRIVATE ${BANJOPAD_IOS_DIR})
++    target_include_directories(BanjoRecompiled PRIVATE ${BEARBIRDPAD_IOS_DIR})
 +endif()
 +
 +# Generate icon_bytes.c from the app icon PNG with a host executable.
@@ -180,11 +180,11 @@ index f868b10..e5f5d15 100644
 +    )
 +
 +    set_target_properties(BanjoRecompiled PROPERTIES
-+        MACOSX_BUNDLE_INFO_PLIST "${BANJOPAD_IOS_DIR}/Info.plist.in"
++        MACOSX_BUNDLE_INFO_PLIST "${BEARBIRDPAD_IOS_DIR}/Info.plist.in"
 +        XCODE_ATTRIBUTE_CODE_SIGN_STYLE Automatic
 +        XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${DEVELOPMENT_TEAM}"
 +        XCODE_ATTRIBUTE_OTHER_LDFLAGS "-ObjC"
-+        XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.chrissotraidis.banjopad"
++        XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.chrissotraidis.bearbirdpad"
 +        XCODE_ATTRIBUTE_SUPPORTED_PLATFORMS "iphoneos iphonesimulator"
 +        XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2"
 +    )
@@ -196,7 +196,7 @@ index f868b10..e5f5d15 100644
 +        COMMAND ${CMAKE_COMMAND} -E copy_if_different
 +            "${CMAKE_SOURCE_DIR}/recompcontrollerdb.txt"
 +            "$<TARGET_BUNDLE_DIR:BanjoRecompiled>/recompcontrollerdb.txt"
-+        COMMENT "Copying BanjoPad iOS resources"
++        COMMENT "Copying BearBirdPad iOS resources"
 +    )
 +elseif (APPLE)
      find_package(SDL2 REQUIRED)
@@ -297,7 +297,7 @@ index 8913338..1a16aee 100644
      PreloadContext preload_context;
 +#if defined(__APPLE__) && TARGET_OS_IPHONE
 +    bool preloaded = true;
-+    fprintf(stdout, "BANJOPAD_IOS executable preload skipped\n");
++    fprintf(stdout, "BEARBIRDPAD_IOS executable preload skipped\n");
 +#else
      bool preloaded = preload_executable(preload_context);
 +#endif
@@ -321,14 +321,14 @@ index 8913338..1a16aee 100644
      // Initialize SDL audio and set the output frequency.
      SDL_InitSubSystem(SDL_INIT_AUDIO);
 +#if defined(__APPLE__) && TARGET_OS_IPHONE
-+    fprintf(stdout, "BANJOPAD_IOS audio devices: %d\n", SDL_GetNumAudioDevices(0));
++    fprintf(stdout, "BEARBIRDPAD_IOS audio devices: %d\n", SDL_GetNumAudioDevices(0));
 +#endif
      if (!reset_audio(48000)) {
          // It is not possible to initialize without an audio device.
          return EXIT_FAILURE;
      }
 +#if defined(__APPLE__) && TARGET_OS_IPHONE
-+    fprintf(stdout, "BANJOPAD_IOS audio ready: 48000 Hz\n");
++    fprintf(stdout, "BEARBIRDPAD_IOS audio ready: 48000 Hz\n");
 +#endif
  
      // Source controller mappings file
@@ -341,7 +341,7 @@ index 8913338..1a16aee 100644
 +    const std::filesystem::path app_folder_path = recompui::file::get_app_folder_path();
 +    recomp::register_config_path(app_folder_path);
 +#if defined(__APPLE__) && TARGET_OS_IPHONE
-+    fprintf(stdout, "BANJOPAD_IOS config path: %s\n", app_folder_path.c_str());
++    fprintf(stdout, "BEARBIRDPAD_IOS config path: %s\n", app_folder_path.c_str());
 +#endif
  
      // Register supported games and patches

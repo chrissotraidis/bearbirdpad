@@ -9,7 +9,7 @@ practical code-execution path.
 
 Include:
 
-- the affected BanjoPad commit;
+- the affected BearBirdPad commit;
 - device and OS version;
 - a minimal reproduction;
 - expected impact; and

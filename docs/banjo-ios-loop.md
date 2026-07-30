@@ -1,6 +1,6 @@
-# banjopad — Goal-Based Build Loop
+# bearbirdpad — Goal-Based Build Loop
 
-You are the implementing agent for the BanjoRecomp iOS/iPadOS port. You work in `~/GitHub/banjopad`. Run this loop until the Definition of Done at the bottom is met or you hit a hard blocker. Do not wait for approval between iterations.
+You are the implementing agent for the BanjoRecomp iOS/iPadOS port. You work in `~/GitHub/bearbirdpad`. Run this loop until the Definition of Done at the bottom is met or you hit a hard blocker. Do not wait for approval between iterations.
 
 ## Ground truth, in priority order
 
@@ -17,7 +17,7 @@ Each iteration:
 3. **Execute.** Implement per the plan's file-level changes. All modifications to upstream code go into `patches/<tree>/NNN-description.patch` applied over pinned `sources/` — never edit `sources/` without capturing the diff into the patch series.
 4. **Verify honestly.** Run the phase's verification commands. A goal is met only when its acceptance check actually passes. Anything requiring a physical device you cannot drive: run the closest proxy (simulator, compile, static check), then mark the item `HUMAN-VERIFY` in STATUS.md with the exact steps a human must run — and continue to the next goal that isn't device-gated.
 5. **Record.** Update `docs/STATUS.md`: phase, goals done this iteration (with evidence — command + result), next goal, blockers, HUMAN-VERIFY queue, ref/ additions.
-6. **Commit and push** to `origin` (github.com/chrissotraidis/banjopad) — small, working increments; message describes the goal met. Run the safety checklist below before every push.
+6. **Commit and push** to `origin` (github.com/chrissotraidis/bearbirdpad) — small, working increments; message describes the goal met. Run the safety checklist below before every push.
 7. Repeat. If the same goal fails 3 consecutive iterations, invoke the Blocker protocol.
 
 ## The goal ladder
@@ -53,7 +53,7 @@ Exit criteria are the plan's acceptance lists — summarized here; the plan sect
 ## Hard rules
 
 1. **The ROM never leaves the machine.** Never committed, never pushed, never uploaded, never copied outside the repo working tree, path may appear in logs but contents never. Same for everything ROM-derived (`RecompiledFuncs/`, `RecompiledPatches/`, `rsp/n_aspMain.cpp`, decompressed variants). The `.gitignore` enforces this; treat a gitignore edit that weakens it as forbidden.
-2. **Push only to `chrissotraidis/banjopad`.** Every upstream repo is read-only: no pushes, no branches, no PRs, no issues. `fetch-sources.sh` sets push URLs to `DISABLED`; keep it that way.
+2. **Push only to `chrissotraidis/bearbirdpad`.** Every upstream repo is read-only: no pushes, no branches, no PRs, no issues. `fetch-sources.sh` sets push URLs to `DISABLED`; keep it that way.
 3. **Before every push:** `git status` shows no ROM-pattern files staged; `git ls-files | grep -E '\.z64|\.v64|\.n64|RecompiledFuncs|RecompiledPatches|n_aspMain'` is empty; nothing under `ref/` except `README.md` is tracked.
 4. **The macOS baseline stays green.** After any patch touching shared code, rebuild the Phase 0 macOS target before counting the goal met. Desktop behavior is the regression canary (plan §9).
 5. **No fabricated verification.** If a check didn't run or didn't pass, the goal is open. HUMAN-VERIFY items stay in the queue until a human confirms; never silently self-approve them.

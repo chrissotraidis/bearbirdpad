@@ -1,6 +1,6 @@
 # Third-party licenses
 
-BanjoPad applies patches to pinned upstream source trees. The BanjoPad license
+BearBirdPad applies patches to pinned upstream source trees. The BearBirdPad license
 does not replace any upstream license. This table records the direct build
 inputs and patched components at the revisions selected by
 [`scripts/fetch-sources.sh`](scripts/fetch-sources.sh).
@@ -30,7 +30,7 @@ audit the exact fetched source and package, not rely on this summary alone.
 
 Do not publish an IPA or a third-party source bundle until RecompFrontend's
 project license has been confirmed by its copyright holders or an
-authoritative upstream license notice. A public BanjoPad source release should
+authoritative upstream license notice. A public BearBirdPad source release should
 also include the exact pinned revisions and this notice.
 
 This file is a repository audit record, not legal advice.

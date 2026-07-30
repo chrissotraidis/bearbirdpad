@@ -27,7 +27,7 @@ float clamp_axis(float value) {
 
 } // namespace
 
-bool banjopad::touch::get_n64_input(int controller_num, uint16_t* buttons, float* x, float* y) {
+bool bearbirdpad::touch::get_n64_input(int controller_num, uint16_t* buttons, float* x, float* y) {
     bool got_input = recompinput::profiles::get_n64_input(controller_num, buttons, x, y);
     if (controller_num != 0) {
         return got_input;
@@ -45,12 +45,12 @@ bool banjopad::touch::get_n64_input(int controller_num, uint16_t* buttons, float
     return true;
 }
 
-void banjopad::touch::merge_right_analog(float* x, float* y) {
+void bearbirdpad::touch::merge_right_analog(float* x, float* y) {
     *x = clamp_axis(*x + touch_state.camera_x.load(std::memory_order_relaxed));
     *y = clamp_axis(*y + touch_state.camera_y.load(std::memory_order_relaxed));
 }
 
-void banjopad::touch::set_button(uint16_t button, bool pressed) {
+void bearbirdpad::touch::set_button(uint16_t button, bool pressed) {
     for (size_t bit = 0; bit < button_press_counts.size(); ++bit) {
         uint16_t mask = static_cast<uint16_t>(1u << bit);
         if ((button & mask) == 0) {
@@ -72,17 +72,17 @@ void banjopad::touch::set_button(uint16_t button, bool pressed) {
     }
 }
 
-void banjopad::touch::set_stick(float x, float y) {
+void bearbirdpad::touch::set_stick(float x, float y) {
     touch_state.stick_x.store(clamp_axis(x), std::memory_order_relaxed);
     touch_state.stick_y.store(clamp_axis(y), std::memory_order_relaxed);
 }
 
-void banjopad::touch::set_camera(float x, float y) {
+void bearbirdpad::touch::set_camera(float x, float y) {
     touch_state.camera_x.store(clamp_axis(x), std::memory_order_relaxed);
     touch_state.camera_y.store(clamp_axis(y), std::memory_order_relaxed);
 }
 
-void banjopad::touch::release_all() {
+void bearbirdpad::touch::release_all() {
     for (auto& count : button_press_counts) {
         count.store(0, std::memory_order_relaxed);
     }
@@ -91,18 +91,18 @@ void banjopad::touch::release_all() {
     set_camera(0.0f, 0.0f);
 }
 
-extern "C" void BanjoPadTouch_SetButton(uint16_t button, int pressed) {
-    banjopad::touch::set_button(button, pressed != 0);
+extern "C" void BearBirdPadTouch_SetButton(uint16_t button, int pressed) {
+    bearbirdpad::touch::set_button(button, pressed != 0);
 }
 
-extern "C" void BanjoPadTouch_SetStick(float x, float y) {
-    banjopad::touch::set_stick(x, y);
+extern "C" void BearBirdPadTouch_SetStick(float x, float y) {
+    bearbirdpad::touch::set_stick(x, y);
 }
 
-extern "C" void BanjoPadTouch_SetCamera(float x, float y) {
-    banjopad::touch::set_camera(x, y);
+extern "C" void BearBirdPadTouch_SetCamera(float x, float y) {
+    bearbirdpad::touch::set_camera(x, y);
 }
 
-extern "C" void BanjoPadTouch_ReleaseAll() {
-    banjopad::touch::release_all();
+extern "C" void BearBirdPadTouch_ReleaseAll() {
+    bearbirdpad::touch::release_all();
 }

@@ -6,13 +6,13 @@
 #include <string>
 #include <vector>
 
-extern "C" void banjopad_complete_ios_file_dialog(bool success, const char *path);
-extern "C" void banjopad_complete_ios_file_dialog_multiple(
+extern "C" void bearbirdpad_complete_ios_file_dialog(bool success, const char *path);
+extern "C" void bearbirdpad_complete_ios_file_dialog_multiple(
     bool success,
     const char *const *paths,
     size_t path_count);
 
-@class BanjoPadDocumentPickerDelegate;
+@class BearBirdPadDocumentPickerDelegate;
 
 namespace {
 enum class PickerMode {
@@ -20,7 +20,7 @@ enum class PickerMode {
     Mods,
 };
 
-static BanjoPadDocumentPickerDelegate *picker_delegate = nil;
+static BearBirdPadDocumentPickerDelegate *picker_delegate = nil;
 
 UIViewController *presenting_view_controller() {
     UIWindow *window = nil;
@@ -80,7 +80,7 @@ NSURL *copy_security_scoped_url(NSURL *source_url, PickerMode mode) {
         if (accessed) {
             [source_url stopAccessingSecurityScopedResource];
         }
-        NSLog(@"BANJOPAD_IOS picker temp directory failed: %@", directory_error);
+        NSLog(@"BEARBIRDPAD_IOS picker temp directory failed: %@", directory_error);
         return nil;
     }
 
@@ -109,7 +109,7 @@ NSURL *copy_security_scoped_url(NSURL *source_url, PickerMode mode) {
     }
 
     if (!copied) {
-        NSLog(@"BANJOPAD_IOS picker copy failed: %@", copy_error);
+        NSLog(@"BEARBIRDPAD_IOS picker copy failed: %@", copy_error);
         return nil;
     }
 
@@ -129,7 +129,7 @@ void complete_picker(PickerMode mode, NSArray<NSURL *> *selected_urls) {
 
     if (mode == PickerMode::Rom) {
         NSURL *rom_url = copied_urls.firstObject;
-        banjopad_complete_ios_file_dialog(
+        bearbirdpad_complete_ios_file_dialog(
             rom_url != nil,
             rom_url != nil ? rom_url.fileSystemRepresentation : nullptr);
         if (rom_url != nil) {
@@ -150,7 +150,7 @@ void complete_picker(PickerMode mode, NSArray<NSURL *> *selected_urls) {
         paths.push_back(path.c_str());
     }
 
-    banjopad_complete_ios_file_dialog_multiple(
+    bearbirdpad_complete_ios_file_dialog_multiple(
         !paths.empty(),
         paths.empty() ? nullptr : paths.data(),
         paths.size());
@@ -161,11 +161,11 @@ void complete_picker(PickerMode mode, NSArray<NSURL *> *selected_urls) {
 }
 } // namespace
 
-@interface BanjoPadDocumentPickerDelegate : NSObject <UIDocumentPickerDelegate>
+@interface BearBirdPadDocumentPickerDelegate : NSObject <UIDocumentPickerDelegate>
 @property(nonatomic, assign) PickerMode mode;
 @end
 
-@implementation BanjoPadDocumentPickerDelegate
+@implementation BearBirdPadDocumentPickerDelegate
 - (void)documentPicker:(UIDocumentPickerViewController *)controller
     didPickDocumentsAtURLs:(NSArray<NSURL *> *)urls {
     complete_picker(self.mode, urls);
@@ -176,7 +176,7 @@ void complete_picker(PickerMode mode, NSArray<NSURL *> *selected_urls) {
 }
 @end
 
-extern "C" void banjopad_present_ios_file_dialog(bool multiple) {
+extern "C" void bearbirdpad_present_ios_file_dialog(bool multiple) {
     dispatch_async(dispatch_get_main_queue(), ^{
         const PickerMode mode = multiple ? PickerMode::Mods : PickerMode::Rom;
         UIViewController *presenter = presenting_view_controller();
@@ -194,7 +194,7 @@ extern "C" void banjopad_present_ios_file_dialog(bool multiple) {
             }
         }
 
-        picker_delegate = [[BanjoPadDocumentPickerDelegate alloc] init];
+        picker_delegate = [[BearBirdPadDocumentPickerDelegate alloc] init];
         picker_delegate.mode = mode;
 
         UIDocumentPickerViewController *picker =

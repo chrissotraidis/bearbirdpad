@@ -3,14 +3,14 @@ diff --git a/recompinput/src/input_events.cpp b/recompinput/src/input_events.cpp
 +++ b/recompinput/src/input_events.cpp
 @@ -102,3 +102,5 @@ bool sdl_event_filter(void* userdata, SDL_Event* event) {
  #if defined(__APPLE__) && TARGET_OS_IPHONE
--        BanjoPadTouch_SetControllerConnected(1);
+-        BearBirdPadTouch_SetControllerConnected(1);
 +        if (controller != nullptr) {
-+            BanjoPadTouch_SetControllerConnected(1);
++            BearBirdPadTouch_SetControllerConnected(1);
 +        }
  #endif
 @@ -122,3 +124,11 @@ bool sdl_event_filter(void* userdata, SDL_Event* event) {
  #if defined(__APPLE__) && TARGET_OS_IPHONE
--        BanjoPadTouch_SetControllerConnected(SDL_NumJoysticks() > 0 ? 1 : 0);
+-        BearBirdPadTouch_SetControllerConnected(SDL_NumJoysticks() > 0 ? 1 : 0);
 +        bool has_connected_game_controller = false;
 +        int joystick_count = SDL_NumJoysticks();
 +        for (int index = 0; index < joystick_count; index++) {
@@ -19,5 +19,5 @@ diff --git a/recompinput/src/input_events.cpp b/recompinput/src/input_events.cpp
 +                break;
 +            }
 +        }
-+        BanjoPadTouch_SetControllerConnected(has_connected_game_controller ? 1 : 0);
++        BearBirdPadTouch_SetControllerConnected(has_connected_game_controller ? 1 : 0);
  #endif

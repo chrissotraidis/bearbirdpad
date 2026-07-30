@@ -3,8 +3,8 @@ index 38fdd69..8ef866b 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -52,7 +52,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
-     if (NOT EXISTS "${BANJOPAD_IOS_DIR}/ios_main.mm")
-         message(FATAL_ERROR "BANJOPAD_IOS_DIR must contain ios_main.mm")
+     if (NOT EXISTS "${BEARBIRDPAD_IOS_DIR}/ios_main.mm")
+         message(FATAL_ERROR "BEARBIRDPAD_IOS_DIR must contain ios_main.mm")
      endif()
 -    add_compile_definitions(BANJO_IOS_NO_CODE_MODS=1)
 +    add_compile_definitions(BANJO_IOS_NO_CODE_MODS=1 BANJO_IOS_TOUCH=1)
@@ -12,15 +12,15 @@ index 38fdd69..8ef866b 100644
          add_compile_definitions(BANJO_MOBILE_RENDERER_STUB=1)
      endif()
 @@ -190,9 +190,12 @@ if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
-         ${BANJOPAD_IOS_DIR}/ios_main.mm
-         ${BANJOPAD_IOS_DIR}/IosFileDialog.mm
-         ${BANJOPAD_IOS_DIR}/NullRendererContext.cpp
-+        ${BANJOPAD_IOS_DIR}/TouchInputShim.cpp
-+        ${BANJOPAD_IOS_DIR}/TouchOverlay.mm
+         ${BEARBIRDPAD_IOS_DIR}/ios_main.mm
+         ${BEARBIRDPAD_IOS_DIR}/IosFileDialog.mm
+         ${BEARBIRDPAD_IOS_DIR}/NullRendererContext.cpp
++        ${BEARBIRDPAD_IOS_DIR}/TouchInputShim.cpp
++        ${BEARBIRDPAD_IOS_DIR}/TouchOverlay.mm
      )
      set_source_files_properties(
-         ${BANJOPAD_IOS_DIR}/IosFileDialog.mm
-+        ${BANJOPAD_IOS_DIR}/TouchOverlay.mm
+         ${BEARBIRDPAD_IOS_DIR}/IosFileDialog.mm
++        ${BEARBIRDPAD_IOS_DIR}/TouchOverlay.mm
          PROPERTIES COMPILE_FLAGS "-fobjc-arc"
      )
  endif()
@@ -68,7 +68,7 @@ index 52c7e10..ad271f8 100644
      // TODO: Use controller number.
      recompinput::get_right_analog(0, x_out, y_out);
 +#if defined(BANJO_IOS_TOUCH)
-+    banjopad::touch::merge_right_analog(x_out, y_out);
++    bearbirdpad::touch::merge_right_analog(x_out, y_out);
 +#endif
  }
 
@@ -92,7 +92,7 @@ index 1a16aee..3f02a2d 100644
      ultramodern::input::callbacks_t input_callbacks{
          .poll_input = recompinput::poll_inputs,
 +#if defined(BANJO_IOS_TOUCH)
-+        .get_input = banjopad::touch::get_n64_input,
++        .get_input = bearbirdpad::touch::get_n64_input,
 +#else
          .get_input = recompinput::profiles::get_n64_input,
 +#endif

@@ -80,7 +80,7 @@ NSString *settings_path() {
 
 static void push_menu_toggle();
 
-@interface BanjoPadTouchButton : UIView
+@interface BearBirdPadTouchButton : UIView
 
 @property(nonatomic, readonly) uint16_t buttonMask;
 @property(nonatomic, strong) UILabel *label;
@@ -100,7 +100,7 @@ static void push_menu_toggle();
 
 @end
 
-@implementation BanjoPadTouchButton {
+@implementation BearBirdPadTouchButton {
     BOOL _pill;
     UIColor *_accentColor;
 }
@@ -207,7 +207,7 @@ static void push_menu_toggle();
     }
     _pressed = pressed;
     [self updateAccessibilityAppearance];
-    BanjoPadTouch_SetButton(self.buttonMask, pressed ? 1 : 0);
+    BearBirdPadTouch_SetButton(self.buttonMask, pressed ? 1 : 0);
 }
 
 - (BOOL)accessibilityActivate {
@@ -273,7 +273,7 @@ static void push_menu_toggle();
 
 @end
 
-@interface BanjoPadTouchStick : UIView
+@interface BearBirdPadTouchStick : UIView
 
 @property(nonatomic, strong) UIView *thumb;
 @property(nonatomic, assign) UITouch *activeTouch;
@@ -291,7 +291,7 @@ static void push_menu_toggle();
 
 @end
 
-@implementation BanjoPadTouchStick
+@implementation BearBirdPadTouchStick
 
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
@@ -389,7 +389,7 @@ static void push_menu_toggle();
         dy *= travel / length;
     }
     self.thumb.center = CGPointMake(center.x + dx, center.y + dy);
-    BanjoPadTouch_SetStick(dx / travel, -dy / travel);
+    BearBirdPadTouch_SetStick(dx / travel, -dy / travel);
 }
 
 - (void)pulseAccessibilityX:(float)x y:(float)y direction:(NSString *)direction {
@@ -399,11 +399,11 @@ static void push_menu_toggle();
     self.thumb.center = CGPointMake(center.x + x * travel, center.y - y * travel);
     self.accessibilityValue = direction;
     UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, direction);
-    BanjoPadTouch_SetStick(x, y);
+    BearBirdPadTouch_SetStick(x, y);
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 160 * NSEC_PER_MSEC),
                    dispatch_get_main_queue(), ^{
         if (generation == self.accessibilityGeneration && self.activeTouch == nil) {
-            BanjoPadTouch_SetStick(0.0f, 0.0f);
+            BearBirdPadTouch_SetStick(0.0f, 0.0f);
             self.accessibilityValue = @"Centered";
             self.thumb.center =
                 CGPointMake(CGRectGetMidX(self.bounds), CGRectGetMidY(self.bounds));
@@ -473,7 +473,7 @@ static void push_menu_toggle();
     self.thumb.center = CGPointMake(CGRectGetMidX(self.bounds), CGRectGetMidY(self.bounds));
     self.accessibilityValue = @"Centered";
     UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, self.accessibilityValue);
-    BanjoPadTouch_SetStick(0.0f, 0.0f);
+    BearBirdPadTouch_SetStick(0.0f, 0.0f);
     return YES;
 }
 
@@ -513,34 +513,34 @@ static void push_menu_toggle();
     self.activeTouch = nil;
     self.thumb.center = CGPointMake(CGRectGetMidX(self.bounds), CGRectGetMidY(self.bounds));
     self.accessibilityValue = @"Centered";
-    BanjoPadTouch_SetStick(0.0f, 0.0f);
+    BearBirdPadTouch_SetStick(0.0f, 0.0f);
 }
 
 @end
 
-static BanjoPadTouchButton *sMenuButton;
+static BearBirdPadTouchButton *sMenuButton;
 static std::atomic_bool sLayoutEditorActive(false);
 static BOOL sLayoutEditorRequested;
 
-@interface BanjoPadTouchOverlay : UIView
+@interface BearBirdPadTouchOverlay : UIView
 
-@property(nonatomic, strong) BanjoPadTouchStick *stick;
-@property(nonatomic, strong) NSArray<BanjoPadTouchButton *> *buttons;
-@property(nonatomic, strong) BanjoPadTouchButton *buttonA;
-@property(nonatomic, strong) BanjoPadTouchButton *buttonB;
-@property(nonatomic, strong) BanjoPadTouchButton *buttonZLeft;
-@property(nonatomic, strong) BanjoPadTouchButton *buttonZRight;
-@property(nonatomic, strong) BanjoPadTouchButton *buttonL;
-@property(nonatomic, strong) BanjoPadTouchButton *buttonR;
-@property(nonatomic, strong) BanjoPadTouchButton *buttonStart;
-@property(nonatomic, strong) BanjoPadTouchButton *cUp;
-@property(nonatomic, strong) BanjoPadTouchButton *cDown;
-@property(nonatomic, strong) BanjoPadTouchButton *cLeft;
-@property(nonatomic, strong) BanjoPadTouchButton *cRight;
-@property(nonatomic, strong) BanjoPadTouchButton *dUp;
-@property(nonatomic, strong) BanjoPadTouchButton *dDown;
-@property(nonatomic, strong) BanjoPadTouchButton *dLeft;
-@property(nonatomic, strong) BanjoPadTouchButton *dRight;
+@property(nonatomic, strong) BearBirdPadTouchStick *stick;
+@property(nonatomic, strong) NSArray<BearBirdPadTouchButton *> *buttons;
+@property(nonatomic, strong) BearBirdPadTouchButton *buttonA;
+@property(nonatomic, strong) BearBirdPadTouchButton *buttonB;
+@property(nonatomic, strong) BearBirdPadTouchButton *buttonZLeft;
+@property(nonatomic, strong) BearBirdPadTouchButton *buttonZRight;
+@property(nonatomic, strong) BearBirdPadTouchButton *buttonL;
+@property(nonatomic, strong) BearBirdPadTouchButton *buttonR;
+@property(nonatomic, strong) BearBirdPadTouchButton *buttonStart;
+@property(nonatomic, strong) BearBirdPadTouchButton *cUp;
+@property(nonatomic, strong) BearBirdPadTouchButton *cDown;
+@property(nonatomic, strong) BearBirdPadTouchButton *cLeft;
+@property(nonatomic, strong) BearBirdPadTouchButton *cRight;
+@property(nonatomic, strong) BearBirdPadTouchButton *dUp;
+@property(nonatomic, strong) BearBirdPadTouchButton *dDown;
+@property(nonatomic, strong) BearBirdPadTouchButton *dLeft;
+@property(nonatomic, strong) BearBirdPadTouchButton *dRight;
 @property(nonatomic, assign) BOOL controllerConnected;
 @property(nonatomic, assign) BOOL showL;
 @property(nonatomic, assign) BOOL showDpad;
@@ -568,7 +568,7 @@ static BOOL sLayoutEditorRequested;
 
 @end
 
-@implementation BanjoPadTouchOverlay
+@implementation BearBirdPadTouchOverlay
 
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
@@ -591,79 +591,79 @@ static BOOL sLayoutEditorRequested;
         UIColor *amber = [UIColor colorWithRed:1.0 green:0.78 blue:0.22 alpha:1.0];
         UIColor *red = [UIColor colorWithRed:1.0 green:0.45 blue:0.42 alpha:1.0];
 
-        _stick = [[BanjoPadTouchStick alloc] initWithFrame:CGRectZero];
-        _buttonA = [[BanjoPadTouchButton alloc] initWithLabel:@"A"
+        _stick = [[BearBirdPadTouchStick alloc] initWithFrame:CGRectZero];
+        _buttonA = [[BearBirdPadTouchButton alloc] initWithLabel:@"A"
                                          accessibilityLabel:@"A button"
                                                        mask:ButtonA
                                                        pill:NO
                                                       color:blue];
-        _buttonB = [[BanjoPadTouchButton alloc] initWithLabel:@"B"
+        _buttonB = [[BearBirdPadTouchButton alloc] initWithLabel:@"B"
                                          accessibilityLabel:@"B button"
                                                        mask:ButtonB
                                                        pill:NO
                                                       color:green];
-        _buttonZLeft = [[BanjoPadTouchButton alloc] initWithLabel:@"Z"
+        _buttonZLeft = [[BearBirdPadTouchButton alloc] initWithLabel:@"Z"
                                              accessibilityLabel:@"Left Z trigger"
                                                            mask:ButtonZ
                                                            pill:YES
                                                           color:nil];
-        _buttonZRight = [[BanjoPadTouchButton alloc] initWithLabel:@"Z"
+        _buttonZRight = [[BearBirdPadTouchButton alloc] initWithLabel:@"Z"
                                               accessibilityLabel:@"Right Z trigger"
                                                             mask:ButtonZ
                                                             pill:NO
                                                            color:nil];
-        _buttonL = [[BanjoPadTouchButton alloc] initWithLabel:@"L"
+        _buttonL = [[BearBirdPadTouchButton alloc] initWithLabel:@"L"
                                          accessibilityLabel:@"L shoulder button"
                                                        mask:ButtonL
                                                        pill:YES
                                                       color:nil];
-        _buttonR = [[BanjoPadTouchButton alloc] initWithLabel:@"R"
+        _buttonR = [[BearBirdPadTouchButton alloc] initWithLabel:@"R"
                                          accessibilityLabel:@"R shoulder button"
                                                        mask:ButtonR
                                                        pill:YES
                                                       color:nil];
         _buttonStart =
-            [[BanjoPadTouchButton alloc] initWithLabel:@"START"
+            [[BearBirdPadTouchButton alloc] initWithLabel:@"START"
                                   accessibilityLabel:@"Start button"
                                                 mask:ButtonStart
                                                 pill:YES
                                                color:red];
-        _cUp = [[BanjoPadTouchButton alloc] initWithLabel:@"▲"
+        _cUp = [[BearBirdPadTouchButton alloc] initWithLabel:@"▲"
                                       accessibilityLabel:@"C Up button"
                                                     mask:ButtonCUp
                                                     pill:NO
                                                    color:amber];
-        _cDown = [[BanjoPadTouchButton alloc] initWithLabel:@"▼"
+        _cDown = [[BearBirdPadTouchButton alloc] initWithLabel:@"▼"
                                         accessibilityLabel:@"C Down button"
                                                       mask:ButtonCDown
                                                       pill:NO
                                                      color:amber];
-        _cLeft = [[BanjoPadTouchButton alloc] initWithLabel:@"◀"
+        _cLeft = [[BearBirdPadTouchButton alloc] initWithLabel:@"◀"
                                         accessibilityLabel:@"C Left button"
                                                       mask:ButtonCLeft
                                                       pill:NO
                                                      color:amber];
-        _cRight = [[BanjoPadTouchButton alloc] initWithLabel:@"▶"
+        _cRight = [[BearBirdPadTouchButton alloc] initWithLabel:@"▶"
                                          accessibilityLabel:@"C Right button"
                                                        mask:ButtonCRight
                                                        pill:NO
                                                       color:amber];
-        _dUp = [[BanjoPadTouchButton alloc] initWithLabel:@"▲"
+        _dUp = [[BearBirdPadTouchButton alloc] initWithLabel:@"▲"
                                       accessibilityLabel:@"D-pad Up"
                                                     mask:ButtonDpadUp
                                                     pill:NO
                                                    color:nil];
-        _dDown = [[BanjoPadTouchButton alloc] initWithLabel:@"▼"
+        _dDown = [[BearBirdPadTouchButton alloc] initWithLabel:@"▼"
                                         accessibilityLabel:@"D-pad Down"
                                                       mask:ButtonDpadDown
                                                       pill:NO
                                                      color:nil];
-        _dLeft = [[BanjoPadTouchButton alloc] initWithLabel:@"◀"
+        _dLeft = [[BearBirdPadTouchButton alloc] initWithLabel:@"◀"
                                         accessibilityLabel:@"D-pad Left"
                                                       mask:ButtonDpadLeft
                                                       pill:NO
                                                      color:nil];
-        _dRight = [[BanjoPadTouchButton alloc] initWithLabel:@"▶"
+        _dRight = [[BearBirdPadTouchButton alloc] initWithLabel:@"▶"
                                          accessibilityLabel:@"D-pad Right"
                                                        mask:ButtonDpadRight
                                                        pill:NO
@@ -699,17 +699,17 @@ static BOOL sLayoutEditorRequested;
             _stick, _buttonA, _buttonB, _buttonZLeft, _buttonZRight, _buttonL, _buttonR,
             _buttonStart, _cUp, _cDown, _cLeft, _cRight, _dUp, _dDown, _dLeft, _dRight
         ];
-        __weak BanjoPadTouchOverlay *weakSelf = self;
+        __weak BearBirdPadTouchOverlay *weakSelf = self;
         void (^selectForAccessibility)(UIView *) = ^(UIView *control) {
             [weakSelf selectControl:control];
         };
         _stick.layoutSelectionHandler = selectForAccessibility;
-        for (BanjoPadTouchButton *button in _buttons) {
+        for (BearBirdPadTouchButton *button in _buttons) {
             button.layoutSelectionHandler = selectForAccessibility;
         }
 
         [self addSubview:_stick];
-        for (BanjoPadTouchButton *button in _buttons) {
+        for (BearBirdPadTouchButton *button in _buttons) {
             [self addSubview:button];
         }
         _buttonL.hidden = YES;
@@ -874,7 +874,7 @@ static BOOL sLayoutEditorRequested;
 }
 
 - (NSString *)storageKeyForProfile:(NSString *)profile {
-    return [@"BanjoPad.TouchLayout." stringByAppendingString:profile];
+    return [@"BearBirdPad.TouchLayout." stringByAppendingString:profile];
 }
 
 - (void)loadLayoutForProfile:(NSString *)profile {
@@ -1099,7 +1099,7 @@ static BOOL sLayoutEditorRequested;
     [self cancelAllInputs];
     self.layoutEditing = YES;
     self.stick.layoutEditing = YES;
-    for (BanjoPadTouchButton *button in self.buttons) {
+    for (BearBirdPadTouchButton *button in self.buttons) {
         button.layoutEditing = YES;
     }
     for (UIGestureRecognizer *gesture in self.editGestures) {
@@ -1110,7 +1110,7 @@ static BOOL sLayoutEditorRequested;
     sMenuButton.hidden = YES;
     [self selectControl:self.buttonA];
     [self setNeedsLayout];
-    SDL_Log("[BanjoPad] touch layout editor opened");
+    SDL_Log("[BearBirdPad] touch layout editor opened");
 }
 
 - (void)endLayoutEditing {
@@ -1120,7 +1120,7 @@ static BOOL sLayoutEditorRequested;
     [self saveCurrentLayout];
     self.layoutEditing = NO;
     self.stick.layoutEditing = NO;
-    for (BanjoPadTouchButton *button in self.buttons) {
+    for (BearBirdPadTouchButton *button in self.buttons) {
         button.layoutEditing = NO;
     }
     for (UIGestureRecognizer *gesture in self.editGestures) {
@@ -1131,7 +1131,7 @@ static BOOL sLayoutEditorRequested;
     sLayoutEditorActive.store(false);
     sMenuButton.hidden = NO;
     [self setNeedsLayout];
-    SDL_Log("[BanjoPad] touch layout saved");
+    SDL_Log("[BearBirdPad] touch layout saved");
 }
 
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
@@ -1180,21 +1180,21 @@ static BOOL sLayoutEditorRequested;
 
 - (void)cancelAllInputs {
     [self.stick cancelInput];
-    for (BanjoPadTouchButton *button in self.buttons) {
+    for (BearBirdPadTouchButton *button in self.buttons) {
         [button cancelInput];
     }
-    BanjoPadTouch_ReleaseAll();
+    BearBirdPadTouch_ReleaseAll();
 }
 
 @end
 
-@interface BanjoPadCameraGesture : UIGestureRecognizer
+@interface BearBirdPadCameraGesture : UIGestureRecognizer
 
 - (CGPoint)consumeTranslation;
 
 @end
 
-@implementation BanjoPadCameraGesture {
+@implementation BearBirdPadCameraGesture {
     UITouch *_activeTouch;
     CGPoint _startPoint;
     CGPoint _lastPoint;
@@ -1274,12 +1274,12 @@ static BOOL sLayoutEditorRequested;
 
 @end
 
-@interface BanjoPadCameraGestureDelegate : NSObject <UIGestureRecognizerDelegate>
+@interface BearBirdPadCameraGestureDelegate : NSObject <UIGestureRecognizerDelegate>
 @end
 
-static BanjoPadTouchOverlay *sOverlay;
-static BanjoPadCameraGesture *sCameraGesture;
-static BanjoPadCameraGestureDelegate *sCameraDelegate;
+static BearBirdPadTouchOverlay *sOverlay;
+static BearBirdPadCameraGesture *sCameraGesture;
+static BearBirdPadCameraGestureDelegate *sCameraDelegate;
 static id sResignObserver;
 static std::atomic_bool sEnabled(true);
 static std::atomic_bool sHideWhenControllerConnected(false);
@@ -1292,10 +1292,10 @@ static NSUInteger sCameraGeneration;
 static void cancel_all_inputs() {
     [sOverlay cancelAllInputs];
     [sMenuButton cancelInput];
-    BanjoPadTouch_ReleaseAll();
+    BearBirdPadTouch_ReleaseAll();
 }
 
-@implementation BanjoPadCameraGestureDelegate
+@implementation BearBirdPadCameraGestureDelegate
 
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer
        shouldReceiveTouch:(UITouch *)touch {
@@ -1304,8 +1304,8 @@ static void cancel_all_inputs() {
     }
     UIView *view = touch.view;
     while (view != nil) {
-        if ([view isKindOfClass:BanjoPadTouchButton.class] ||
-            [view isKindOfClass:BanjoPadTouchStick.class]) {
+        if ([view isKindOfClass:BearBirdPadTouchButton.class] ||
+            [view isKindOfClass:BearBirdPadTouchStick.class]) {
             return NO;
         }
         view = view.superview;
@@ -1375,18 +1375,18 @@ static void push_menu_toggle() {
     SDL_PushEvent(&event);
 }
 
-static void handle_camera_pan(BanjoPadCameraGesture *gesture) {
+static void handle_camera_pan(BearBirdPadCameraGesture *gesture) {
     if (gesture.state == UIGestureRecognizerStateBegan ||
         gesture.state == UIGestureRecognizerStateChanged) {
         CGPoint translation = [gesture consumeTranslation];
         float x = std::clamp(static_cast<float>(translation.x / 60.0), -1.0f, 1.0f);
         float y = std::clamp(static_cast<float>(-translation.y / 60.0), -1.0f, 1.0f);
-        BanjoPadTouch_SetCamera(x, y);
+        BearBirdPadTouch_SetCamera(x, y);
         NSUInteger generation = ++sCameraGeneration;
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 40 * NSEC_PER_MSEC),
                        dispatch_get_main_queue(), ^{
             if (generation == sCameraGeneration) {
-                BanjoPadTouch_SetCamera(0.0f, 0.0f);
+                BearBirdPadTouch_SetCamera(0.0f, 0.0f);
             }
         });
     }
@@ -1394,43 +1394,43 @@ static void handle_camera_pan(BanjoPadCameraGesture *gesture) {
         gesture.state == UIGestureRecognizerStateCancelled ||
         gesture.state == UIGestureRecognizerStateFailed) {
         ++sCameraGeneration;
-        BanjoPadTouch_SetCamera(0.0f, 0.0f);
+        BearBirdPadTouch_SetCamera(0.0f, 0.0f);
     }
 }
 
-@interface BanjoPadMenuTapTarget : NSObject
+@interface BearBirdPadMenuTapTarget : NSObject
 - (void)tapped;
 @end
 
-@interface BanjoPadCameraTarget : NSObject
-- (void)panned:(BanjoPadCameraGesture *)gesture;
+@interface BearBirdPadCameraTarget : NSObject
+- (void)panned:(BearBirdPadCameraGesture *)gesture;
 @end
 
-static BanjoPadMenuTapTarget *sMenuTapTarget;
-static BanjoPadCameraTarget *sCameraTarget;
+static BearBirdPadMenuTapTarget *sMenuTapTarget;
+static BearBirdPadCameraTarget *sCameraTarget;
 
-@implementation BanjoPadMenuTapTarget
+@implementation BearBirdPadMenuTapTarget
 - (void)tapped {
     push_menu_toggle();
 }
 @end
 
-@implementation BanjoPadCameraTarget
-- (void)panned:(BanjoPadCameraGesture *)gesture {
+@implementation BearBirdPadCameraTarget
+- (void)panned:(BearBirdPadCameraGesture *)gesture {
     handle_camera_pan(gesture);
 }
 @end
 
 static void install_menu_button(UIWindow *window) {
     if (sMenuButton == nil) {
-        sMenuTapTarget = [[BanjoPadMenuTapTarget alloc] init];
+        sMenuTapTarget = [[BearBirdPadMenuTapTarget alloc] init];
         sMenuButton =
-            [[BanjoPadTouchButton alloc] initWithLabel:@"•••"
-                                  accessibilityLabel:@"BanjoPad menu"
+            [[BearBirdPadTouchButton alloc] initWithLabel:@"•••"
+                                  accessibilityLabel:@"BearBirdPad menu"
                                                 mask:0
                                                 pill:NO
                                                color:nil];
-        sMenuButton.accessibilityHint = @"Opens or closes the BanjoPad menu.";
+        sMenuButton.accessibilityHint = @"Opens or closes the BearBirdPad menu.";
         [sMenuButton addGestureRecognizer:
             [[UITapGestureRecognizer alloc] initWithTarget:sMenuTapTarget action:@selector(tapped)]];
     }
@@ -1462,10 +1462,10 @@ static void install_when_ready() {
 
     install_menu_button(window);
     if (sCameraGesture == nil) {
-        sCameraDelegate = [[BanjoPadCameraGestureDelegate alloc] init];
-        sCameraTarget = [[BanjoPadCameraTarget alloc] init];
+        sCameraDelegate = [[BearBirdPadCameraGestureDelegate alloc] init];
+        sCameraTarget = [[BearBirdPadCameraTarget alloc] init];
         sCameraGesture =
-            [[BanjoPadCameraGesture alloc] initWithTarget:sCameraTarget action:@selector(panned:)];
+            [[BearBirdPadCameraGesture alloc] initWithTarget:sCameraTarget action:@selector(panned:)];
         [window addGestureRecognizer:sCameraGesture];
         sCameraGesture.delegate = sCameraDelegate;
         sCameraGesture.cancelsTouchesInView = NO;
@@ -1498,7 +1498,7 @@ static void apply_overlay_state() {
     }
 
     if (sOverlay == nil) {
-        sOverlay = [[BanjoPadTouchOverlay alloc] initWithFrame:window.bounds];
+        sOverlay = [[BearBirdPadTouchOverlay alloc] initWithFrame:window.bounds];
         sOverlay.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     }
     [sOverlay setOptionalControlsShowL:sShowL.load() showDpad:sShowDpad.load()];
@@ -1517,34 +1517,34 @@ static void apply_overlay_state() {
     }
 }
 
-extern "C" int BanjoPadTouch_Available(void) {
+extern "C" int BearBirdPadTouch_Available(void) {
     return 1;
 }
 
-extern "C" int BanjoPadTouch_Enabled(void) {
+extern "C" int BearBirdPadTouch_Enabled(void) {
     return sEnabled.load() ? 1 : 0;
 }
 
-extern "C" int BanjoPadTouch_HideWhenControllerConnected(void) {
+extern "C" int BearBirdPadTouch_HideWhenControllerConnected(void) {
     return sHideWhenControllerConnected.load() ? 1 : 0;
 }
 
-extern "C" int BanjoPadTouch_ShowDpad(void) {
+extern "C" int BearBirdPadTouch_ShowDpad(void) {
     return sShowDpad.load() ? 1 : 0;
 }
 
-extern "C" int BanjoPadTouch_ShowL(void) {
+extern "C" int BearBirdPadTouch_ShowL(void) {
     return sShowL.load() ? 1 : 0;
 }
 
-extern "C" void BanjoPadTouch_BeginLayoutEditing(void) {
+extern "C" void BearBirdPadTouch_BeginLayoutEditing(void) {
     dispatch_async(dispatch_get_main_queue(), ^{
         if (!sEnabled.load()) {
-            SDL_Log("[BanjoPad] layout editor requires Touch Controls");
+            SDL_Log("[BearBirdPad] layout editor requires Touch Controls");
             return;
         }
         if (sControllerConnected.load() && sHideWhenControllerConnected.load()) {
-            SDL_Log("[BanjoPad] layout editor unavailable while touch controls are hidden");
+            SDL_Log("[BearBirdPad] layout editor unavailable while touch controls are hidden");
             return;
         }
         sLayoutEditorRequested = YES;
@@ -1556,7 +1556,7 @@ extern "C" void BanjoPadTouch_BeginLayoutEditing(void) {
     });
 }
 
-extern "C" void BanjoPadTouch_Install(void) {
+extern "C" void BearBirdPadTouch_Install(void) {
     dispatch_async(dispatch_get_main_queue(), ^{
         if (sResignObserver == nil) {
             sResignObserver = [NSNotificationCenter.defaultCenter
@@ -1572,7 +1572,7 @@ extern "C" void BanjoPadTouch_Install(void) {
     });
 }
 
-extern "C" void BanjoPadTouch_SetEnabled(int enabled) {
+extern "C" void BearBirdPadTouch_SetEnabled(int enabled) {
     sEnabled.store(enabled != 0);
     dispatch_async(dispatch_get_main_queue(), ^{
         if (!sEnabled.load()) {
@@ -1584,7 +1584,7 @@ extern "C" void BanjoPadTouch_SetEnabled(int enabled) {
     });
 }
 
-extern "C" void BanjoPadTouch_SetHideWhenControllerConnected(int hidden) {
+extern "C" void BearBirdPadTouch_SetHideWhenControllerConnected(int hidden) {
     sHideWhenControllerConnected.store(hidden != 0);
     dispatch_async(dispatch_get_main_queue(), ^{
         save_control_settings();
@@ -1592,7 +1592,7 @@ extern "C" void BanjoPadTouch_SetHideWhenControllerConnected(int hidden) {
     });
 }
 
-extern "C" void BanjoPadTouch_SetShowDpad(int visible) {
+extern "C" void BearBirdPadTouch_SetShowDpad(int visible) {
     sShowDpad.store(visible != 0);
     dispatch_async(dispatch_get_main_queue(), ^{
         save_control_settings();
@@ -1600,7 +1600,7 @@ extern "C" void BanjoPadTouch_SetShowDpad(int visible) {
     });
 }
 
-extern "C" void BanjoPadTouch_SetShowL(int visible) {
+extern "C" void BearBirdPadTouch_SetShowL(int visible) {
     sShowL.store(visible != 0);
     dispatch_async(dispatch_get_main_queue(), ^{
         save_control_settings();
@@ -1608,7 +1608,7 @@ extern "C" void BanjoPadTouch_SetShowL(int visible) {
     });
 }
 
-extern "C" void BanjoPadTouch_SetMenuVisible(int visible) {
+extern "C" void BearBirdPadTouch_SetMenuVisible(int visible) {
     bool newValue = visible != 0;
     if (sMenuVisible.exchange(newValue) == newValue) {
         return;
@@ -1618,7 +1618,7 @@ extern "C" void BanjoPadTouch_SetMenuVisible(int visible) {
     });
 }
 
-extern "C" void BanjoPadTouch_SetControllerConnected(int connected) {
+extern "C" void BearBirdPadTouch_SetControllerConnected(int connected) {
     bool newValue = connected != 0;
     if (sControllerConnected.exchange(newValue) == newValue) {
         return;

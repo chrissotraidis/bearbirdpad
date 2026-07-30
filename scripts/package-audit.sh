@@ -43,7 +43,7 @@ find "$app_path" -type f -print |
         esac
     done
 
-find "$app_path" -type f ! -name BanjoRecompiled ! -name BanjoPadCIStub -exec \
+find "$app_path" -type f ! -name BanjoRecompiled ! -name BearBirdPadCIStub -exec \
     grep -IEl '1fe1632098865f639e22c11b9a81ee8f29c75d7a|1fb13cad402518d3ae9a8dc4b52c5c54b2a4adc7|RecompiledFuncs|RecompiledPatches|banjo\.us\.v10\.decompressed' {} + |
     LC_ALL=C sort |
     while IFS= read -r file; do

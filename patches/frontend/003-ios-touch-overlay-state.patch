@@ -7,8 +7,8 @@ index 16a5f0d..b4292a9 100644
  #endif
 
 +#if defined(__APPLE__) && TARGET_OS_IPHONE
-+extern "C" void BanjoPadTouch_ReleaseAll(void);
-+extern "C" void BanjoPadTouch_SetControllerConnected(int connected);
++extern "C" void BearBirdPadTouch_ReleaseAll(void);
++extern "C" void BearBirdPadTouch_SetControllerConnected(int connected);
 +#endif
 +
  static struct {
@@ -16,7 +16,7 @@ index 16a5f0d..b4292a9 100644
  } DropState;
 @@ -94 +99,5 @@ bool sdl_event_filter(void* userdata, SDL_Event* event) {
 +#if defined(__APPLE__) && TARGET_OS_IPHONE
-+        BanjoPadTouch_SetControllerConnected(1);
++        BearBirdPadTouch_SetControllerConnected(1);
 +#endif
 +
          ControllerGUID guid = profiles::get_guid_from_sdl_controller(controller);
@@ -25,7 +25,7 @@ index 16a5f0d..b4292a9 100644
          printf("Controller removed: %d\n", controller_event->which);
          recompinput::remove_controller_state(controller_event->which);
 +#if defined(__APPLE__) && TARGET_OS_IPHONE
-+        BanjoPadTouch_SetControllerConnected(SDL_NumJoysticks() > 0 ? 1 : 0);
++        BearBirdPadTouch_SetControllerConnected(SDL_NumJoysticks() > 0 ? 1 : 0);
 +#endif
      }
      break;
@@ -35,7 +35,7 @@ index 16a5f0d..b4292a9 100644
          break;
  #if defined(__APPLE__) && TARGET_OS_IPHONE
 +    case SDL_EventType::SDL_APP_WILLENTERBACKGROUND:
-+        BanjoPadTouch_ReleaseAll();
++        BearBirdPadTouch_ReleaseAll();
 +        break;
      case SDL_EventType::SDL_APP_DIDENTERFOREGROUND:
          if (!ultramodern::is_game_started()) {
@@ -53,7 +53,7 @@ index 277a421..e842929 100644
 +#endif
 +
 +#if defined(__APPLE__) && TARGET_OS_IPHONE
-+extern "C" void BanjoPadTouch_SetMenuVisible(int visible);
++extern "C" void BearBirdPadTouch_SetMenuVisible(int visible);
 +#endif
 +
  static std::atomic_bool cursor_enabled = true;
@@ -64,7 +64,7 @@ index 277a421..e842929 100644
      apply_background_input_mode();
 
 +#if defined(__APPLE__) && TARGET_OS_IPHONE
-+    BanjoPadTouch_SetMenuVisible(
++    BearBirdPadTouch_SetMenuVisible(
 +        !ultramodern::is_game_started() || recompui::is_any_context_shown());
 +#endif
 +
@@ -85,15 +85,15 @@ index f379a6f..b53e44e 100644
 +#endif
 +
 +#if defined(__APPLE__) && TARGET_OS_IPHONE
-+extern "C" int BanjoPadTouch_Enabled(void);
-+extern "C" int BanjoPadTouch_HideWhenControllerConnected(void);
-+extern "C" int BanjoPadTouch_ShowDpad(void);
-+extern "C" int BanjoPadTouch_ShowL(void);
-+extern "C" void BanjoPadTouch_BeginLayoutEditing(void);
-+extern "C" void BanjoPadTouch_SetEnabled(int enabled);
-+extern "C" void BanjoPadTouch_SetHideWhenControllerConnected(int hidden);
-+extern "C" void BanjoPadTouch_SetShowDpad(int visible);
-+extern "C" void BanjoPadTouch_SetShowL(int visible);
++extern "C" int BearBirdPadTouch_Enabled(void);
++extern "C" int BearBirdPadTouch_HideWhenControllerConnected(void);
++extern "C" int BearBirdPadTouch_ShowDpad(void);
++extern "C" int BearBirdPadTouch_ShowL(void);
++extern "C" void BearBirdPadTouch_BeginLayoutEditing(void);
++extern "C" void BearBirdPadTouch_SetEnabled(int enabled);
++extern "C" void BearBirdPadTouch_SetHideWhenControllerConnected(int hidden);
++extern "C" void BearBirdPadTouch_SetShowDpad(int visible);
++extern "C" void BearBirdPadTouch_SetShowL(int visible);
 +#endif
 +
  namespace recompui {
@@ -119,14 +119,14 @@ index f379a6f..b53e44e 100644
 +            return toggle;
 +        };
 +        auto touch_controls_toggle =
-+            create_touch_toggle("Touch Controls", BanjoPadTouch_Enabled() != 0);
++            create_touch_toggle("Touch Controls", BearBirdPadTouch_Enabled() != 0);
 +        auto show_l_toggle =
-+            create_touch_toggle("Show L Button", BanjoPadTouch_ShowL() != 0);
++            create_touch_toggle("Show L Button", BearBirdPadTouch_ShowL() != 0);
 +        auto show_dpad_toggle =
-+            create_touch_toggle("Show D-pad", BanjoPadTouch_ShowDpad() != 0);
++            create_touch_toggle("Show D-pad", BearBirdPadTouch_ShowDpad() != 0);
 +        auto hide_with_controller_toggle = create_touch_toggle(
 +            "Hide When Controller Connected",
-+            BanjoPadTouch_HideWhenControllerConnected() != 0);
++            BearBirdPadTouch_HideWhenControllerConnected() != 0);
 +        auto customize_touch_button = context.create_element<Button>(
 +            body_left_scroll,
 +            "Customize Touch Layout",
@@ -137,24 +137,24 @@ index f379a6f..b53e44e 100644
 +        customize_touch_button->set_margin_bottom(16.0f);
 +        const bool game_started = ultramodern::is_game_started();
 +        customize_touch_button->set_enabled(
-+            BanjoPadTouch_Enabled() != 0 && game_started);
++            BearBirdPadTouch_Enabled() != 0 && game_started);
 +        customize_touch_button->add_pressed_callback([]() {
-+            BanjoPadTouch_BeginLayoutEditing();
++            BearBirdPadTouch_BeginLayoutEditing();
 +        });
 +
 +        touch_controls_toggle->add_checked_callback(
 +            [customize_touch_button, game_started](bool checked) {
-+                BanjoPadTouch_SetEnabled(checked ? 1 : 0);
++                BearBirdPadTouch_SetEnabled(checked ? 1 : 0);
 +                customize_touch_button->set_enabled(checked && game_started);
 +            });
 +        show_l_toggle->add_checked_callback([](bool checked) {
-+            BanjoPadTouch_SetShowL(checked ? 1 : 0);
++            BearBirdPadTouch_SetShowL(checked ? 1 : 0);
 +        });
 +        show_dpad_toggle->add_checked_callback([](bool checked) {
-+            BanjoPadTouch_SetShowDpad(checked ? 1 : 0);
++            BearBirdPadTouch_SetShowDpad(checked ? 1 : 0);
 +        });
 +        hide_with_controller_toggle->add_checked_callback([](bool checked) {
-+            BanjoPadTouch_SetHideWhenControllerConnected(checked ? 1 : 0);
++            BearBirdPadTouch_SetHideWhenControllerConnected(checked ? 1 : 0);
 +        });
 +#endif
 +

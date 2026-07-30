@@ -13,7 +13,7 @@ rt64_revision="6f1c2d9"
 plume_revision="d890ac8"
 frontend_revision="d0d90ba"
 bk_decomp_revision="351ca15"
-patch_state="$source_root/.banjopad-patch-state"
+patch_state="$source_root/.bearbirdpad-patch-state"
 using_patch_state=false
 
 assert_revision() {

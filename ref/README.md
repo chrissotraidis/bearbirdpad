@@ -1,6 +1,6 @@
 # Reference material
 
-Read-only reference inputs for the banjopad iOS port. Nothing in this folder is a build input, and **everything here except this README is gitignored** — the contents stay local and are never committed or pushed.
+Read-only reference inputs for the bearbirdpad iOS port. Nothing in this folder is a build input, and **everything here except this README is gitignored** — the contents stay local and are never committed or pushed.
 
 - **The original game ROM lives here**: place your legally owned Banjo-Kazooie NTSC-U v1.0 retail dump in this folder (`.z64`/`.v64`/`.n64`, any byte order — the tooling normalizes it). A complete dump is exactly 16 MiB (16,777,216 bytes), normalizes to XXH3-64 `1B67585D56E07F8C`, and has big-endian MD5 `b29599651a13f681c9923d69354bf4a3`. It is validated during Phase 0 (see [../docs/banjo-ios-loop.md](../docs/banjo-ios-loop.md)) and staged into `sources/` locally for the recompilers. A short dump must be re-dumped, not padded, because the missing range contains game data. The ROM must never be committed, pushed, or uploaded.
 - **Cloned reference repos** (the Android port, upstream HEADs, texture packs / graphics mods, decomp material) also go here — the build loop fetches them as needed and logs each one below with URL, commit, and purpose.

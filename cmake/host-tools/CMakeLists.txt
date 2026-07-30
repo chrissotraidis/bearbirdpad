@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(banjopad_host_tools LANGUAGES C CXX)
+project(bearbirdpad_host_tools LANGUAGES C CXX)
 
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 20)
@@ -8,18 +8,18 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
-set(BANJOPAD_SOURCE_ROOT
+set(BEARBIRDPAD_SOURCE_ROOT
     "${CMAKE_CURRENT_LIST_DIR}/../../sources/banjo"
     CACHE PATH "Pinned BanjoRecomp checkout")
-get_filename_component(BANJOPAD_SOURCE_ROOT
-    "${BANJOPAD_SOURCE_ROOT}" REALPATH)
+get_filename_component(BEARBIRDPAD_SOURCE_ROOT
+    "${BEARBIRDPAD_SOURCE_ROOT}" REALPATH)
 
 set(n64recomp_source
-    "${BANJOPAD_SOURCE_ROOT}/lib/N64ModernRuntime/N64Recomp")
-set(rt64_source "${BANJOPAD_SOURCE_ROOT}/lib/rt64")
+    "${BEARBIRDPAD_SOURCE_ROOT}/lib/N64ModernRuntime/N64Recomp")
+set(rt64_source "${BEARBIRDPAD_SOURCE_ROOT}/lib/rt64")
 set(spirv_cross_source "${rt64_source}/src/contrib/spirv-cross")
 set(xxhash_source
-    "${BANJOPAD_SOURCE_ROOT}/lib/N64ModernRuntime/thirdparty/xxHash")
+    "${BEARBIRDPAD_SOURCE_ROOT}/lib/N64ModernRuntime/thirdparty/xxHash")
 
 foreach(required_path
         "${n64recomp_source}/CMakeLists.txt"

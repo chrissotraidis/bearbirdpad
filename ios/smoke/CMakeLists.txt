@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(BanjoPadMetalSmoke LANGUAGES C CXX OBJC OBJCXX)
+project(BearBirdPadMetalSmoke LANGUAGES C CXX OBJC OBJCXX)
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
     message(FATAL_ERROR "The smoke app requires -DCMAKE_SYSTEM_NAME=iOS")
@@ -19,10 +19,10 @@ set_target_properties(plume PROPERTIES
     INTERFACE_INCLUDE_DIRECTORIES "${PLUME_INCLUDE_DIR}"
 )
 
-add_executable(BanjoPadMetalSmoke MACOSX_BUNDLE main.cpp)
-target_compile_features(BanjoPadMetalSmoke PRIVATE cxx_std_17)
-target_compile_definitions(BanjoPadMetalSmoke PRIVATE PLUME_IOS=1)
-target_link_libraries(BanjoPadMetalSmoke PRIVATE
+add_executable(BearBirdPadMetalSmoke MACOSX_BUNDLE main.cpp)
+target_compile_features(BearBirdPadMetalSmoke PRIVATE cxx_std_17)
+target_compile_definitions(BearBirdPadMetalSmoke PRIVATE PLUME_IOS=1)
+target_link_libraries(BearBirdPadMetalSmoke PRIVATE
     plume
     SDL2::SDL2main
     SDL2::SDL2-static
@@ -33,12 +33,12 @@ target_link_libraries(BanjoPadMetalSmoke PRIVATE
     "-framework CoreGraphics"
 )
 
-set_target_properties(BanjoPadMetalSmoke PROPERTIES
+set_target_properties(BearBirdPadMetalSmoke PROPERTIES
     MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in"
     XCODE_ATTRIBUTE_CODE_SIGN_STYLE Automatic
     XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${DEVELOPMENT_TEAM}"
     XCODE_ATTRIBUTE_OTHER_LDFLAGS "-ObjC"
-    XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.chrissotraidis.banjopad.smoke"
+    XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.chrissotraidis.bearbirdpad.smoke"
     XCODE_ATTRIBUTE_SUPPORTED_PLATFORMS "iphoneos iphonesimulator"
     XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2"
 )

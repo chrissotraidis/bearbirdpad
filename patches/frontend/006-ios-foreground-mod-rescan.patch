@@ -3,8 +3,8 @@ diff --git a/recompinput/src/input_events.cpp b/recompinput/src/input_events.cpp
 +++ b/recompinput/src/input_events.cpp
 @@ -13,4 +13,7 @@
  #if defined(__APPLE__) && TARGET_OS_IPHONE
- extern "C" void BanjoPadTouch_ReleaseAll(void);
- extern "C" void BanjoPadTouch_SetControllerConnected(int connected);
+ extern "C" void BearBirdPadTouch_ReleaseAll(void);
+ extern "C" void BearBirdPadTouch_SetControllerConnected(int connected);
 +namespace recomp::mods {
 +void scan_mods();
 +}
