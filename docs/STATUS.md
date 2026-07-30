@@ -1,11 +1,11 @@
-# BanjoPad status
+# BearBirdPad status
 
 Updated 2026-07-30. Current phase: stable physical-device development build;
 public developer-preview packaging has not been released.
 
 ## Current result
 
-BanjoPad builds as a universal arm64 iPhone/iPad app with an iOS 16.0
+BearBirdPad builds as a universal arm64 iPhone/iPad app with an iOS 16.0
 deployment target. The regular play path is stable in current owner testing:
 supported-ROM loading, Metal rendering, touch gameplay, settings, saves,
 in-place updates, and separate phone/tablet control layouts are working.

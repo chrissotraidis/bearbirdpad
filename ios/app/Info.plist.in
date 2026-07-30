@@ -5,12 +5,12 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleDisplayName</key>
-    <string>BanjoPad</string>
+    <string>BearBirdPad</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIconFiles</key>
     <array>
-        <string>BanjoPadIcon</string>
+        <string>BearBirdPadIcon</string>
     </array>
     <key>CFBundleIdentifier</key>
     <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
@@ -46,7 +46,7 @@
             <string>Alternate</string>
             <key>LSItemContentTypes</key>
             <array>
-                <string>com.chrissotraidis.banjopad.n64-rom</string>
+                <string>com.chrissotraidis.bearbirdpad.n64-rom</string>
             </array>
         </dict>
         <dict>
@@ -58,7 +58,7 @@
             <string>Alternate</string>
             <key>LSItemContentTypes</key>
             <array>
-                <string>com.chrissotraidis.banjopad.mod</string>
+                <string>com.chrissotraidis.bearbirdpad.mod</string>
             </array>
         </dict>
     </array>
@@ -72,7 +72,7 @@
             <key>UTTypeDescription</key>
             <string>Nintendo 64 ROM</string>
             <key>UTTypeIdentifier</key>
-            <string>com.chrissotraidis.banjopad.n64-rom</string>
+            <string>com.chrissotraidis.bearbirdpad.n64-rom</string>
             <key>UTTypeTagSpecification</key>
             <dict>
                 <key>public.filename-extension</key>
@@ -91,7 +91,7 @@
             <key>UTTypeDescription</key>
             <string>BanjoRecompiled Mod</string>
             <key>UTTypeIdentifier</key>
-            <string>com.chrissotraidis.banjopad.mod</string>
+            <string>com.chrissotraidis.bearbirdpad.mod</string>
             <key>UTTypeTagSpecification</key>
             <dict>
                 <key>public.filename-extension</key>

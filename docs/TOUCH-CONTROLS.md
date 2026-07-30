@@ -1,6 +1,6 @@
 # Touch controls
 
-BanjoPad's full N64 overlay is available during gameplay on iPhone and iPad. It
+BearBirdPad's full N64 overlay is available during gameplay on iPhone and iPad. It
 supports simultaneous touches, so the stick, either Z trigger, and another
 button can be held or tapped together for Banjo-Kazooie's compound moves.
 
@@ -13,7 +13,7 @@ Customize Touch Layout**. The editor works directly on the live overlay:
 - Drag it to move it within the safe area.
 - Use **Size** to scale it from 70% to 150%.
 - Use **Hide** or **Show** for controls you do not need.
-- Choose **Reset** to restore BanjoPad's default layout.
+- Choose **Reset** to restore BearBirdPad's default layout.
 - Choose **Done** to save and return to gameplay.
 
 The control stick is always available and cannot be hidden. The optional L

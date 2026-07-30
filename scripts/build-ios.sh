@@ -100,15 +100,15 @@ extract_archive() {
     local destination="$2"
     local marker="$3"
 
-    if [[ -f "$destination/.banjopad-source" ]] &&
-       [[ "$(cat "$destination/.banjopad-source")" == "$marker" ]]; then
+    if [[ -f "$destination/.bearbirdpad-source" ]] &&
+       [[ "$(cat "$destination/.bearbirdpad-source")" == "$marker" ]]; then
         return
     fi
 
     rm -rf "$destination"
     mkdir -p "$destination"
     tar -xf "$archive" -C "$destination" --strip-components=1
-    printf '%s\n' "$marker" > "$destination/.banjopad-source"
+    printf '%s\n' "$marker" > "$destination/.bearbirdpad-source"
 }
 
 mkdir -p "$DOWNLOAD_ROOT" "$SOURCE_ROOT" "$PREFIX_ROOT"
@@ -185,14 +185,14 @@ if [[ "$PRODUCT" == "stub" ]]; then
 
     set -- cmake --build "$CI_STUB_BUILD" \
         --config "$CONFIG" \
-        --target BanjoPadCIStub \
+        --target BearBirdPadCIStub \
         -- -destination "$DESTINATION"
     if [[ -z "${DEVELOPMENT_TEAM:-}" ]]; then
         set -- "$@" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
     fi
     "$@"
 
-    stub_app="$CI_STUB_BUILD/$CONFIG-$XCODE_OUTPUT_SUFFIX/BanjoPadCIStub.app"
+    stub_app="$CI_STUB_BUILD/$CONFIG-$XCODE_OUTPUT_SUFFIX/BearBirdPadCIStub.app"
     remove_stale_signing_material "$stub_app"
 
     echo
@@ -217,7 +217,7 @@ if [[ "$PRODUCT" == "app" ]]; then
         -DCMAKE_PREFIX_PATH="$SDL_PREFIX;$FREETYPE_PREFIX" \
         -DSDL2_DIR="$SDL_PREFIX/lib/cmake/SDL2" \
         -DFreetype_DIR="$FREETYPE_PREFIX/lib/cmake/freetype" \
-        -DBANJOPAD_IOS_DIR="$ROOT/ios/app" \
+        -DBEARBIRDPAD_IOS_DIR="$ROOT/ios/app" \
         -DBANJO_MOBILE_RENDERER_STUB=OFF \
         -DDEVELOPMENT_TEAM="${DEVELOPMENT_TEAM:-}" \
         -DDXC_PATH="$ROOT/sources/banjo/lib/rt64/src/contrib/dxc/bin/arm64/dxc-macos" \
@@ -271,14 +271,14 @@ cmake \
 
 set -- cmake --build "$SMOKE_BUILD" \
     --config Release \
-    --target BanjoPadMetalSmoke \
+    --target BearBirdPadMetalSmoke \
     -- -destination "$DESTINATION"
 if [[ -z "${DEVELOPMENT_TEAM:-}" ]]; then
     set -- "$@" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
 fi
 "$@"
 
-smoke_app="$SMOKE_BUILD/Release-$XCODE_OUTPUT_SUFFIX/BanjoPadMetalSmoke.app"
+smoke_app="$SMOKE_BUILD/Release-$XCODE_OUTPUT_SUFFIX/BearBirdPadMetalSmoke.app"
 remove_stale_signing_material "$smoke_app"
 
 echo

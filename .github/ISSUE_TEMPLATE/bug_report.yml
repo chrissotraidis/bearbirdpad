@@ -1,18 +1,18 @@
 name: Bug report
-description: Report a reproducible BanjoPad problem without sharing game data.
+description: Report a reproducible BearBirdPad problem without sharing game data.
 title: "[Bug] "
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for testing BanjoPad. Never attach or link to a ROM, generated
+        Thanks for testing BearBirdPad. Never attach or link to a ROM, generated
         recompilation input, save, texture pack, provisioning profile,
         certificate, private key, signed IPA, or extracted copyrighted asset.
 
   - type: input
     id: commit
     attributes:
-      label: BanjoPad commit
+      label: BearBirdPad commit
       description: Run `git rev-parse --short HEAD` or provide the release tag.
       placeholder: abc1234
     validations:

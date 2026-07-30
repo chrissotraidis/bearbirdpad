@@ -1,6 +1,6 @@
 # Read-only upstream handoff
 
-Status: evidence package only. BanjoPad's build loop must not create upstream branches, issues, pull requests, or pushes. The patch series in this repository remains authoritative.
+Status: evidence package only. BearBirdPad's build loop must not create upstream branches, issues, pull requests, or pushes. The patch series in this repository remains authoritative.
 
 ## Verified upstream snapshot
 
@@ -25,7 +25,7 @@ The timer-only hunk applies cleanly to current N64ModernRuntime HEAD. Before any
 - cancelling a timer after its timestamp changes;
 - repeating timers without duplicate active entries.
 
-BanjoPad's runtime and lifecycle tests demonstrate downstream use, but they are not a substitute for those focused upstream tests.
+BearBirdPad's runtime and lifecycle tests demonstrate downstream use, but they are not a substitute for those focused upstream tests.
 
 ## plume iOS work
 
@@ -33,10 +33,10 @@ The four plume patches are deliberately not one upstream unit:
 
 | Patch | Handoff classification |
 |---|---|
-| [`001-ios-uikit.patch`](../patches/plume/001-ios-uikit.patch) | Foundation for an iOS proposal: CMake source selection, UIKit window state, and iOS-safe Metal device/presentation branches. It is proven in BanjoPad but should not be submitted alone because its asynchronous state refresh is superseded downstream. |
+| [`001-ios-uikit.patch`](../patches/plume/001-ios-uikit.patch) | Foundation for an iOS proposal: CMake source selection, UIKit window state, and iOS-safe Metal device/presentation branches. It is proven in BearBirdPad but should not be submitted alone because its asynchronous state refresh is superseded downstream. |
 | [`002-guard-unavailable-metal-counter-results.patch`](../patches/plume/002-guard-unavailable-metal-counter-results.patch) | Independent, small Metal correctness fix. This is the cleanest standalone upstream candidate. |
 | [`003-stabilize-uikit-window-state.patch`](../patches/plume/003-stabilize-uikit-window-state.patch) | Keep downstream. It prevents unbounded main-queue refresh work by freezing the initial full-screen geometry, but that policy is intentionally incompatible with general Stage Manager resizing. |
-| [`004-ios-swapchain-availability.patch`](../patches/plume/004-ios-swapchain-availability.patch) | Keep downstream. The global C lifecycle hook matches BanjoPad's app shell; a general plume API should express availability per swapchain instead. |
+| [`004-ios-swapchain-availability.patch`](../patches/plume/004-ios-swapchain-availability.patch) | Keep downstream. The global C lifecycle hook matches BearBirdPad's app shell; a general plume API should express availability per swapchain instead. |
 
 All four patches replay cleanly in order on current plume HEAD. A future general-purpose UIKit proposal should start from patch `001`, replace patches `003` and `004` with an event-driven or single-flight scene-size/lifecycle API owned by the swapchain, and retain the full-screen path as a supported subset. It must also prove a physical-device present/background cycle; that remains `HUMAN-VERIFY`.
 
@@ -46,7 +46,7 @@ The local handoff is complete:
 
 1. The platform-neutral timer fix has an exact one-file extraction boundary and current-upstream replay proof.
 2. The independent plume counter guard is separable now.
-3. The UIKit foundation is identified, while BanjoPad-specific fixed-window and lifecycle policies remain downstream.
+3. The UIKit foundation is identified, while BearBirdPad-specific fixed-window and lifecycle policies remain downstream.
 4. No upstream state was changed.
 
-Actual upstream reception remains unknown by design. It is not a BanjoPad release blocker.
+Actual upstream reception remains unknown by design. It is not a BearBirdPad release blocker.

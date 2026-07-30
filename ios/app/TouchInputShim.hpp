@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace banjopad::touch {
+namespace bearbirdpad::touch {
 
 bool get_n64_input(int controller_num, uint16_t* buttons, float* x, float* y);
 void merge_right_analog(float* x, float* y);
@@ -12,13 +12,13 @@ void set_stick(float x, float y);
 void set_camera(float x, float y);
 void release_all();
 
-} // namespace banjopad::touch
+} // namespace bearbirdpad::touch
 
 extern "C" {
 
-void BanjoPadTouch_SetButton(uint16_t button, int pressed);
-void BanjoPadTouch_SetStick(float x, float y);
-void BanjoPadTouch_SetCamera(float x, float y);
-void BanjoPadTouch_ReleaseAll();
+void BearBirdPadTouch_SetButton(uint16_t button, int pressed);
+void BearBirdPadTouch_SetStick(float x, float y);
+void BearBirdPadTouch_SetCamera(float x, float y);
+void BearBirdPadTouch_ReleaseAll();
 
 }

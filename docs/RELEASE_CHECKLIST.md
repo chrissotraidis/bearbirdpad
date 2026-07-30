@@ -1,4 +1,4 @@
-# BanjoPad release checklist
+# BearBirdPad release checklist
 
 This is the final gate for a public source snapshot or downloadable IPA.
 
@@ -28,7 +28,7 @@ This is the final gate for a public source snapshot or downloadable IPA.
 - [ ] Review the exact package and distribution plan for GPLv3
       corresponding-source and third-party notice obligations.
 - [ ] Publish or otherwise provide the complete corresponding source for the
-      exact binary, including BanjoPad patches and build scripts; do not rely
+      exact binary, including BearBirdPad patches and build scripts; do not rely
       solely on mutable upstream links.
 - [ ] Build from a clean checkout at a deliberate tag.
 - [ ] Set a stable bundle identifier, app version, and monotonically

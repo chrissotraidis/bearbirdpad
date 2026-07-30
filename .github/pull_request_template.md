@@ -13,4 +13,4 @@
 - [ ] Documentation reflects observed behavior and remaining physical gates.
 - [ ] No ROM, generated source, save, texture pack, device backup, signing
       material, signed app, or IPA is included.
-- [ ] Changes belong to BanjoPad rather than a generated `sources/` tree.
+- [ ] Changes belong to BearBirdPad rather than a generated `sources/` tree.

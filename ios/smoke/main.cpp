@@ -26,7 +26,7 @@ namespace {
             case SDL_APP_WILLENTERBACKGROUND:
             case SDL_APP_DIDENTERBACKGROUND:
                 foreground.store(false);
-                std::puts("BANJOPAD_SMOKE background: drawable acquisition disabled");
+                std::puts("BEARBIRDPAD_SMOKE background: drawable acquisition disabled");
                 break;
             case SDL_APP_WILLENTERFOREGROUND:
                 foreground.store(false);
@@ -34,7 +34,7 @@ namespace {
             case SDL_APP_DIDENTERFOREGROUND:
                 resizeRequested.store(true);
                 foreground.store(true);
-                std::puts("BANJOPAD_SMOKE foreground: drawable acquisition enabled");
+                std::puts("BEARBIRDPAD_SMOKE foreground: drawable acquisition enabled");
                 break;
             case SDL_APP_TERMINATING:
                 foreground.store(false);
@@ -63,7 +63,7 @@ namespace {
         context.framebuffers.clear();
 
         if (!context.swapchain->resize()) {
-            std::fputs("BANJOPAD_SMOKE ERROR: swapchain resize failed\n", stderr);
+            std::fputs("BEARBIRDPAD_SMOKE ERROR: swapchain resize failed\n", stderr);
             return;
         }
 
@@ -78,7 +78,7 @@ namespace {
         }
 
         std::printf(
-            "BANJOPAD_SMOKE resize: %ux%u textures=%u refresh=%u\n",
+            "BEARBIRDPAD_SMOKE resize: %ux%u textures=%u refresh=%u\n",
             context.swapchain->getWidth(),
             context.swapchain->getHeight(),
             context.swapchain->getTextureCount(),
@@ -138,12 +138,12 @@ int main(int, char **) {
     SDL_SetEventFilter(lifecycleFilter, nullptr);
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
-        std::fprintf(stderr, "BANJOPAD_SMOKE ERROR: SDL_Init: %s\n", SDL_GetError());
+        std::fprintf(stderr, "BEARBIRDPAD_SMOKE ERROR: SDL_Init: %s\n", SDL_GetError());
         return 1;
     }
 
     SDL_Window *window = SDL_CreateWindow(
-        "BanjoPad Metal Smoke",
+        "BearBirdPad Metal Smoke",
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
         0,
@@ -151,14 +151,14 @@ int main(int, char **) {
         SDL_WINDOW_METAL | SDL_WINDOW_FULLSCREEN | SDL_WINDOW_ALLOW_HIGHDPI
     );
     if (window == nullptr) {
-        std::fprintf(stderr, "BANJOPAD_SMOKE ERROR: SDL_CreateWindow: %s\n", SDL_GetError());
+        std::fprintf(stderr, "BEARBIRDPAD_SMOKE ERROR: SDL_CreateWindow: %s\n", SDL_GetError());
         SDL_Quit();
         return 2;
     }
 
     SDL_MetalView metalView = SDL_Metal_CreateView(window);
     if (metalView == nullptr) {
-        std::fprintf(stderr, "BANJOPAD_SMOKE ERROR: SDL_Metal_CreateView: %s\n", SDL_GetError());
+        std::fprintf(stderr, "BEARBIRDPAD_SMOKE ERROR: SDL_Metal_CreateView: %s\n", SDL_GetError());
         SDL_DestroyWindow(window);
         SDL_Quit();
         return 3;
@@ -167,7 +167,7 @@ int main(int, char **) {
     SDL_SysWMinfo windowInfo{};
     SDL_VERSION(&windowInfo.version);
     if (SDL_GetWindowWMInfo(window, &windowInfo) != SDL_TRUE) {
-        std::fprintf(stderr, "BANJOPAD_SMOKE ERROR: SDL_GetWindowWMInfo: %s\n", SDL_GetError());
+        std::fprintf(stderr, "BEARBIRDPAD_SMOKE ERROR: SDL_GetWindowWMInfo: %s\n", SDL_GetError());
         SDL_Metal_DestroyView(metalView);
         SDL_DestroyWindow(window);
         SDL_Quit();
@@ -194,7 +194,7 @@ int main(int, char **) {
     rebuildFramebuffers(context);
 
     std::printf(
-        "BANJOPAD_SMOKE ready: device=%s\n",
+        "BEARBIRDPAD_SMOKE ready: device=%s\n",
         context.device->getDescription().name.c_str()
     );
 
@@ -226,7 +226,7 @@ int main(int, char **) {
         if (renderFrame(context, frameNumber)) {
             frameNumber++;
             if ((frameNumber % 60) == 0) {
-                std::printf("BANJOPAD_SMOKE frames=%llu\n", static_cast<unsigned long long>(frameNumber));
+                std::printf("BEARBIRDPAD_SMOKE frames=%llu\n", static_cast<unsigned long long>(frameNumber));
             }
         } else {
             SDL_Delay(1);

@@ -2,19 +2,19 @@ diff --git a/CMakeLists.txt b/CMakeLists.txt
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -192,6 +192,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
-         ${BANJOPAD_IOS_DIR}/ios_main.mm
-         ${BANJOPAD_IOS_DIR}/IosFileDialog.mm
-         ${BANJOPAD_IOS_DIR}/IosLifecycle.mm
-+        ${BANJOPAD_IOS_DIR}/LaunchScreen.storyboard
-         ${BANJOPAD_IOS_DIR}/NullRendererContext.cpp
-         ${BANJOPAD_IOS_DIR}/TouchInputShim.cpp
-         ${BANJOPAD_IOS_DIR}/TouchOverlay.mm
+         ${BEARBIRDPAD_IOS_DIR}/ios_main.mm
+         ${BEARBIRDPAD_IOS_DIR}/IosFileDialog.mm
+         ${BEARBIRDPAD_IOS_DIR}/IosLifecycle.mm
++        ${BEARBIRDPAD_IOS_DIR}/LaunchScreen.storyboard
+         ${BEARBIRDPAD_IOS_DIR}/NullRendererContext.cpp
+         ${BEARBIRDPAD_IOS_DIR}/TouchInputShim.cpp
+         ${BEARBIRDPAD_IOS_DIR}/TouchOverlay.mm
 @@ -203,4 +204,8 @@ if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
-         ${BANJOPAD_IOS_DIR}/TouchOverlay.mm
+         ${BEARBIRDPAD_IOS_DIR}/TouchOverlay.mm
          PROPERTIES COMPILE_FLAGS "-fobjc-arc"
      )
 +    set_source_files_properties(
-+        ${BANJOPAD_IOS_DIR}/LaunchScreen.storyboard
++        ${BEARBIRDPAD_IOS_DIR}/LaunchScreen.storyboard
 +        PROPERTIES MACOSX_PACKAGE_LOCATION Resources
 +    )
  endif()

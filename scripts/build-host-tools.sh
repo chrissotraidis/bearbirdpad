@@ -20,7 +20,7 @@ cmake \
     -B "$build_root" \
     -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
-    -DBANJOPAD_SOURCE_ROOT="$source_root"
+    -DBEARBIRDPAD_SOURCE_ROOT="$source_root"
 
 cmake --build "$build_root" \
     --target N64RecompCLI RSPRecomp file_to_c spirv_cross_msl rom_xxh3 \

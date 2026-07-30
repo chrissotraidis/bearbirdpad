@@ -108,7 +108,7 @@ index 0000000..35c3072
 +}
 +
 +const char *NFD_GetError(void) {
-+    return "Native file dialogs require the BanjoPad document picker";
++    return "Native file dialogs require the BearBirdPad document picker";
 +}
 +
 +void NFD_ClearError(void) {

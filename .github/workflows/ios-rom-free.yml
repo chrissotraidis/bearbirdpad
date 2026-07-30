@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 90
 
     steps:
-      - name: Check out BanjoPad
+      - name: Check out BearBirdPad
         uses: actions/checkout@v4
 
       - name: Check repository safety
@@ -45,13 +45,13 @@ jobs:
 
       - name: Audit and package stub
         run: |
-          app="build-ios-ci-stub-simulator/Release-iphonesimulator/BanjoPadCIStub.app"
+          app="build-ios-ci-stub-simulator/Release-iphonesimulator/BearBirdPadCIStub.app"
           scripts/package-audit.sh "$app"
-          scripts/package-ios.sh "$app" build/ci/BanjoPad-CIStub-simulator.ipa
+          scripts/package-ios.sh "$app" build/ci/BearBirdPad-CIStub-simulator.ipa
 
       - name: Upload ROM-free proof artifact
         uses: actions/upload-artifact@v4
         with:
-          name: BanjoPad-CIStub-simulator
-          path: build/ci/BanjoPad-CIStub-simulator.ipa
+          name: BearBirdPad-CIStub-simulator
+          path: build/ci/BearBirdPad-CIStub-simulator.ipa
           if-no-files-found: error

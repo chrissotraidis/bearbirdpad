@@ -36,7 +36,7 @@ bool get_n64_input(int player_index, uint16_t* buttons, float* x, float* y) {
 } // namespace recompinput::profiles
 
 int main() {
-    using namespace banjopad::touch;
+    using namespace bearbirdpad::touch;
 
     release_all();
     set_stick(0.9f, 0.75f);

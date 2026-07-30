@@ -45,5 +45,5 @@ diff --git a/src/main/main.cpp b/src/main/main.cpp
 +        return EXIT_FAILURE;
 +    }
  #if defined(__APPLE__) && TARGET_OS_IPHONE
-     fprintf(stdout, "BANJOPAD_IOS audio devices: %d\n", SDL_GetNumAudioDevices(0));
+     fprintf(stdout, "BEARBIRDPAD_IOS audio devices: %d\n", SDL_GetNumAudioDevices(0));
  #endif

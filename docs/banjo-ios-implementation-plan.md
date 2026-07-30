@@ -1,6 +1,6 @@
 # BanjoRecomp on iOS/iPadOS — Implementation Plan
 
-Companion to [banjo-ios-feasibility.md](banjo-ios-feasibility.md) (read it first; this plan assumes its findings and does not re-argue them). Working project name: **banjopad**. Tree tags (`banjo:`, `nmr:`, `n64recomp:`, `rt64:`, `plume:`, `frontend:`, `android:`) and pinned revisions are the same as the feasibility document's table. All upstream file/line citations were verified at those pins on 2026-07-28; re-verify after any pin bump.
+Companion to [banjo-ios-feasibility.md](banjo-ios-feasibility.md) (read it first; this plan assumes its findings and does not re-argue them). Working project name: **bearbirdpad**. Tree tags (`banjo:`, `nmr:`, `n64recomp:`, `rt64:`, `plume:`, `frontend:`, `android:`) and pinned revisions are the same as the feasibility document's table. All upstream file/line citations were verified at those pins on 2026-07-28; re-verify after any pin bump.
 
 ---
 
@@ -11,7 +11,7 @@ Build a native iPadOS/iOS app of Banjo: Recompiled on top of pinned BanjoRecomp 
 The shape of the approach:
 
 - **AOT-only runtime.** The base game is fully ahead-of-time compiled; the mod system stays compiled in but code-mod loading is hard-disabled on iOS. No JIT entitlement, no pairing ritual, install-and-play. Texture packs (data-only `.rtz`) fully supported.
-- **banjopad is the publication repository.** All upstream repos are read-only pinned build inputs; every change lives here as an ordered patch series. No pushes, branches, or PRs to any upstream (HarkinianPad's proven model).
+- **bearbirdpad is the publication repository.** All upstream repos are read-only pinned build inputs; every change lives here as an ordered patch series. No pushes, branches, or PRs to any upstream (HarkinianPad's proven model).
 - **Two-track bring-up**, exactly as the Android port did: Track A proves the app shell (paths, audio, input, lifecycle) under a renderer stub; Track B brings up plume-Metal-on-iOS from "compiles" to "first frame." They merge at the launcher-renders milestone.
 - **Touch controls are new work** (no port of this stack has them) — a UIKit overlay injecting into the `ultramodern::input::callbacks_t::get_input` seam, with BK's analog-camera option driven by a right-half camera drag region.
 - Primary target: iPad (M-series and A13+), landscape. iPhone supported at reduced scale. Floor: iOS 16.0, GPU family Apple3+.
@@ -32,8 +32,8 @@ Options: (a) plume-Metal + iOS gap-fill; (b) MoltenVK via plume-Vulkan (reuse An
 Chosen: (a).
 Why: macOS ships plume-Metal in production ("Automatic" → Metal on Apple, `rt64:src/common/rt64_user_configuration.cpp:142-152`), the iOS capability table already exists (`plume:plume_metal.cpp:3833-3837`), and the gap list is three API guards + one AppKit file + CMake (feasibility §5). MoltenVK adds a translation layer, a new dependency, and none of the Android Vulkan surface-lifecycle code applies to iOS's windowing anyway. (c) is absurd given (a).
 
-**D3 — Where iOS code lives: banjopad owns everything; upstreams are pinned read-only inputs.**
-Options: (a) fork each upstream repo on GitHub; (b) banjopad holds pinned checkouts + an ordered patch series applied by script; (c) submodules pointing at personal forks.
+**D3 — Where iOS code lives: bearbirdpad owns everything; upstreams are pinned read-only inputs.**
+Options: (a) fork each upstream repo on GitHub; (b) bearbirdpad holds pinned checkouts + an ordered patch series applied by script; (c) submodules pointing at personal forks.
 Chosen: (b), mirroring HarkinianPad (`harkinianpad:docs/ios-feasibility-and-implementation-plan.md` §G repository rule).
 Why: upstream moves daily (feasibility R2); a patch series over exact pins is rebasable on our schedule, keeps a single publication surface, guarantees we never accidentally push, and makes every iOS change reviewable as a diff. Patches are grouped per target tree (`patches/banjo/`, `patches/nmr/`, `patches/rt64/` — plume patches live in the rt64 series since plume is vendored inside it, `patches/frontend/`), numbered, and applied by `scripts/fetch-sources.sh` after clone. Push URLs of fetched sources are set to `DISABLED` just as HarkinianPad does.
 
@@ -87,12 +87,12 @@ Why 16.0: `bufferDeviceAddress` gating (`plume:plume_metal.cpp:3836`), a current
 
 **Deferred decisions:**
 
-- **DD1 — Touch-layout editor/haptics/custom art:** the touch-layout editor was resolved downstream on 2026-07-29 after owner feedback. BanjoPad now edits the live UIKit overlay, persists separate normalized phone/tablet profiles, supports 70–150% sizing and per-control visibility, preserves the required stick and Settings-owned optional L/D-pad policy, and provides Reset. Haptics and custom control art remain deferred until physical-device feel testing justifies them.
+- **DD1 — Touch-layout editor/haptics/custom art:** the touch-layout editor was resolved downstream on 2026-07-29 after owner feedback. BearBirdPad now edits the live UIKit overlay, persists separate normalized phone/tablet profiles, supports 70–150% sizing and per-control visibility, preserves the required stick and Settings-owned optional L/D-pad policy, and provides Reset. Haptics and custom control art remain deferred until physical-device feel testing justifies them.
 - **DD2 — Bundled offline mods** (OfflineModRecomp → static/embedded-framework + shim replacement + table-based redirection): remains out of scope. The 2026-07-29 current-upstream audit found that `use_lookup_for_all_function_calls` is still only a recompiler-context flag and N64ModernRuntime enables it only for live-regenerated hook functions before calling `patch_func` on the original base functions. Banjo's generated base still has `36132` direct named calls versus `198` dynamic lookups, so there is no runtime table capable of intercepting the general base call graph. Reopen only when base recompilation and runtime replacement both use a lookup path without JIT or signed-text writes.
 - **DD3 — iPad multitasking/Stage Manager support:** retain `UIRequiresFullScreen=YES` for the current landscape-only app. The 2026-07-29 resize-matrix pass on an iPad Pro 11-inch (M4), iPadOS 18.5 Simulator proved that removing the key while keeping landscape-only metadata does not meet Apple's adaptive-orientation contract, while declaring all orientations exposes true Stage Manager resizing but makes the landscape launcher and gameplay viewport unusable in portrait. A diagnostic plume refresh correctly changed the Metal drawable from `2420×1668` to `1668×2420`, but the launcher remained clipped and its menu moved offscreen; the experiment was reverted rather than shipping partial support. Reopen only with a dedicated landscape-canvas/letterboxing design, portrait-safe touch layout, and scene-size/orientation policy. Apple's migration guidance: [TN3192](https://developer.apple.com/documentation/technotes/tn3192-migrating-your-app-from-the-deprecated-uirequiresfullscreen-key).
 - **DD4 — iCloud save sync / save export UI:** deferred; Files-visible `Documents/saves/` plus D13's snapshot API is the v1 answer. Settled by demand.
 - **DD5 — MTLBinaryArchive PSO caching:** evidence-gated and unimplemented. The 2026-07-29 audit found no physical Metal traces, while the pinned renderer still compiles specialized PSOs asynchronously at idle priority and uses eight dynamic ubershader pipelines until each specialization is ready (`rt64:src/render/rt64_raster_shader_cache.cpp:33-105`, `rt64_framebuffer_renderer.cpp:1610-1622`, `rt64_raster_shader.cpp:407-492`). Reopen only when all three required physical cold-start traces attribute a user-visible hitch to PSO compilation; do not add persistent cache lifecycle and invalidation complexity before that threshold.
-- **DD6 — Upstreaming:** resolved locally as a read-only handoff on 2026-07-29; see [`docs/UPSTREAM-HANDOFF.md`](UPSTREAM-HANDOFF.md). Current N64ModernRuntime still lacks the platform-neutral timer fix and current plume still lacks the UIKit helper. The handoff isolates the timer-only hunk, the independent Metal counter guard, the reusable UIKit foundation, and the BanjoPad-specific fixed-window/lifecycle policies that must remain downstream. Per the repository hard rule, no upstream branch, issue, pull request, or push was created; actual reception is unknown and does not block BanjoPad.
+- **DD6 — Upstreaming:** resolved locally as a read-only handoff on 2026-07-29; see [`docs/UPSTREAM-HANDOFF.md`](UPSTREAM-HANDOFF.md). Current N64ModernRuntime still lacks the platform-neutral timer fix and current plume still lacks the UIKit helper. The handoff isolates the timer-only hunk, the independent Metal counter guard, the reusable UIKit foundation, and the BearBirdPad-specific fixed-window/lifecycle policies that must remain downstream. Per the repository hard rule, no upstream branch, issue, pull request, or push was created; actual reception is unknown and does not block BearBirdPad.
 
 ---
 
@@ -100,7 +100,7 @@ Why 16.0: `bufferDeviceAddress` gating (`plume:plume_metal.cpp:3836`), a current
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│ banjopad/ios — app shell (new code, ~all of it Obj-C++/C++)         │
+│ bearbirdpad/ios — app shell (new code, ~all of it Obj-C++/C++)         │
 │   ios_main.mm            SDL_main → banjo_recomp_main               │
 │   IosPaths.mm            Documents/bundle path providers            │
 │   IosFileDialog.mm       UIDocumentPicker → complete_ios_file_dialog │
@@ -135,10 +135,10 @@ Why 16.0: `bufferDeviceAddress` gating (`plume:plume_metal.cpp:3836`), a current
 
 Control flow at runtime is unchanged from desktop: `SDL_main` → `banjo_recomp_main` → registrations (`banjo:src/main/main.cpp:688-805`) → `recomp::start` (`nmr:librecomp/src/recomp.cpp:795`) — which creates the SDL window on the main thread via the `create_window` callback, spawns the game-start thread, and runs the main-thread `update_gfx` event pump (`recomp.cpp:875-893`). The launcher parks in `wait_for_game_started`; "Start Game" boots the recompiled entrypoint. UIKit's main-thread requirement is satisfied because SDL_main runs on the process main thread and all window/event work stays there; RT64 renders from ultramodern's gfx thread against the CAMetalLayer, which Metal permits.
 
-Repository layout (banjopad):
+Repository layout (bearbirdpad):
 
 ```
-banjopad/
+bearbirdpad/
   docs/                      this plan + feasibility + BUILDING-IOS.md (Phase 9)
   ios/                       app shell sources + plist/assets (new code, see diagram)
   patches/
@@ -162,7 +162,7 @@ Rule enforced by `.gitignore` + `package-audit.sh`: no ROM, no `RecompiledFuncs/
 
 ## 4. Phased plan
 
-Phases are ordered; each lists goal (observable outcome), file-level changes, commands, acceptance criteria, and verification. Do not start a phase before the previous one's acceptance is green (Track exceptions noted). Commands assume repo root `~/GitHub/banjopad` on an Apple-silicon Mac with Xcode 16+, CMake ≥3.24, Ninja, and a legally owned BK NTSC-U 1.0 ROM available locally (never committed).
+Phases are ordered; each lists goal (observable outcome), file-level changes, commands, acceptance criteria, and verification. Do not start a phase before the previous one's acceptance is green (Track exceptions noted). Commands assume repo root `~/GitHub/bearbirdpad` on an Apple-silicon Mac with Xcode 16+, CMake ≥3.24, Ninja, and a legally owned BK NTSC-U 1.0 ROM available locally (never committed).
 
 ### Phase 0 — Pinned sources, host tools, macOS baseline
 
@@ -174,7 +174,7 @@ Changes:
 - `scripts/prepare-generated.sh <path-to-rom>`: verify sha1 `1fb13cad402518d3ae9a8dc4b52c5c54b2a4adc7` for the decompressed ROM (or produce it from a retail dump using `sources/banjo/lib/bk-decomp/tools/bk_rom_compressor`, accepting the byte-order normalization the Android notes describe); place as `sources/banjo/banjo.us.v10.decompressed.z64` (gitignored); run `./N64Recomp banjo.us.rev0.toml` and `./RSPRecomp n_aspMain.us.rev0.toml` from `sources/banjo` (matches `banjo:.github/workflows/validate.yml:82-88`). Idempotent, like Android's `prepare_android_generated_sources.sh`.
 - macOS baseline: `cmake -S sources/banjo -B build-macos -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build-macos --target BanjoRecompiled`.
 
-Acceptance: macOS `BanjoRecompiled` launches, imports a retail ROM, reaches the BK title screen with audio. `git status` in banjopad shows no generated/ROM files as untracked-and-committable (`.gitignore` proven).
+Acceptance: macOS `BanjoRecompiled` launches, imports a retail ROM, reaches the BK title screen with audio. `git status` in bearbirdpad shows no generated/ROM files as untracked-and-committable (`.gitignore` proven).
 Verification: run the game 5 minutes; confirm `~/Library/Application Support/BanjoRecompiled/` is created with config JSONs and `saves/bk.n64.us.1.0.bin` after an in-game save.
 
 ### Phase 1 — plume + RT64 compile for the iOS SDK  *(Track B start; the approach-proving phase)*
@@ -273,7 +273,7 @@ Acceptance: stable 60 (or the framerate-cap setting honored) on iPad primary; no
 
 ### Phase 9 — Packaging, signing, docs, CI
 
-**Goal (observable):** a tagged banjopad release from which a competent developer goes clone → device install using only the docs; CI proves the ROM-free invariant on every push.
+**Goal (observable):** a tagged bearbirdpad release from which a competent developer goes clone → device install using only the docs; CI proves the ROM-free invariant on every push.
 
 Changes: `scripts/package-audit.sh` (HarkinianPad `package-ios.sh` pattern: scan the built .app for `.z64/.v64/.n64`, `RecompiledFuncs`, `banjo.us`, ROM hashes; `REQUIRE_SIGNED=1` enforces a valid signature + embedded profile before IPA wrap); `docs/BUILDING-IOS.md` (toolchain versions, ROM prep, signing with a personal team, simulator notes); GitHub Actions on `macos-15`: fetch pins → apply patches → build host tools → **stub-mode** iOS build (no ROM in CI; the full-game target stays local-only unless a private-inputs repo is configured — both modes scripted, mirroring `banjo:.github/workflows/validate.yml`'s secret-repo pattern and the Android probe/runtime split) → package-audit must pass.
 Acceptance: the clean local Release build and package-audit pass; a reproducible unsigned IPA artifact is ready for personal signing (AltStore/Sideloadly path documented, per `harkinianpad:docs/INSTALL_IPA.md` precedent). Hosted CI is supplemental rather than a release blocker. Tag `v0.1.0` only after the signed physical-device package gate passes.
@@ -395,11 +395,11 @@ cmake -S sources/banjo -B build-ios -G Xcode \
   -DBANJO_IOS=ON -DBANJO_IOS_NO_CODE_MODS=ON \
   -DSDL2_IOS_PREFIX=$PWD/build-ios-deps/sdl2 -DFREETYPE_IOS_PREFIX=$PWD/build-ios-deps/freetype \
   -DDXC_PATH=… -DSPIRV_CROSS_MSL_PATH=… -DFILE_TO_C_PATH=… \
-  -DXCODE_ATTRIBUTE_DEVELOPMENT_TEAM=<TEAMID> -DBUNDLE_ID=com.<yours>.banjopad
+  -DXCODE_ATTRIBUTE_DEVELOPMENT_TEAM=<TEAMID> -DBUNDLE_ID=com.<yours>.bearbirdpad
 ```
 Simulator: same + `-DCMAKE_OSX_SYSROOT=iphonesimulator` (shader SDK follows, Phase 1). All of this is wrapped by `scripts/build-ios.sh`.
 
-**Info.plist keys (ios/Info.plist.in):** `UIFileSharingEnabled=YES`; `LSSupportsOpeningDocumentsInPlace=YES`; `UISupportedInterfaceOrientations` = landscape-left/right only (both idioms); `UIRequiresFullScreen=YES` (D15); `UIStatusBarHidden=YES` + `UIViewControllerBasedStatusBarAppearance=NO`; `GCSupportsControllerUserInteraction=YES`; `GCSupportedGameControllers` = ExtendedGamepad; `UIApplicationSupportsIndirectInputEvents=YES`; `UILaunchStoryboardName=LaunchScreen`; `CFBundleDocumentTypes`/`UTExportedTypeDeclarations` for `.z64/.v64/.n64` and `.rtz`/`.nrm` (enables "Open in banjopad" share-sheet imports later); `MinimumOSVersion` 16.0.
+**Info.plist keys (ios/Info.plist.in):** `UIFileSharingEnabled=YES`; `LSSupportsOpeningDocumentsInPlace=YES`; `UISupportedInterfaceOrientations` = landscape-left/right only (both idioms); `UIRequiresFullScreen=YES` (D15); `UIStatusBarHidden=YES` + `UIViewControllerBasedStatusBarAppearance=NO`; `GCSupportsControllerUserInteraction=YES`; `GCSupportedGameControllers` = ExtendedGamepad; `UIApplicationSupportsIndirectInputEvents=YES`; `UILaunchStoryboardName=LaunchScreen`; `CFBundleDocumentTypes`/`UTExportedTypeDeclarations` for `.z64/.v64/.n64` and `.rtz`/`.nrm` (enables "Open in bearbirdpad" share-sheet imports later); `MinimumOSVersion` 16.0.
 
 **Entitlements:** none beyond the default app sandbox. Explicitly **no** `get-task-allow` in release builds, no JIT-related entitlements (D1), no iCloud (v1). The absence of special entitlements is the point — personal-team signing suffices.
 

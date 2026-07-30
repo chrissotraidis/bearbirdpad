@@ -4,19 +4,19 @@
 extern "C" {
 #endif
 
-int BanjoPadTouch_Available(void);
-int BanjoPadTouch_Enabled(void);
-int BanjoPadTouch_HideWhenControllerConnected(void);
-int BanjoPadTouch_ShowDpad(void);
-int BanjoPadTouch_ShowL(void);
-void BanjoPadTouch_BeginLayoutEditing(void);
-void BanjoPadTouch_Install(void);
-void BanjoPadTouch_SetEnabled(int enabled);
-void BanjoPadTouch_SetHideWhenControllerConnected(int hidden);
-void BanjoPadTouch_SetShowDpad(int visible);
-void BanjoPadTouch_SetShowL(int visible);
-void BanjoPadTouch_SetMenuVisible(int visible);
-void BanjoPadTouch_SetControllerConnected(int connected);
+int BearBirdPadTouch_Available(void);
+int BearBirdPadTouch_Enabled(void);
+int BearBirdPadTouch_HideWhenControllerConnected(void);
+int BearBirdPadTouch_ShowDpad(void);
+int BearBirdPadTouch_ShowL(void);
+void BearBirdPadTouch_BeginLayoutEditing(void);
+void BearBirdPadTouch_Install(void);
+void BearBirdPadTouch_SetEnabled(int enabled);
+void BearBirdPadTouch_SetHideWhenControllerConnected(int hidden);
+void BearBirdPadTouch_SetShowDpad(int visible);
+void BearBirdPadTouch_SetShowL(int visible);
+void BearBirdPadTouch_SetMenuVisible(int visible);
+void BearBirdPadTouch_SetControllerConnected(int connected);
 
 #ifdef __cplusplus
 }

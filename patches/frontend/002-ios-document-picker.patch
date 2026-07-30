@@ -51,7 +51,7 @@ index 7ee84ed..8966e9d 100644
  #endif
 
 +#if defined(__APPLE__) && TARGET_OS_IPHONE
-+extern "C" void banjopad_present_ios_file_dialog(bool multiple);
++extern "C" void bearbirdpad_present_ios_file_dialog(bool multiple);
 +#endif
 +
  namespace recompui {
@@ -82,7 +82,7 @@ index 7ee84ed..8966e9d 100644
 +            callback(false, {});
 +            return;
 +        }
-+        banjopad_present_ios_file_dialog(false);
++        bearbirdpad_present_ios_file_dialog(false);
 +#elif defined(__APPLE__)
          file::apple::dispatch_on_ui_thread([callback]() {
              perform_file_dialog_operation(callback);
@@ -105,7 +105,7 @@ index 7ee84ed..8966e9d 100644
 +            callback(false, {});
 +            return;
 +        }
-+        banjopad_present_ios_file_dialog(true);
++        bearbirdpad_present_ios_file_dialog(true);
 +#elif defined(__APPLE__)
          file::apple::dispatch_on_ui_thread([callback]() {
              perform_file_dialog_operation_multiple(callback);
@@ -116,7 +116,7 @@ index 7ee84ed..8966e9d 100644
  }
 +
 +#if defined(__APPLE__) && TARGET_OS_IPHONE
-+extern "C" void banjopad_complete_ios_file_dialog(bool success, const char *path) {
++extern "C" void bearbirdpad_complete_ios_file_dialog(bool success, const char *path) {
 +    std::function<void(bool, const std::filesystem::path&)> callback;
 +    {
 +        std::lock_guard lock(recompui::ios_file_dialog_mutex);
@@ -130,7 +130,7 @@ index 7ee84ed..8966e9d 100644
 +    }
 +}
 +
-+extern "C" void banjopad_complete_ios_file_dialog_multiple(
++extern "C" void bearbirdpad_complete_ios_file_dialog_multiple(
 +        bool success,
 +        const char *const *paths,
 +        size_t path_count) {

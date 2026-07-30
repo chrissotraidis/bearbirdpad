@@ -5,12 +5,12 @@ index e5f5d15..38fdd69 100644
 @@ -188,8 +188,13 @@ set (SOURCES
  if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
      list(APPEND SOURCES
-         ${BANJOPAD_IOS_DIR}/ios_main.mm
-+        ${BANJOPAD_IOS_DIR}/IosFileDialog.mm
-         ${BANJOPAD_IOS_DIR}/NullRendererContext.cpp
+         ${BEARBIRDPAD_IOS_DIR}/ios_main.mm
++        ${BEARBIRDPAD_IOS_DIR}/IosFileDialog.mm
+         ${BEARBIRDPAD_IOS_DIR}/NullRendererContext.cpp
      )
 +    set_source_files_properties(
-+        ${BANJOPAD_IOS_DIR}/IosFileDialog.mm
++        ${BEARBIRDPAD_IOS_DIR}/IosFileDialog.mm
 +        PROPERTIES COMPILE_FLAGS "-fobjc-arc"
 +    )
  endif()
