@@ -44,7 +44,13 @@ app's Documents container.
 
 ## Licensing
 
-Each upstream component retains its own license and copyright. BanjoRecomp is
-distributed under GNU GPL version 3; other dependencies carry their own terms.
-See [`RIGHTS_AND_LICENSES.md`](RIGHTS_AND_LICENSES.md) before proposing binary
-distribution.
+By contributing BanjoPad-owned material, you agree that it may be distributed
+under GPL-3.0-or-later. Do not submit code or assets unless you have the right
+to contribute them under those terms.
+
+Each upstream component retains its own license and copyright. See
+[`RIGHTS_AND_LICENSES.md`](RIGHTS_AND_LICENSES.md) and
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) before proposing
+distribution. RecompFrontend's project-level license is currently unresolved,
+so an IPA or third-party source bundle must not be published until that point
+is clarified.

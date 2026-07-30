@@ -14,13 +14,22 @@ This is the final gate for a public source snapshot or downloadable IPA.
 - [ ] No ROM, save, texture pack, generated source, device backup, signing
       material, signed app, or IPA appears in the current tree or Git history.
 - [ ] Remaining physical-device limitations are stated plainly.
+- [ ] [`LICENSE`](../LICENSE), [`RIGHTS_AND_LICENSES.md`](../RIGHTS_AND_LICENSES.md),
+      and [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md) match the exact
+      source pins and distribution scope.
 
 ## Before publishing an unsigned developer-preview IPA
 
 - [ ] [`RIGHTS_AND_LICENSES.md`](../RIGHTS_AND_LICENSES.md) still states the
       game-data boundary and does not claim to relicense third-party projects.
+- [ ] RecompFrontend has an explicit, authoritative project license compatible
+      with the intended distribution. Until then, binary publication is
+      blocked.
 - [ ] Review the exact package and distribution plan for GPLv3
       corresponding-source and third-party notice obligations.
+- [ ] Publish or otherwise provide the complete corresponding source for the
+      exact binary, including BanjoPad patches and build scripts; do not rely
+      solely on mutable upstream links.
 - [ ] Build from a clean checkout at a deliberate tag.
 - [ ] Set a stable bundle identifier, app version, and monotonically
       increasing build number.

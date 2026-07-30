@@ -55,8 +55,9 @@ touch play path:
   device range;
 - install and validate the exact final distributable IPA rather than only the
   local signed `.app`; and
-- review corresponding-source and third-party notice obligations before
-  publishing a binary.
+- resolve RecompFrontend's missing project-level license and review
+  corresponding-source and third-party notice obligations before publishing a
+  binary.
 
 The GitHub Actions workflow is configured to build a ROM-free Simulator stub,
 audit it, and upload a proof artifact. Hosted jobs are currently prevented
@@ -69,4 +70,5 @@ No ROM, generated recompilation input, save, texture pack, device backup,
 provisioning profile, certificate, signed application, or IPA belongs in Git.
 The first public IPA, if approved, must pass
 [`docs/RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) on the exact tagged
-artifact.
+artifact. Binary publication remains blocked until RecompFrontend's
+project-level license is authoritative and compatible with the complete work.

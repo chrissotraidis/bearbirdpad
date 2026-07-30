@@ -16,6 +16,7 @@
   <img alt="Physical iPhone and iPad tested" src="https://img.shields.io/badge/physical%20iPhone%20%2B%20iPad-tested-30D158">
   <img alt="Custom touch layouts" src="https://img.shields.io/badge/touch%20layouts-customizable-FF9F0A">
   <img alt="ROM not included" src="https://img.shields.io/badge/game%20data-not%20included-FF453A">
+  <img alt="GPL version 3 or later" src="https://img.shields.io/badge/license-GPL--3.0--or--later-34C759">
 </p>
 
 ![BanjoPad running Banjo-Kazooie on a physical iPhone with its touch controller](docs/readme/banjopad-iphone-gameplay.jpg)
@@ -33,8 +34,10 @@ device class.
 This repository contains the mobile integration, maintained patches, and
 reproducible build scripts. It does **not** contain Banjo-Kazooie, a ROM,
 saves, extracted assets, or a playable preconfigured build. Read the scoped
-[`rights and licensing boundary`](RIGHTS_AND_LICENSES.md); it does not
-relicense third-party projects or game material.
+[`rights and licensing boundary`](RIGHTS_AND_LICENSES.md) and
+[`third-party license audit`](THIRD_PARTY_NOTICES.md). BanjoPad-owned software
+is GPL-3.0-or-later; third-party projects and game material retain their own
+rights and are not relicensed.
 
 ## Install status
 
@@ -274,6 +277,12 @@ Never attach or request game data.
 BanjoPad is an unofficial community project and is not affiliated with or
 endorsed by Nintendo, Microsoft, Rare, or the BanjoRecomp project. It does not
 provide the game, ROM downloads, saves, or extracted game data.
+
+BanjoPad-owned software, scripts, patches, and documentation are licensed
+under GPL-3.0-or-later. See [`LICENSE`](LICENSE),
+[`RIGHTS_AND_LICENSES.md`](RIGHTS_AND_LICENSES.md), and
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). The gameplay screenshot,
+game imagery, names, logos, and trademarks are not included in that license.
 
 This project builds on BanjoRecomp, N64ModernRuntime, N64Recomp, RT64, Plume,
 RecompFrontend, SDL, bk-decomp, and their contributors. All projects,
