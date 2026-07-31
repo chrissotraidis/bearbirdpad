@@ -11,6 +11,7 @@
   <img alt="Metal renderer" src="https://img.shields.io/badge/renderer-Metal-5E5CE6">
   <img alt="Physical iPhone and iPad tested" src="https://img.shields.io/badge/physical%20iPhone%20%2B%20iPad-tested-30D158">
   <img alt="Custom touch layouts" src="https://img.shields.io/badge/touch%20layouts-customizable-FF9F0A">
+  <a href="https://github.com/chrissotraidis/bearbirdpad/releases/tag/v0.1.0-preview.1"><img alt="Download developer preview IPA" src="https://img.shields.io/badge/IPA-developer%20preview-FF9F0A"></a>
   <img alt="ROM not included" src="https://img.shields.io/badge/game%20data-not%20included-FF453A">
   <img alt="GPL version 3 or later" src="https://img.shields.io/badge/license-GPL--3.0--or--later-34C759">
 </p>
@@ -41,7 +42,7 @@ rights and are not relicensed.
 |---|---|---|
 | Local iPhone or iPad build | **Available now** | Build and sign with your Apple development team using the instructions below. |
 | Simulator | **Available now** | Best for development and UI testing; it is not a substitute for physical-device testing. |
-| Developer-preview `.ipa` | **Not published** | Packaging is implemented, but there is no public download yet. |
+| Developer-preview `.ipa` | **Available now** | [Download preview 0.1.0 build 1](https://github.com/chrissotraidis/bearbirdpad/releases/download/v0.1.0-preview.1/BearBirdPad-0.1.0-preview.1-unsigned.ipa), then sign it for your device using the [installation guide](docs/INSTALL_IPA.md). |
 | App Store / TestFlight | **Not announced** | No listing or public TestFlight currently exists. |
 
 The current development build has been signed, installed, launched, and
@@ -55,6 +56,20 @@ settings, device-specific layouts, save transfer, save reload, and in-place
 app updates preserving the Documents container have been exercised. The
 current build is stable in regular playtesting; a wider controller,
 audio-route, interruption, and performance matrix remains open.
+
+## Download the developer preview
+
+[Download BearBirdPad 0.1.0 Preview 1](https://github.com/chrissotraidis/bearbirdpad/releases/tag/v0.1.0-preview.1).
+The IPA is unsigned: it must be signed with your own Apple ID before it can be
+installed. Follow [`docs/INSTALL_IPA.md`](docs/INSTALL_IPA.md) for the short
+installation and update procedure.
+
+The download contains no ROM, save, extracted game assets, generated-source
+tree, provisioning profile, or maintainer certificate. You must provide your
+own legally acquired Banjo-Kazooie NTSC-U 1.0 ROM after installation. The
+compiled executable necessarily contains statically recompiled game code, as
+the upstream BanjoRecomp desktop releases do; “ROM-free” does not mean that
+the executable is independent of the original game code.
 
 ## Get started
 
@@ -200,9 +215,9 @@ claim about rights in the original game.
 <details>
 <summary><strong>Where is the IPA?</strong></summary>
 
-There is no public BearBirdPad IPA yet. Developers can build locally and create
-an audited archive with `scripts/package-ios.sh`. An unsigned IPA still needs
-to be signed for the destination device.
+[Download the unsigned developer-preview IPA from GitHub Releases](https://github.com/chrissotraidis/bearbirdpad/releases/tag/v0.1.0-preview.1),
+then follow the [installation guide](docs/INSTALL_IPA.md) to sign it for your
+iPhone or iPad.
 </details>
 
 <details>
@@ -251,6 +266,7 @@ separate signing, review, account, and compliance requirements.
 | [`patches/`](patches/) | BearBirdPad changes replayed onto pinned upstream source |
 | [`ios/`](ios/) | Native iOS shell, Files integration, lifecycle, and touch overlay |
 | [`docs/BUILDING-IOS.md`](docs/BUILDING-IOS.md) | Full build, signing, installation, and testing guide |
+| [`docs/INSTALL_IPA.md`](docs/INSTALL_IPA.md) | Developer-preview IPA installation and safe updates |
 | [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) | Source and IPA publication gates |
 | [`docs/TOUCH-CONTROLS.md`](docs/TOUCH-CONTROLS.md) | Touch layout and editor contract |
 | [`docs/STATUS.md`](docs/STATUS.md) | Current physical-device evidence and open checks |

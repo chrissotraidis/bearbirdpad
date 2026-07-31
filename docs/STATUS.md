@@ -1,7 +1,7 @@
 # BearBirdPad status
 
-Updated 2026-07-30. Current phase: stable physical-device development build;
-public developer-preview packaging has not been released.
+Updated 2026-07-31. Current phase: stable physical-device development build
+and free unsigned developer preview.
 
 ## Current result
 
@@ -9,6 +9,17 @@ BearBirdPad builds as a universal arm64 iPhone/iPad app with an iOS 16.0
 deployment target. The regular play path is stable in current owner testing:
 supported-ROM loading, Metal rendering, touch gameplay, settings, saves,
 in-place updates, and separate phone/tablet control layouts are working.
+
+The `v0.1.0-preview.1` unsigned IPA is a deterministic, ROM-free developer
+preview. Its SHA-256 is
+`275aefb38924f5d1edd1c7361ef47df5bc961e005eade51954d7cfe647ab6b24`.
+It includes the project rights notices and 87 discovered third-party license
+files and requires user-side signing plus a legally acquired supported ROM.
+The exact archive passed local payload and reproducibility checks. It was not
+freshly re-signed for another device install in this release session because
+the configured Xcode account could not create a new provisioning profile; the
+same source app had already been signed, installed, launched, and exercised on
+the iPad and iPhone listed below.
 
 The latest focused fixes keep the persistent `•••` menu button inside the
 active safe area and scale iOS pointer events from UIKit/SDL logical
@@ -53,11 +64,12 @@ touch play path:
   recovery;
 - record a repeatable FPS, hitch, memory, and thermal matrix on the target
   device range;
-- install and validate the exact final distributable IPA rather than only the
-  local signed `.app`; and
-- resolve RecompFrontend's missing project-level license and review
-  corresponding-source and third-party notice obligations before publishing a
-  binary.
+- re-sign and update-install the exact final distributable IPA after the local
+  Xcode account can provision `com.chrissotraidis.bearbirdpad`, then extend
+  validation to additional physical iPhone and iPad models; and
+- obtain authoritative clarification of RecompFrontend's missing project-level
+  license before paid access, commercial licensing, or official-store
+  distribution.
 
 The GitHub Actions workflow is configured to build a ROM-free Simulator stub,
 audit it, and upload a proof artifact. Hosted jobs are currently prevented
@@ -68,7 +80,8 @@ this is an account-level limitation rather than a source or build failure.
 
 No ROM, generated recompilation input, save, texture pack, device backup,
 provisioning profile, certificate, signed application, or IPA belongs in Git.
-The first public IPA, if approved, must pass
-[`docs/RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) on the exact tagged
-artifact. Binary publication remains blocked until RecompFrontend's
-project-level license is authoritative and compatible with the complete work.
+Every public IPA must pass [`docs/RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md)
+on the exact tagged artifact. The free unsigned developer preview follows
+BanjoRecomp's public binary model while clearly disclosing RecompFrontend's
+unresolved project-level license; that uncertainty still blocks paid access,
+commercial licensing, and official-store distribution.
