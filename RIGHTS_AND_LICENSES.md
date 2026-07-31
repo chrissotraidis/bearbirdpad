@@ -30,10 +30,9 @@ material. No game ROM, save file, or generated-source tree is included in this
 repository or intended for a published IPA. Users must provide their own
 legally acquired supported game copy.
 
-The gameplay screenshot at
-`docs/readme/bearbirdpad-iphone-gameplay.jpg` contains third-party game imagery
-and is not offered under the BearBirdPad GPL license. Project names, logos, and
-trademarks are likewise outside the software license.
+The gameplay screenshots under `docs/readme/` contain third-party game imagery
+and are not offered under the BearBirdPad GPL license. Project names, logos,
+and trademarks are likewise outside the software license.
 
 The BearBirdPad app icon at `ios/app/BearBirdPadIcon.png` is original project
 artwork. It does not contain or claim rights to Banjo-Kazooie character art,
