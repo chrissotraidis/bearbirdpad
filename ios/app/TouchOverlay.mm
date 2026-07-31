@@ -86,9 +86,14 @@ static void push_menu_toggle();
 @property(nonatomic, strong) UILabel *label;
 @property(nonatomic, assign) UITouch *activeTouch;
 @property(nonatomic, assign) BOOL pressed;
+@property(nonatomic, assign) BOOL latched;
+@property(nonatomic, assign) BOOL supportsLongPressLatch;
 @property(nonatomic, assign) BOOL layoutEditing;
 @property(nonatomic, assign) NSUInteger accessibilityGeneration;
+@property(nonatomic, assign) NSUInteger latchGeneration;
 @property(nonatomic, copy) void (^layoutSelectionHandler)(UIView *);
+@property(nonatomic, copy) BOOL (^releaseLatchHandler)(void);
+@property(nonatomic, copy) void (^engageLatchHandler)(void);
 
 - (instancetype)initWithLabel:(NSString *)label
            accessibilityLabel:(NSString *)accessibilityLabel
@@ -167,8 +172,31 @@ static void push_menu_toggle();
 }
 
 - (void)updateAccessibilityAppearance {
+    if (self.latched) {
+        BOOL strongerContrast =
+            UIAccessibilityIsReduceTransparencyEnabled() ||
+            UIAccessibilityDarkerSystemColorsEnabled();
+        self.backgroundColor = [UIColor colorWithRed:0.78
+                                               green:0.46
+                                                blue:0.04
+                                               alpha:strongerContrast ? 1.0 : 0.88];
+        self.layer.borderColor =
+            [UIColor colorWithRed:1.0 green:0.84 blue:0.25 alpha:1.0].CGColor;
+        return;
+    }
     self.backgroundColor = fill_color(self.pressed);
     self.layer.borderColor = (self.pressed ? _accentColor : border_color()).CGColor;
+}
+
+- (void)setLatched:(BOOL)latched {
+    if (_latched == latched) {
+        return;
+    }
+    _latched = latched;
+    self.accessibilityValue = latched ? @"Held" : nil;
+    self.accessibilityTraits = UIAccessibilityTraitButton |
+        (latched ? UIAccessibilityTraitSelected : 0);
+    [self updateAccessibilityAppearance];
 }
 
 - (CGRect)interactionBounds {
@@ -238,17 +266,19 @@ static void push_menu_toggle();
         return;
     }
     if (self.activeTouch == nil) {
+        BOOL releasedLatch = self.supportsLongPressLatch &&
+            self.releaseLatchHandler != nil && self.releaseLatchHandler();
         self.activeTouch = touches.anyObject;
         self.pressed = YES;
-    }
-}
-
-- (void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-    if (self.activeTouch != nil && [touches containsObject:self.activeTouch]) {
-        CGPoint point = [self.activeTouch locationInView:self];
-        CGRect releaseBounds = CGRectInset(self.bounds, -20.0, -20.0);
-        if (![[self hitPathForBounds:releaseBounds] containsPoint:point]) {
-            [self cancelInput];
+        NSUInteger generation = ++self.latchGeneration;
+        if (self.supportsLongPressLatch && !releasedLatch) {
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 2 * NSEC_PER_SEC),
+                           dispatch_get_main_queue(), ^{
+                if (generation == self.latchGeneration && self.activeTouch != nil &&
+                    self.engageLatchHandler != nil) {
+                    self.engageLatchHandler();
+                }
+            });
         }
     }
 }
@@ -267,6 +297,7 @@ static void push_menu_toggle();
 
 - (void)cancelInput {
     ++self.accessibilityGeneration;
+    ++self.latchGeneration;
     self.activeTouch = nil;
     self.pressed = NO;
 }
@@ -544,6 +575,7 @@ static BOOL sLayoutEditorRequested;
 @property(nonatomic, assign) BOOL controllerConnected;
 @property(nonatomic, assign) BOOL showL;
 @property(nonatomic, assign) BOOL showDpad;
+@property(nonatomic, assign) BOOL zLatched;
 @property(nonatomic, assign) BOOL layoutEditing;
 @property(nonatomic, strong) NSArray<UIView *> *editableControls;
 @property(nonatomic, strong) NSMutableArray<UIGestureRecognizer *> *editGestures;
@@ -565,6 +597,8 @@ static BOOL sLayoutEditorRequested;
 - (void)endLayoutEditing;
 - (void)setOptionalControlsShowL:(BOOL)showL showDpad:(BOOL)showDpad;
 - (void)updateControllerAppearance;
+- (BOOL)releaseLatchedZ;
+- (void)engageLatchedZ;
 
 @end
 
@@ -707,6 +741,19 @@ static BOOL sLayoutEditorRequested;
         for (BearBirdPadTouchButton *button in _buttons) {
             button.layoutSelectionHandler = selectForAccessibility;
         }
+        BOOL (^releaseLatchedZ)(void) = ^BOOL {
+            return [weakSelf releaseLatchedZ];
+        };
+        void (^engageLatchedZ)(void) = ^{
+            [weakSelf engageLatchedZ];
+        };
+        for (BearBirdPadTouchButton *button in @[ _buttonZLeft, _buttonZRight ]) {
+            button.supportsLongPressLatch = YES;
+            button.releaseLatchHandler = releaseLatchedZ;
+            button.engageLatchHandler = engageLatchedZ;
+            button.accessibilityHint =
+                @"Hold for two seconds to keep Z held. Tap either Z to release.";
+        }
 
         [self addSubview:_stick];
         for (BearBirdPadTouchButton *button in _buttons) {
@@ -740,6 +787,31 @@ static BOOL sLayoutEditorRequested;
         UIAccessibilityIsReduceTransparencyEnabled() ||
         UIAccessibilityDarkerSystemColorsEnabled();
     self.alpha = self.controllerConnected && !strongerContrast ? 0.4 : 1.0;
+}
+
+- (void)engageLatchedZ {
+    if (self.zLatched) {
+        return;
+    }
+    self.zLatched = YES;
+    self.buttonZLeft.latched = YES;
+    self.buttonZRight.latched = YES;
+    BearBirdPadTouch_SetButton(ButtonZ, 1);
+    UIAccessibilityPostNotification(
+        UIAccessibilityAnnouncementNotification, @"Z held");
+}
+
+- (BOOL)releaseLatchedZ {
+    if (!self.zLatched) {
+        return NO;
+    }
+    self.zLatched = NO;
+    self.buttonZLeft.latched = NO;
+    self.buttonZRight.latched = NO;
+    BearBirdPadTouch_SetButton(ButtonZ, 0);
+    UIAccessibilityPostNotification(
+        UIAccessibilityAnnouncementNotification, @"Z released");
+    return YES;
 }
 
 - (void)setOptionalControlsShowL:(BOOL)showL showDpad:(BOOL)showDpad {
@@ -1183,6 +1255,9 @@ static BOOL sLayoutEditorRequested;
     for (BearBirdPadTouchButton *button in self.buttons) {
         [button cancelInput];
     }
+    self.zLatched = NO;
+    self.buttonZLeft.latched = NO;
+    self.buttonZRight.latched = NO;
     BearBirdPadTouch_ReleaseAll();
 }
 

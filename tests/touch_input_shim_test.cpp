@@ -7,8 +7,10 @@
 namespace {
 
 constexpr uint16_t ButtonA = 0x8000;
+constexpr uint16_t ButtonB = 0x4000;
 constexpr uint16_t ButtonZ = 0x2000;
 constexpr uint16_t ButtonCUp = 0x0008;
+constexpr uint16_t ButtonCLeft = 0x0002;
 bool stock_input_available = true;
 
 bool nearly_equal(float a, float b) {
@@ -47,10 +49,45 @@ int main() {
     float x = 0.0f;
     float y = 0.0f;
     assert(get_n64_input(0, &buttons, &x, &y));
+    assert(buttons == (ButtonA | ButtonZ));
+    assert(nearly_equal(x, 1.0f));
+    assert(nearly_equal(y, 0.5f));
+
+    buttons = 0;
+    x = 0.0f;
+    y = 0.0f;
+    assert(get_n64_input(0, &buttons, &x, &y));
     assert(buttons == (ButtonA | ButtonZ | ButtonCUp));
     assert(nearly_equal(x, 1.0f));
     assert(nearly_equal(y, 0.5f));
 
+    // Talon Trot: C-Left is a momentary press while Z and analog remain held.
+    set_button(ButtonCUp, false);
+    set_button(ButtonCLeft, true);
+    buttons = 0;
+    x = 0.0f;
+    y = 0.0f;
+    assert(get_n64_input(0, &buttons, &x, &y));
+    assert(buttons == (ButtonA | ButtonZ));
+
+    buttons = 0;
+    x = 0.0f;
+    y = 0.0f;
+    assert(get_n64_input(0, &buttons, &x, &y));
+    assert(buttons == (ButtonA | ButtonZ | ButtonCLeft));
+    assert(nearly_equal(x, 1.0f));
+    assert(nearly_equal(y, 0.5f));
+
+    set_button(ButtonCLeft, false);
+    buttons = 0;
+    x = 0.0f;
+    y = 0.0f;
+    assert(get_n64_input(0, &buttons, &x, &y));
+    assert(buttons == (ButtonA | ButtonZ));
+    assert(nearly_equal(x, 1.0f));
+    assert(nearly_equal(y, 0.5f));
+
+    // A second visible Z source keeps logical Z held when either source ends.
     set_button(ButtonZ, true);
     set_button(ButtonZ, false);
     buttons = 0;
@@ -60,7 +97,6 @@ int main() {
     assert((buttons & ButtonZ) != 0);
 
     set_button(ButtonZ, false);
-    set_button(ButtonCUp, false);
     buttons = 0;
     x = 0.0f;
     y = 0.0f;
@@ -89,6 +125,20 @@ int main() {
     assert(nearly_equal(x, 0.4f));
     assert(nearly_equal(y, -0.3f));
 
+    // A digital touch does not disturb an active analog touch.
+    release_all();
+    set_stick(-0.6f, 0.4f);
+    set_button(ButtonB, true);
+    buttons = 0;
+    x = 0.0f;
+    y = 0.0f;
+    assert(get_n64_input(0, &buttons, &x, &y));
+    assert(buttons == (ButtonA | ButtonB));
+    assert(nearly_equal(x, -0.35f));
+    assert(nearly_equal(y, 0.15f));
+    set_button(ButtonB, false);
+
+    release_all();
     stock_input_available = false;
     buttons = 123;
     x = 123.0f;
@@ -97,6 +147,23 @@ int main() {
     assert(buttons == 0);
     assert(nearly_equal(x, 0.0f));
     assert(nearly_equal(y, 0.0f));
+
+    // A latched Z source remains held after the original finger lifts.
+    set_button(ButtonZ, true);
+    set_button(ButtonZ, true);
+    set_button(ButtonZ, false);
+    assert(get_n64_input(0, &buttons, &x, &y));
+    assert(buttons == ButtonZ);
+    set_button(ButtonZ, false);
+    assert(get_n64_input(0, &buttons, &x, &y));
+    assert(buttons == 0);
+
+    // Working Z+A behavior is unchanged by the C-button timing correction.
+    set_button(ButtonZ, true);
+    set_button(ButtonA, true);
+    assert(get_n64_input(0, &buttons, &x, &y));
+    assert(buttons == (ButtonZ | ButtonA));
+    release_all();
 
     buttons = 123;
     x = 123.0f;

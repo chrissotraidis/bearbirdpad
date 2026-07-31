@@ -12,6 +12,7 @@ namespace {
 
 struct TouchState {
     std::atomic<uint16_t> buttons{0};
+    std::atomic<uint16_t> last_polled_buttons{0};
     std::atomic<float> stick_x{0.0f};
     std::atomic<float> stick_y{0.0f};
     std::atomic<float> camera_x{0.0f};
@@ -20,6 +21,13 @@ struct TouchState {
 
 TouchState touch_state;
 std::array<std::atomic<uint8_t>, 16> button_press_counts{};
+
+constexpr uint16_t ButtonZ = 0x2000;
+constexpr uint16_t ButtonCUp = 0x0008;
+constexpr uint16_t ButtonCDown = 0x0004;
+constexpr uint16_t ButtonCLeft = 0x0002;
+constexpr uint16_t ButtonCRight = 0x0001;
+constexpr uint16_t CButtons = ButtonCUp | ButtonCDown | ButtonCLeft | ButtonCRight;
 
 float clamp_axis(float value) {
     return std::clamp(value, -1.0f, 1.0f);
@@ -39,7 +47,20 @@ bool bearbirdpad::touch::get_n64_input(int controller_num, uint16_t* buttons, fl
         *y = 0.0f;
     }
 
-    *buttons |= touch_state.buttons.load(std::memory_order_relaxed);
+    uint16_t touch_buttons = touch_state.buttons.load(std::memory_order_relaxed);
+    uint16_t previous_touch_buttons =
+        touch_state.last_polled_buttons.exchange(touch_buttons, std::memory_order_relaxed);
+
+    // Give held touch Z one controller sample before each new touch C-button
+    // edge. Otherwise the C-button edge can be consumed by the camera before
+    // Banjo's crouch/modifier state processes it.
+    uint16_t new_c_buttons = static_cast<uint16_t>(
+        (touch_buttons & CButtons) & ~(previous_touch_buttons & CButtons));
+    if ((touch_buttons & ButtonZ) != 0) {
+        touch_buttons &= static_cast<uint16_t>(~new_c_buttons);
+    }
+
+    *buttons |= touch_buttons;
     *x = clamp_axis(*x + touch_state.stick_x.load(std::memory_order_relaxed));
     *y = clamp_axis(*y + touch_state.stick_y.load(std::memory_order_relaxed));
     return true;
@@ -87,6 +108,7 @@ void bearbirdpad::touch::release_all() {
         count.store(0, std::memory_order_relaxed);
     }
     touch_state.buttons.store(0, std::memory_order_relaxed);
+    touch_state.last_polled_buttons.store(0, std::memory_order_relaxed);
     set_stick(0.0f, 0.0f);
     set_camera(0.0f, 0.0f);
 }
