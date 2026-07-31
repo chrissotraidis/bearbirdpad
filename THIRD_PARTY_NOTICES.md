@@ -26,11 +26,15 @@ Each upstream checkout contains its applicable license texts and additional
 transitive notices. A binary distributor must preserve those notices and
 audit the exact fetched source and package, not rely on this summary alone.
 
-## Current distribution hold
+## Developer-preview distribution posture
 
-Do not publish an IPA or a third-party source bundle until RecompFrontend's
-project license has been confirmed by its copyright holders or an
-authoritative upstream license notice. A public BearBirdPad source release should
-also include the exact pinned revisions and this notice.
+RecompFrontend's missing project-level license remains an acknowledged
+uncertainty. The free, unsigned, ROM-free developer preview follows
+BanjoRecomp's existing GPL-licensed source and public binary distribution
+model. Paid access, commercial binary licensing, official-store distribution,
+or a separately redistributed RecompFrontend source bundle remain out of
+scope without authoritative clarification. Every BearBirdPad release must
+identify the exact pinned revisions and include this notice and the discovered
+third-party license files.
 
 This file is a repository audit record, not legal advice.

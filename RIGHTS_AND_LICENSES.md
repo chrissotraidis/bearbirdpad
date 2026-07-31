@@ -16,10 +16,13 @@ Nothing in BearBirdPad's license relicenses, supersedes, or claims ownership of
 third-party material.
 
 The pinned RecompFrontend revision does not include a project-level license.
-Its license must be clarified before publishing an IPA or redistributing a
-third-party source bundle. The MIT license in its
-`lib/GamepadMotionHelpers/` directory applies to that component, not
-automatically to RecompFrontend as a whole.
+The MIT license in its `lib/GamepadMotionHelpers/` directory applies to that
+component, not automatically to RecompFrontend as a whole. BanjoRecomp is
+GPL-3.0-or-later and publicly distributes builds that use RecompFrontend; the
+free, unsigned BearBirdPad developer preview follows that upstream community
+distribution model. This is not a standalone RecompFrontend license grant.
+Written clarification remains desirable before paid access, commercial binary
+licensing, or official-store distribution.
 
 No rights are granted to Nintendo, Microsoft, or Rare trademarks,
 Banjo-Kazooie, ROMs, saves, extracted assets, or other copyrighted game

@@ -22,9 +22,9 @@ This is the final gate for a public source snapshot or downloadable IPA.
 
 - [ ] [`RIGHTS_AND_LICENSES.md`](../RIGHTS_AND_LICENSES.md) still states the
       game-data boundary and does not claim to relicense third-party projects.
-- [ ] RecompFrontend has an explicit, authoritative project license compatible
-      with the intended distribution. Until then, binary publication is
-      blocked.
+- [ ] RecompFrontend's missing project-level license is disclosed; distribution
+      remains a free, unsigned community preview consistent with BanjoRecomp's
+      existing public binary model.
 - [ ] Review the exact package and distribution plan for GPLv3
       corresponding-source and third-party notice obligations.
 - [ ] Publish or otherwise provide the complete corresponding source for the
@@ -36,7 +36,10 @@ This is the final gate for a public source snapshot or downloadable IPA.
 - [ ] Run `scripts/package-ios.sh` and record the exact SHA-256.
 - [ ] Confirm the IPA contains no ROM, save, texture pack, generated source,
       provisioning profile, maintainer certificate, or device backup.
-- [ ] Re-sign and update-install the exact IPA on physical iPhone and iPad.
+- [ ] Confirm the IPA carries `LICENSE`, `RIGHTS_AND_LICENSES.md`,
+      `THIRD_PARTY_NOTICES.md`, and the discovered dependency license files.
+- [ ] Re-sign and update-install the exact IPA on at least one physical iPhone
+      or iPad; record the exact device coverage and untested matrix.
 - [ ] Confirm that update installation preserves the existing ROM, save,
       configuration, and the separate phone/tablet touch-layout profiles.
 - [ ] Replay launch, Files import, touch controls, menu access, gameplay,
@@ -58,9 +61,11 @@ This is the final gate for a public source snapshot or downloadable IPA.
 - [ ] Record the signing type without publishing certificates, profiles, or
       other signing material.
 
-## Current publication gates
+## Current publication limits
 
-- No public developer-preview IPA has been released.
 - The regular physical iPhone/iPad play path is stable, but the wider
   controller reconnect/rumble, audio-route/interruption, and performance
   matrix is incomplete.
+- RecompFrontend's project-level license remains unresolved. Keep distribution
+  free, unsigned, ROM-free, and outside official stores unless authoritative
+  clarification is obtained.
