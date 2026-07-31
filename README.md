@@ -16,10 +16,10 @@
   <img alt="GPL version 3 or later" src="https://img.shields.io/badge/license-GPL--3.0--or--later-34C759">
 </p>
 
-![BearBirdPad running Banjo-Kazooie on a physical iPhone with its touch controller](docs/readme/bearbirdpad-iphone-gameplay.jpg)
+![BearBirdPad running Banjo-Kazooie on a physical iPad with its touch controller](docs/readme/bearbirdpad-ipad-gameplay.jpg)
 
-The capture above is from the current physical iPhone build. Its game data was
-supplied locally and is not part of this repository.
+The capture above and gallery below are from the current physical iPad build.
+Game data was supplied locally and is not part of this repository.
 
 BearBirdPad packages the full
 [BanjoRecomp](https://github.com/BanjoRecomp/BanjoRecomp) source port as a
@@ -35,6 +35,31 @@ saves, extracted assets, or a playable preconfigured build. Read the scoped
 [`third-party license audit`](THIRD_PARTY_NOTICES.md). BearBirdPad-owned software
 is GPL-3.0-or-later; third-party projects and game material retain their own
 rights and are not relicensed.
+
+## Gameplay on iPad
+
+<table>
+  <tr>
+    <td width="50%">
+      <img src="docs/readme/bearbirdpad-ipad-dialogue.jpg" alt="Banjo speaking with Nipper while the touch controller remains visible"><br>
+      <sub><strong>World interaction.</strong> Dialogue and camera framing remain readable while the touch controller stays available.</sub>
+    </td>
+    <td width="50%">
+      <img src="docs/readme/bearbirdpad-ipad-flight.jpg" alt="Banjo and Kazooie flying over Treasure Trove Cove using the iPad touch controller"><br>
+      <sub><strong>Aerial exploration.</strong> The full virtual N64 layout supports flying and traversal.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/readme/bearbirdpad-ipad-underwater.jpg" alt="Banjo and Kazooie swimming underwater using the iPad touch controller"><br>
+      <sub><strong>Underwater traversal.</strong> Analog movement and action controls remain accessible while swimming.</sub>
+    </td>
+    <td width="50%">
+      <img src="docs/readme/bearbirdpad-ipad-talon-trot.jpg" alt="Banjo and Kazooie using Talon Trot with the iPad touch controller"><br>
+      <sub><strong>Talon Trot.</strong> Simultaneous touch input supports compound moves and faster traversal.</sub>
+    </td>
+  </tr>
+</table>
 
 ## Install status
 
@@ -293,7 +318,7 @@ provide the game, ROM downloads, saves, or extracted game data.
 BearBirdPad-owned software, scripts, patches, and documentation are licensed
 under GPL-3.0-or-later. See [`LICENSE`](LICENSE),
 [`RIGHTS_AND_LICENSES.md`](RIGHTS_AND_LICENSES.md), and
-[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). The gameplay screenshot,
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). The gameplay screenshots,
 game imagery, names, logos, and trademarks are not included in that license.
 
 This project builds on BanjoRecomp, N64ModernRuntime, N64Recomp, RT64, Plume,
