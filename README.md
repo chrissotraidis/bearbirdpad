@@ -108,7 +108,7 @@ You need:
 Install the command-line dependencies:
 
 ```sh
-brew install cmake ninja rust
+brew install cmake ninja rust llvm lld
 ```
 
 Clone and build:
