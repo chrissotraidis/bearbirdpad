@@ -36,7 +36,8 @@ fi
 
 if [ ! -x "$build_root/bin/rom_xxh3" ] ||
     [ ! -x "$build_root/bin/N64Recomp" ] ||
-    [ ! -x "$build_root/bin/RSPRecomp" ]; then
+    [ ! -x "$build_root/bin/RSPRecomp" ] ||
+    [ ! -x "$build_root/bin/file_to_c" ]; then
     "$repo_root/scripts/build-host-tools.sh"
 fi
 
@@ -96,6 +97,46 @@ else
     )
 fi
 
+have_patch_sources=true
+for generated_file in \
+    "$source_root/RecompiledPatches/patches.c" \
+    "$source_root/RecompiledPatches/patches_bin.c" \
+    "$source_root/RecompiledPatches/patches_bin.h" \
+    "$source_root/RecompiledPatches/recomp_overlays.inl" \
+    "$source_root/RecompiledPatches/funcs.h" \
+    "$source_root/patches/patches.bin"; do
+    if [ ! -s "$generated_file" ]; then
+        have_patch_sources=false
+        break
+    fi
+done
+
+if [ "$have_patch_sources" = true ]; then
+    echo "Generated patch sources are already present."
+else
+    llvm_prefix=$(brew --prefix llvm 2>/dev/null || true)
+    lld_prefix=$(brew --prefix lld 2>/dev/null || true)
+    patch_cc="$llvm_prefix/bin/clang"
+    patch_ld="$lld_prefix/bin/ld.lld"
+
+    if [ ! -x "$patch_cc" ] || [ ! -x "$patch_ld" ]; then
+        echo "The patch generator requires Homebrew LLVM and lld." >&2
+        echo "Install them with: brew install llvm lld" >&2
+        exit 1
+    fi
+
+    make -C "$source_root/patches" CC="$patch_cc" LD="$patch_ld"
+    (
+        cd "$source_root"
+        ./N64Recomp patches.toml
+    )
+    "$build_root/bin/file_to_c" \
+        "$source_root/patches/patches.bin" \
+        bk_patches_bin \
+        "$source_root/RecompiledPatches/patches_bin.c" \
+        "$source_root/RecompiledPatches/patches_bin.h"
+fi
+
 game_source_count=$(find "$source_root/RecompiledFuncs" \
     -type f \( -name '*.c' -o -name '*.cpp' \) | wc -l | tr -d ' ')
 if [ "$game_source_count" -eq 0 ] ||
@@ -104,4 +145,17 @@ if [ "$game_source_count" -eq 0 ] ||
     exit 1
 fi
 
-echo "Generated sources are ready: $game_source_count game files and rsp/n_aspMain.cpp"
+for generated_file in \
+    "$source_root/RecompiledPatches/patches.c" \
+    "$source_root/RecompiledPatches/patches_bin.c" \
+    "$source_root/RecompiledPatches/patches_bin.h" \
+    "$source_root/RecompiledPatches/recomp_overlays.inl" \
+    "$source_root/RecompiledPatches/funcs.h" \
+    "$source_root/patches/patches.bin"; do
+    if [ ! -s "$generated_file" ]; then
+        echo "Generated patch source verification failed: $generated_file" >&2
+        exit 1
+    fi
+done
+
+echo "Generated sources are ready: $game_source_count game files, RSP, and patches"

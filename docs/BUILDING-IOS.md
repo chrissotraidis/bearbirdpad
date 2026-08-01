@@ -12,7 +12,7 @@ BearBirdPad builds BanjoRecomp as a native arm64 iPhone/iPad app. The repository
 Install the command-line prerequisites with Homebrew if needed:
 
 ```sh
-brew install cmake ninja rust
+brew install cmake ninja rust llvm lld
 ```
 
 Install the iOS platform and Metal toolchain from Xcode Settings > Components. Accept the Xcode license and open Xcode once before using command-line builds.
@@ -28,7 +28,7 @@ scripts/prepare-generated.sh "/absolute/path/to/Banjo-Kazooie (USA).n64"
 scripts/build-ios.sh --device --app --config Release
 ```
 
-`prepare-generated.sh` accepts `.z64`, `.v64`, or `.n64` byte order, requires the complete 16 MiB NTSC-U 1.0 image, verifies retail XXH3-64 `1B67585D56E07F8C`, and verifies the decompressed build input SHA-1 `1fb13cad402518d3ae9a8dc4b52c5c54b2a4adc7`. It writes only under ignored `sources/` and `build-*` paths.
+`prepare-generated.sh` accepts `.z64`, `.v64`, or `.n64` byte order, requires the complete 16 MiB NTSC-U 1.0 image, verifies retail XXH3-64 `1B67585D56E07F8C`, and verifies the decompressed build input SHA-1 `1fb13cad402518d3ae9a8dc4b52c5c54b2a4adc7`. It uses Homebrew LLVM and lld for the MIPS patch sources because Apple's Clang does not support the required target flags. It writes only under ignored `sources/` and `build-*` paths.
 
 The unsigned device app is:
 
