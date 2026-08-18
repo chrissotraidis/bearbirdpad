@@ -11,7 +11,7 @@
   <img alt="Metal renderer" src="https://img.shields.io/badge/renderer-Metal-5E5CE6">
   <img alt="Physical iPhone and iPad tested" src="https://img.shields.io/badge/physical%20iPhone%20%2B%20iPad-tested-30D158">
   <img alt="Custom touch layouts" src="https://img.shields.io/badge/touch%20layouts-customizable-FF9F0A">
-  <a href="https://github.com/chrissotraidis/bearbirdpad/releases/tag/v0.1.0-preview.1"><img alt="Download developer preview IPA" src="https://img.shields.io/badge/IPA-developer%20preview-FF9F0A"></a>
+  <a href="https://github.com/chrissotraidis/bearbirdpad/releases/tag/v0.1.0-preview.2"><img alt="Download developer preview IPA" src="https://img.shields.io/badge/IPA-developer%20preview-FF9F0A"></a>
   <img alt="ROM not included" src="https://img.shields.io/badge/game%20data-not%20included-FF453A">
   <img alt="GPL version 3 or later" src="https://img.shields.io/badge/license-GPL--3.0--or--later-34C759">
 </p>
@@ -67,7 +67,7 @@ rights and are not relicensed.
 |---|---|---|
 | Local iPhone or iPad build | **Available now** | Build and sign with your Apple development team using the instructions below. |
 | Simulator | **Available now** | Best for development and UI testing; it is not a substitute for physical-device testing. |
-| Developer-preview `.ipa` | **Available now** | [Download preview 0.1.0 build 1](https://github.com/chrissotraidis/bearbirdpad/releases/download/v0.1.0-preview.1/BearBirdPad-0.1.0-preview.1-unsigned.ipa), then sign it for your device using the [installation guide](docs/INSTALL_IPA.md). |
+| Developer-preview `.ipa` | **Available now** | [Download preview 0.1.0 build 2](https://github.com/chrissotraidis/bearbirdpad/releases/download/v0.1.0-preview.2/BearBirdPad-0.1.0-preview.2-unsigned.ipa), then sign it for your device using the [installation guide](docs/INSTALL_IPA.md). |
 | App Store / TestFlight | **Not announced** | No listing or public TestFlight currently exists. |
 
 The current development build has been signed, installed, launched, and
@@ -79,12 +79,14 @@ played on:
 On those devices, local ROM loading, native Metal gameplay, touch input,
 settings, device-specific layouts, save transfer, save reload, and in-place
 app updates preserving the Documents container have been exercised. The
-current build is stable in regular playtesting; a wider controller,
-audio-route, interruption, and performance matrix remains open.
+current build is stable in regular playtesting. SDL2 controller ownership now
+reconciles stale handles and stable player slots after disconnect, reconnect,
+and foreground resume; physical Bluetooth, wired, natural-sleep, mapping, and
+two-controller acceptance remain open.
 
 ## Download the developer preview
 
-[Download BearBirdPad 0.1.0 Preview 1](https://github.com/chrissotraidis/bearbirdpad/releases/tag/v0.1.0-preview.1).
+[Download BearBirdPad 0.1.0 Preview 2](https://github.com/chrissotraidis/bearbirdpad/releases/tag/v0.1.0-preview.2).
 The IPA is unsigned: it must be signed with your own Apple ID before it can be
 installed. Follow [`docs/INSTALL_IPA.md`](docs/INSTALL_IPA.md) for the short
 installation and update procedure.
@@ -198,7 +200,7 @@ geometry stays separate so an iPad layout cannot distort the iPhone controls.
 | Rendering | Plume/RT64 Metal rendering in Simulator and on physical iPhone/iPad |
 | Game setup | NTSC-U 1.0 validation and Files import for `.z64`, `.v64`, and `.n64` |
 | Touch | Simultaneous N64 controls, safe-area menu access, and separate customizable phone/tablet layouts |
-| Controllers | SDL's iOS-compatible MFi, PlayStation, and Xbox input path is included |
+| Controllers | SDL2 MFi, PlayStation, and Xbox input with stale-handle cleanup, stable slots, held-input release, reconnect, and foreground reconciliation |
 | Saves | Files-visible save/backup files, transfer between devices, and in-place update persistence |
 | Mods | `.rtz` texture-pack import through Files or the Mods picker |
 | Lifecycle | Rendering, configuration, save flushing, and audio recovery are integrated with app backgrounding |
@@ -240,7 +242,7 @@ claim about rights in the original game.
 <details>
 <summary><strong>Where is the IPA?</strong></summary>
 
-[Download the unsigned developer-preview IPA from GitHub Releases](https://github.com/chrissotraidis/bearbirdpad/releases/tag/v0.1.0-preview.1),
+[Download the unsigned developer-preview IPA from GitHub Releases](https://github.com/chrissotraidis/bearbirdpad/releases/tag/v0.1.0-preview.2),
 then follow the [installation guide](docs/INSTALL_IPA.md) to sign it for your
 iPhone or iPad.
 </details>

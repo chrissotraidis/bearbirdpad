@@ -8,7 +8,7 @@ The IPA contains no ROM, save, extracted game assets, provisioning profile, or
 maintainer certificate. You must provide your own legally acquired
 Banjo-Kazooie NTSC-U 1.0 ROM after installation.
 
-[Download BearBirdPad 0.1.0 Preview 1](https://github.com/chrissotraidis/bearbirdpad/releases/download/v0.1.0-preview.1/BearBirdPad-0.1.0-preview.1-unsigned.ipa)
+[Download BearBirdPad 0.1.0 Preview 2](https://github.com/chrissotraidis/bearbirdpad/releases/download/v0.1.0-preview.2/BearBirdPad-0.1.0-preview.2-unsigned.ipa)
 
 The GitHub release page records the SHA-256 for the exact published asset.
 
@@ -44,7 +44,8 @@ outside BearBirdPad's tested in-place update path cannot be guaranteed.
 - This is early test software and may contain bugs.
 - The published IPA must be re-signed by the installer.
 - No jailbreak or JIT entitlement is required by BearBirdPad.
-- Wider controller, audio-route, interruption, and performance testing remains
-  incomplete.
+- Automated controller sleep/disconnect/reconnect coverage is included, but
+  physical Bluetooth, wired, natural-sleep, mapping, and two-controller
+  acceptance remain incomplete.
 - App Store, TestFlight, and official third-party-store distribution are not
   part of this preview.
