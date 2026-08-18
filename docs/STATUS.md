@@ -81,10 +81,9 @@ touch play path:
   license before paid access, commercial licensing, or official-store
   distribution.
 
-The GitHub Actions workflow is configured to build a ROM-free Simulator stub,
-audit it, and upload a proof artifact. Hosted jobs are currently prevented
-from starting by the repository owner's GitHub Actions billing/spending state;
-this is an account-level limitation rather than a source or build failure.
+The GitHub Actions workflow builds a ROM-free Simulator stub, audits it, and
+uploads a proof artifact. Both the push and pull-request runs for Preview 2
+completed successfully.
 
 ## Publication boundary
 
