@@ -53,6 +53,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 "$ROOT/scripts/test-touch-input.sh"
+"$ROOT/scripts/test-controller-slots.sh"
 
 case "$MODE" in
     --device)
@@ -214,6 +215,10 @@ if [[ "$PRODUCT" == "app" ]]; then
         -DCMAKE_OSX_SYSROOT="$SDK" \
         -DCMAKE_OSX_DEPLOYMENT_TARGET=16.0 \
         -DCMAKE_OSX_ARCHITECTURES=arm64 \
+        -DCMAKE_C_FLAGS="-ffile-prefix-map=$ROOT=." \
+        -DCMAKE_CXX_FLAGS="-ffile-prefix-map=$ROOT=." \
+        -DCMAKE_OBJC_FLAGS="-ffile-prefix-map=$ROOT=." \
+        -DCMAKE_OBJCXX_FLAGS="-ffile-prefix-map=$ROOT=." \
         -DCMAKE_PREFIX_PATH="$SDL_PREFIX;$FREETYPE_PREFIX" \
         -DSDL2_DIR="$SDL_PREFIX/lib/cmake/SDL2" \
         -DFreetype_DIR="$FREETYPE_PREFIX/lib/cmake/freetype" \

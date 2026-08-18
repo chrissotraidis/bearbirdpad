@@ -4,7 +4,7 @@ set -eu
 
 repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 app_path=${1:-"$repo_root/build-ios-app-device/Release/BanjoRecompiled.app"}
-output_path=${2:-"$repo_root/build/release/BearBirdPad-0.1.0-unsigned.ipa"}
+output_path=${2:-"$repo_root/build/release/BearBirdPad-0.1.0-preview.2-unsigned.ipa"}
 
 case "$output_path" in
     /*) ;;

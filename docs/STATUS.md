@@ -1,6 +1,6 @@
 # BearBirdPad status
 
-Updated 2026-07-31. Current phase: stable physical-device development build
+Updated 2026-08-18. Current phase: stable physical-device development build
 and free unsigned developer preview.
 
 ## Current result
@@ -10,28 +10,34 @@ deployment target. The regular play path is stable in current owner testing:
 supported-ROM loading, Metal rendering, touch gameplay, settings, saves,
 in-place updates, and separate phone/tablet control layouts are working.
 
-The `v0.1.0-preview.1` unsigned IPA is a deterministic, ROM-free developer
+The `v0.1.0-preview.2` unsigned IPA is a deterministic, ROM-free developer
 preview. Its SHA-256 is
-`275aefb38924f5d1edd1c7361ef47df5bc961e005eade51954d7cfe647ab6b24`.
+`8e39e264a6ef096661ed7e75eaa5028513e3091a20464197877d8e60b249bcf9`.
 It includes the project rights notices and 87 discovered third-party license
 files and requires user-side signing plus a legally acquired supported ROM.
-The exact archive passed local payload and reproducibility checks. It was not
-freshly re-signed for another device install in this release session because
-the configured Xcode account could not create a new provisioning profile; the
-same source app had already been signed, installed, launched, and exercised on
-the iPad and iPhone listed below.
+The exact archive passed local payload and reproducibility checks. A separate
+development-signed build with the same bundle ID and signing team was installed
+in place on the iPad, then launched to the rendered title menu.
 
-The latest focused fixes keep the persistent `•••` menu button inside the
-active safe area and scale iOS pointer events from UIKit/SDL logical
-coordinates into the Retina pixel coordinate space expected by
-RecompFrontend. Together they fix the clipped menu and unresponsive
-high-DPI menu taps observed on physical hardware.
+BearBirdPad uses RecompFrontend's SDL2 `SDL_GameController` backend. The prior
+event-only ownership path opened controller handles on add, erased state on a
+remove event without closing the handle, did not validate attachment while
+polling, and did not reconcile on foreground resume. A missed removal during
+sleep could therefore leave stale non-null ownership and held input.
+
+Build 2 adds a compact four-slot identity helper at that existing seam. It
+enumerates current SDL game controllers, validates attachment and instance
+identity, closes stale handles, fills the first free slot deterministically,
+and reads gameplay input only from attached handles. Reconciliation runs at
+startup, add/remove/remap events, foreground resume, and a bounded one-second
+active check. Existing mappings and touch preferences are unchanged, and SDL
+is never restarted.
 
 ## Physical-device evidence
 
 | Device | OS | Verified |
 |---|---|---|
-| 12.9-inch iPad Pro (6th generation), `iPad14,5` | iPadOS 26.5.2 | Signed install, local ROM loading, gameplay, touch controls, menu access, save creation/reload, save export, settings persistence, and in-place update |
+| 12.9-inch iPad Pro (6th generation), `iPad14,5` | iPadOS 26.6 | Build 2 same-team in-place install, live PID, SDL/UIKit and Metal initialization, existing-ROM title-menu render, foreground controller reconciliation, and byte-identical ROM/save/controller/touch preferences after readback |
 | iPhone 14, `iPhone14,7` | iOS 26.5.2 | Signed install, local ROM loading, gameplay, touch controls, safe-area menu placement, imported iPad save, phone-default layout restoration, and in-place update |
 
 Both devices used the same universal application bundle. The iPad save was
@@ -49,6 +55,7 @@ container with its `.bak` companion. The original iPad save remained intact.
 | Touch | Full N64 overlay, simultaneous touches, duplicated-Z reference counting, editor, optional controls, and persistent menu |
 | Layout persistence | Normalized `phone-v1` and `tablet-v1` preferences survive relaunch and remain independent |
 | Pointer input | Logical SDL pointer coordinates are scaled to the drawable's Retina pixel space on iOS |
+| Controllers | Deterministic regression covers missed removal with held button/axis input, neutral release, sole return to player 1, an additional controller in player 2, preservation of an unaffected slot, and foreground reconciliation |
 | Saves | Primary and `.bak` save files load after relaunch, transfer between devices, and survive in-place installs |
 | Mods | `.rtz` texture packs can be imported through Files or the Mods picker |
 | Packaging | App audit rejects ROM paths/digests and generated-source markers; signed mode verifies the signature and provisioning Team ID |
@@ -59,14 +66,17 @@ container with its `.bak` companion. The original iPad save remained intact.
 These are breadth and distribution gates, not known blockers in the regular
 touch play path:
 
-- complete the physical controller reconnect, rumble, and model matrix;
+- physically exercise Bluetooth disconnect/reconnect, wired
+  disconnect/reconnect, natural sleep/wake, active and foreground return,
+  held-input release, overlay restoration, full mapping, rumble, and
+  two-controller slot preservation;
 - exercise headphones, Bluetooth audio, calls/Siri, and longer interruption
   recovery;
 - record a repeatable FPS, hitch, memory, and thermal matrix on the target
   device range;
-- re-sign and update-install the exact final distributable IPA after the local
-  Xcode account can provision `com.chrissotraidis.bearbirdpad`, then extend
-  validation to additional physical iPhone and iPad models; and
+- re-sign the unsigned release IPA with the same application identity before a
+  future device install, and extend validation to additional physical iPhone
+  and iPad models; and
 - obtain authoritative clarification of RecompFrontend's missing project-level
   license before paid access, commercial licensing, or official-store
   distribution.

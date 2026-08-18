@@ -8,6 +8,7 @@ This is the final gate for a public source snapshot or downloadable IPA.
 - [ ] Pinned source revisions replay every maintained patch without manual
       edits.
 - [ ] `scripts/test-touch-input.sh` passes for touch-related changes.
+- [ ] `scripts/test-controller-slots.sh` passes for controller-lifecycle changes.
 - [ ] The relevant Simulator and device Release targets build.
 - [ ] `scripts/package-audit.sh` accepts the intended app.
 - [ ] README setup steps and screenshots match the current interface.

@@ -1,0 +1,507 @@
+--- a/recompinput/src/input_state.cpp
++++ b/recompinput/src/input_state.cpp
+@@ -1,8 +1,19 @@
+ #include <algorithm>
++#include <cstdio>
+ #include <mutex>
+ #include <span>
+ #include <atomic>
++#include <string>
++#include <string_view>
+ 
++#ifdef __APPLE__
++#include <TargetConditionals.h>
++#endif
++
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++#include "ControllerSlots.hpp"
++#endif
++
+ #include "recompinput/recompinput.h"
+ #include "recompinput/input_state.h"
+ #include "recompinput/input_binding.h"
+@@ -22,6 +33,9 @@
+     std::mutex controllers_mutex;
+     std::vector<SDL_GameController*> detected_controllers{};
+     std::unordered_map<SDL_JoystickID, ControllerState> controller_states;
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++    bearbirdpad::controller::Slots<SDL_JoystickID, 4> controller_slots;
++#endif
+ 
+     std::array<float, 2> mouse_delta{};
+     std::mutex pending_input_mutex;
+@@ -40,17 +54,28 @@
+         std::lock_guard lock{ InputState.controllers_mutex };
+         InputState.detected_controllers.clear();
+ 
+-        static std::vector<size_t> free_controllers;
+-        free_controllers.clear();
+-
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++        for (size_t slot = 0; slot < 4; ++slot) {
++            const auto identity = InputState.controller_slots.identity_at(slot);
++            if (!identity.has_value()) {
++                continue;
++            }
++            const auto state = InputState.controller_states.find(*identity);
++            if (state != InputState.controller_states.end() &&
++                state->second.controller != nullptr &&
++                SDL_GameControllerGetAttached(state->second.controller) == SDL_TRUE) {
++                InputState.detected_controllers.push_back(state->second.controller);
++            }
++        }
++#else
+         for (const auto& [id, state] : InputState.controller_states) {
+             (void)id; // Avoid unused variable warning.
+             SDL_GameController* controller = state.controller;
+             if (controller != nullptr) {
+-                free_controllers.emplace_back(InputState.detected_controllers.size());
+                 InputState.detected_controllers.push_back(controller);
+             }
+         }
++#endif
+     }
+ 
+     // Read the deltas while resetting them to zero.
+@@ -77,9 +102,17 @@
+     return std::lerp(from, to, amount);
+ }
+ 
++static bool controller_is_attached(SDL_GameController* controller) {
++    return controller != nullptr &&
++           SDL_GameControllerGetAttached(controller) == SDL_TRUE;
++}
++
+ // Update rumble to attempt to mimic the way n64 rumble ramps up and falls off
+ void recompinput::update_rumble() {
+     auto do_rumble = [](SDL_GameController* controller, uint16_t rumble_strength, uint32_t duration) {
++        if (!controller_is_attached(controller)) {
++            return;
++        }
+         SDL_Joystick* joystick = SDL_GameControllerGetJoystick(controller);
+         SDL_JoystickID joystick_id = SDL_JoystickInstanceID(joystick);
+         ControllerState &state = InputState.controller_states[joystick_id];
+@@ -142,12 +175,14 @@
+             std::lock_guard lock{ InputState.controllers_mutex };
+             if (recompinput::players::is_single_player_mode()) {
+                 for (const auto &controller : InputState.detected_controllers) {
+-                    ret |= SDL_GameControllerGetButton(controller, button);
++                    if (controller_is_attached(controller)) {
++                        ret |= SDL_GameControllerGetButton(controller, button);
++                    }
+                 }
+             }
+             else {
+                 auto &player = recompinput::players::get_player(controller_num);
+-                if (player.controller != nullptr) {
++                if (controller_is_attached(player.controller)) {
+                     ret |= SDL_GameControllerGetButton(player.controller, button);
+                 }
+             }
+@@ -168,6 +203,9 @@
+ 
+         {
+             auto gather_axis_state = [&](SDL_GameController* controller) {
++                if (!controller_is_attached(controller)) {
++                    return 0.0f;
++                }
+                 float cur_val = SDL_GameControllerGetAxis(controller, axis) * (1 / 32768.0f);
+                 if (negative_range) {
+                     cur_val = -cur_val;
+@@ -193,7 +231,7 @@
+             }
+             else {
+                 auto &player = recompinput::players::get_player(controller_num);
+-                if (player.controller != nullptr) {
++                if (controller_is_attached(player.controller)) {
+                     ret = gather_axis_state(player.controller);
+                 }
+             }
+@@ -285,6 +323,9 @@
+             std::lock_guard lock{ InputState.controllers_mutex };
+             for (const auto &state_pair : InputState.controller_states) {
+                 const ControllerState &state = state_pair.second;
++                if (!controller_is_attached(state.controller)) {
++                    continue;
++                }
+                 cur_rotation_delta[0] += state.rotation_delta[0];
+                 cur_rotation_delta[1] += state.rotation_delta[1];
+             }
+@@ -292,7 +333,7 @@
+ 
+     } else {
+         auto &player = players::get_player(controller_num);
+-        if (player.controller == nullptr) {
++        if (!controller_is_attached(player.controller)) {
+             *x = 0.0f;
+             *y = 0.0f;
+             return;
+@@ -397,8 +438,187 @@
+ void recompinput::remove_controller_state(SDL_JoystickID joystick_id) {
+     std::lock_guard lock{ InputState.controllers_mutex };
+     InputState.controller_states.erase(joystick_id);
++}
++
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++std::vector<SDL_GameController*> recompinput::reconcile_controller_states(const char* reason) {
++    struct CurrentController {
++        int device_index;
++        SDL_JoystickID identity;
++        std::string name;
++    };
++
++    SDL_GameControllerUpdate();
++    std::vector<CurrentController> current;
++    const int joystick_count = SDL_NumJoysticks();
++    current.reserve(joystick_count > 0 ? static_cast<size_t>(joystick_count) : 0);
++    for (int device_index = 0; device_index < joystick_count; ++device_index) {
++        if (SDL_IsGameController(device_index) != SDL_TRUE) {
++            continue;
++        }
++        const SDL_JoystickID identity = SDL_JoystickGetDeviceInstanceID(device_index);
++        if (identity < 0) {
++            const char* name = SDL_GameControllerNameForIndex(device_index);
++            std::fprintf(
++                stderr,
++                "BEARBIRDPAD_CONTROLLER reconcile=%s device=%d identity=invalid name=%s\n",
++                reason,
++                device_index,
++                name != nullptr ? name : "unknown");
++            continue;
++        }
++        current.push_back({
++            device_index,
++            identity,
++            SDL_GameControllerNameForIndex(device_index) != nullptr
++                ? SDL_GameControllerNameForIndex(device_index)
++                : "unknown",
++        });
++    }
++
++    std::vector<SDL_JoystickID> identities;
++    identities.reserve(current.size());
++    for (const auto &controller : current) {
++        identities.push_back(controller.identity);
++    }
++
++    using Slots = bearbirdpad::controller::Slots<SDL_JoystickID, 4>;
++    std::vector<Slots::Change> changes;
++    std::vector<SDL_GameController*> to_close;
++    {
++        std::lock_guard lock{ InputState.controllers_mutex };
++        changes = InputState.controller_slots.reconcile(identities, [&](SDL_JoystickID identity) {
++            const auto state = InputState.controller_states.find(identity);
++            if (state == InputState.controller_states.end()) {
++                return true;
++            }
++            SDL_GameController* controller = state->second.controller;
++            if (!controller_is_attached(controller)) {
++                return false;
++            }
++            SDL_Joystick* joystick = SDL_GameControllerGetJoystick(controller);
++            return joystick != nullptr && SDL_JoystickInstanceID(joystick) == identity;
++        });
++
++        for (const auto &change : changes) {
++            if (change.kind != Slots::ChangeKind::Release) {
++                continue;
++            }
++            const auto state = InputState.controller_states.find(change.identity);
++            if (state != InputState.controller_states.end()) {
++                SDL_GameController* controller = state->second.controller;
++                std::fprintf(
++                    stderr,
++                    "BEARBIRDPAD_CONTROLLER reconcile=%s release player=%zu instance=%d name=%s\n",
++                    reason,
++                    change.slot + 1,
++                    change.identity,
++                    controller != nullptr && SDL_GameControllerName(controller) != nullptr
++                        ? SDL_GameControllerName(controller)
++                        : "unknown");
++                if (controller != nullptr) {
++                    std::erase(InputState.detected_controllers, controller);
++                    to_close.push_back(controller);
++                }
++                InputState.controller_states.erase(state);
++            }
++        }
++
++        const auto follow_up = InputState.controller_slots.reconcile(
++            identities, [](SDL_JoystickID) { return true; });
++        changes.insert(changes.end(), follow_up.begin(), follow_up.end());
++    }
++
++    for (SDL_GameController* controller : to_close) {
++        SDL_GameControllerClose(controller);
++        std::fprintf(
++            stderr,
++            "BEARBIRDPAD_CONTROLLER reconcile=%s close=ok\n",
++            reason);
++    }
++
++    std::vector<SDL_GameController*> opened;
++    for (const auto &change : changes) {
++        if (change.kind != Slots::ChangeKind::Assign) {
++            continue;
++        }
++
++        const auto device = std::find_if(
++            current.begin(), current.end(), [&](const CurrentController &candidate) {
++                return candidate.identity == change.identity;
++            });
++        if (device == current.end()) {
++            std::lock_guard lock{ InputState.controllers_mutex };
++            InputState.controller_slots.release(change.identity);
++            continue;
++        }
++
++        SDL_GameController* controller = SDL_GameControllerOpen(device->device_index);
++        if (controller == nullptr) {
++            std::fprintf(
++                stderr,
++                "BEARBIRDPAD_CONTROLLER reconcile=%s open=failed player=%zu device=%d instance=%d name=%s error=%s\n",
++                reason,
++                change.slot + 1,
++                device->device_index,
++                change.identity,
++                device->name.c_str(),
++                SDL_GetError());
++            std::lock_guard lock{ InputState.controllers_mutex };
++            InputState.controller_slots.release(change.identity);
++            continue;
++        }
++
++        SDL_Joystick* joystick = SDL_GameControllerGetJoystick(controller);
++        const SDL_JoystickID opened_identity =
++            joystick != nullptr ? SDL_JoystickInstanceID(joystick) : -1;
++        if (!controller_is_attached(controller) || opened_identity != change.identity) {
++            std::fprintf(
++                stderr,
++                "BEARBIRDPAD_CONTROLLER reconcile=%s open=invalid player=%zu device=%d expected=%d actual=%d\n",
++                reason,
++                change.slot + 1,
++                device->device_index,
++                change.identity,
++                opened_identity);
++            SDL_GameControllerClose(controller);
++            std::lock_guard lock{ InputState.controllers_mutex };
++            InputState.controller_slots.release(change.identity);
++            continue;
++        }
++
++        {
++            std::lock_guard lock{ InputState.controllers_mutex };
++            ControllerState &state = InputState.controller_states[change.identity];
++            state.controller = controller;
++        }
++        opened.push_back(controller);
++        std::fprintf(
++            stderr,
++            "BEARBIRDPAD_CONTROLLER reconcile=%s assign player=%zu device=%d instance=%d name=%s\n",
++            reason,
++            change.slot + 1,
++            device->device_index,
++            change.identity,
++            device->name.c_str());
++    }
++
++    if (!changes.empty() || std::string_view(reason) != "active-check") {
++        std::fprintf(
++            stderr,
++            "BEARBIRDPAD_CONTROLLER reconcile=%s connected=%zu\n",
++            reason,
++            recompinput::connected_controller_count());
++    }
++    return opened;
+ }
+ 
++size_t recompinput::connected_controller_count() {
++    std::lock_guard lock{ InputState.controllers_mutex };
++    return InputState.controller_slots.connected_count();
++}
++#endif
++
+ void recompinput::add_rotation_deltas(SDL_JoystickID joystick_id, float rot_x, float rot_y) {
+     std::lock_guard lock{ InputState.pending_input_mutex };
+     ControllerState &state = InputState.controller_states[joystick_id];
+--- a/recompinput/src/input_events.cpp
++++ b/recompinput/src/input_events.cpp
+@@ -43,6 +43,41 @@
+     return profile_index;
+ }
+ 
++static void register_controller(SDL_GameController* controller) {
++    if (controller == nullptr) {
++        return;
++    }
++
++    if (SDL_GameControllerHasSensor(controller, SDL_SensorType::SDL_SENSOR_GYRO) &&
++        SDL_GameControllerHasSensor(controller, SDL_SensorType::SDL_SENSOR_ACCEL)) {
++        SDL_GameControllerSetSensorEnabled(controller, SDL_SensorType::SDL_SENSOR_GYRO, SDL_TRUE);
++        SDL_GameControllerSetSensorEnabled(controller, SDL_SensorType::SDL_SENSOR_ACCEL, SDL_TRUE);
++    }
++
++    ControllerGUID guid = profiles::get_guid_from_sdl_controller(controller);
++    if (profiles::get_controller_by_guid(guid) < 0) {
++        if (players::is_single_player_mode()) {
++            deferred_controller_profiles[guid.hash] = guid;
++        } else {
++            int profile_index = get_or_create_controller_profile_index(guid);
++            profiles::add_controller(guid, profile_index);
++        }
++    }
++}
++
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++static bool controller_reconcile_active = true;
++
++static void reconcile_controllers(const char* reason) {
++    const auto opened = recompinput::reconcile_controller_states(reason);
++    for (SDL_GameController* controller : opened) {
++        register_controller(controller);
++    }
++    BearBirdPadTouch_SetControllerConnected(
++        recompinput::connected_controller_count() > 0 ? 1 : 0);
++}
++#endif
++
+ void purge_deferred_controller_profiles() {
+     for (auto &guid_pair : deferred_controller_profiles) {
+         int profile_index = get_or_create_controller_profile_index(guid_pair.second);
+@@ -85,6 +120,9 @@
+     break;
+     case SDL_EventType::SDL_CONTROLLERDEVICEADDED:
+     {
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++        reconcile_controllers("device-added");
++#else
+         SDL_ControllerDeviceEvent* controller_event = &event->cdevice;
+         SDL_GameController* controller = SDL_GameControllerOpen(controller_event->which);
+         printf("Controller added: %d\n", controller_event->which);
+@@ -92,48 +130,27 @@
+             printf("  Instance ID: %d\n", SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(controller)));
+             printf("  Path: %s\n", SDL_JoystickPath(SDL_GameControllerGetJoystick(controller)));
+             recompinput::add_controller_state(SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(controller)), controller);
+-
+-            if (SDL_GameControllerHasSensor(controller, SDL_SensorType::SDL_SENSOR_GYRO) && SDL_GameControllerHasSensor(controller, SDL_SensorType::SDL_SENSOR_ACCEL)) {
+-                SDL_GameControllerSetSensorEnabled(controller, SDL_SensorType::SDL_SENSOR_GYRO, SDL_TRUE);
+-                SDL_GameControllerSetSensorEnabled(controller, SDL_SensorType::SDL_SENSOR_ACCEL, SDL_TRUE);
+-            }
+-        }
+-        
+-#if defined(__APPLE__) && TARGET_OS_IPHONE
+-        if (controller != nullptr) {
+-            BearBirdPadTouch_SetControllerConnected(1);
++            register_controller(controller);
+         }
+ #endif
+-
+-        ControllerGUID guid = profiles::get_guid_from_sdl_controller(controller);
+-        if (profiles::get_controller_by_guid(guid) < 0) {
+-            if (players::is_single_player_mode()) {
+-                deferred_controller_profiles[guid.hash] = guid;
+-            } else {
+-                int profile_index = get_or_create_controller_profile_index(guid);
+-                profiles::add_controller(guid, profile_index);
+-            }
+-        }
+     }
+     break;
+     case SDL_EventType::SDL_CONTROLLERDEVICEREMOVED:
+     {
+         SDL_ControllerDeviceEvent* controller_event = &event->cdevice;
+         printf("Controller removed: %d\n", controller_event->which);
+-        recompinput::remove_controller_state(controller_event->which);
+ #if defined(__APPLE__) && TARGET_OS_IPHONE
+-        bool has_connected_game_controller = false;
+-        int joystick_count = SDL_NumJoysticks();
+-        for (int index = 0; index < joystick_count; index++) {
+-            if (SDL_IsGameController(index) == SDL_TRUE) {
+-                has_connected_game_controller = true;
+-                break;
+-            }
+-        }
+-        BearBirdPadTouch_SetControllerConnected(has_connected_game_controller ? 1 : 0);
++        reconcile_controllers("device-removed");
++#else
++        recompinput::remove_controller_state(controller_event->which);
+ #endif
+     }
+     break;
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++    case SDL_EventType::SDL_CONTROLLERDEVICEREMAPPED:
++        reconcile_controllers("device-remapped");
++        break;
++#endif
+     case SDL_EventType::SDL_QUIT: {
+         if (!ultramodern::is_game_started()) {
+             ultramodern::quit();
+@@ -266,9 +283,12 @@
+         break;
+ #if defined(__APPLE__) && TARGET_OS_IPHONE
+     case SDL_EventType::SDL_APP_WILLENTERBACKGROUND:
++        controller_reconcile_active = false;
+         BearBirdPadTouch_ReleaseAll();
+         break;
+     case SDL_EventType::SDL_APP_DIDENTERFOREGROUND:
++        controller_reconcile_active = true;
++        reconcile_controllers("foreground");
+         if (!ultramodern::is_game_started()) {
+             recomp::mods::scan_mods();
+             recompui::update_mod_list(false);
+@@ -288,6 +308,20 @@
+ }
+ 
+ void handle_events() {
++#if defined(__APPLE__) && TARGET_OS_IPHONE
++    static bool controller_reconcile_started = false;
++    static Uint64 next_controller_reconcile = 0;
++    const Uint64 now = SDL_GetTicks64();
++    if (!controller_reconcile_started) {
++        controller_reconcile_started = true;
++        reconcile_controllers("startup");
++        next_controller_reconcile = now + 1000;
++    } else if (controller_reconcile_active && now >= next_controller_reconcile) {
++        reconcile_controllers("active-check");
++        next_controller_reconcile = now + 1000;
++    }
++#endif
++
+     SDL_Event cur_event;
+     static bool started = false;
+     static bool exited = false;
+--- a/recompinput/include/recompinput/input_state.h
++++ b/recompinput/include/recompinput/input_state.h
+@@ -1,6 +1,7 @@
+ #pragma once
+ 
+ #include <span>
++#include <vector>
+ 
+ // disable warning: '/*' within block comment [-Wcomment] for GamepadMotion.hpp
+ #pragma GCC diagnostic push
+@@ -46,6 +47,10 @@
+     SDL_GameController *get_controller_from_joystick_id(SDL_JoystickID joystick_id);
+     void add_controller_state(SDL_JoystickID joystick_id, SDL_GameController* controller);
+     void remove_controller_state(SDL_JoystickID joystick_id);
++#if defined(__APPLE__)
++    std::vector<SDL_GameController*> reconcile_controller_states(const char* reason);
++    size_t connected_controller_count();
++#endif
+     void add_rotation_deltas(SDL_JoystickID joystick_id, float rot_x, float rot_y);
+     void add_mouse_deltas(float delta_x, float delta_y);
+     void add_mouse_wheel_delta(int32_t delta);
+--- a/recompinput/CMakeLists.txt
++++ b/recompinput/CMakeLists.txt
+@@ -40,6 +40,10 @@
+     "${CMAKE_CURRENT_SOURCE_DIR}/include/recompinput"
+ )
+ 
++if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
++    target_include_directories(recompinput PRIVATE "${BEARBIRDPAD_IOS_DIR}")
++endif()
++
+ if (WIN32)
+     target_include_directories(recompinput PRIVATE ${sdl2_SOURCE_DIR}/include)
+ elseif (APPLE OR CMAKE_SYSTEM_NAME MATCHES "Linux")
+
