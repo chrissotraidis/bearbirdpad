@@ -147,15 +147,37 @@ Before publishing or sharing a build, follow the
 
 BearBirdPad never downloads or bundles game data.
 
+You do **not** need to create or wait for a BearBirdPad Documents folder. Before
+launching the app, save your ROM anywhere already available in Files, such as
+**Downloads**, **iCloud Drive**, or another Files provider.
+
 1. Launch BearBirdPad.
-2. Choose **Load ROM**.
-3. Select your legally acquired Banjo-Kazooie NTSC-U 1.0 ROM from Files.
+2. Tap **Load ROM** in the launcher. This opens Apple's Files picker.
+3. Select your legally acquired Banjo-Kazooie NTSC-U 1.0 ROM.
 4. Wait for validation to finish, then choose **Start Game**.
 5. On later launches, BearBirdPad validates and reuses the stored local ROM.
 
 `.z64`, `.v64`, and `.n64` byte orders are accepted. The selected ROM remains
-inside the app's Documents container and is never part of this repository or
-its package output.
+wherever you originally kept it; BearBirdPad also stores its own private copy
+under `Documents/BanjoRecompiled/`. That app folder is useful for saves and
+backups after setup, but its visibility in Files is not required for the
+**Load ROM** picker to work.
+
+### If Load ROM does not respond
+
+First force-quit BearBirdPad, reopen it, and tap **Load ROM** once. If the Files
+picker still does not appear, report:
+
+- the iPhone or iPad model and iOS/iPadOS version;
+- the exact signing/install method, including whether the IPA is running inside
+  a container app rather than as a normally installed app;
+- whether **Controls** and **Settings** respond; and
+- a short screen recording showing the tap.
+
+If **Controls** and **Settings** also ignore taps, that points to a general touch
+or display-coordinate problem. If only **Load ROM** fails, that points to the
+iOS document-picker bridge. A missing BearBirdPad folder in Files by itself
+does not identify either problem and should not block ROM selection.
 
 ## Touch controls
 
@@ -252,6 +274,17 @@ iPhone or iPad.
 
 No. You must provide your own legally acquired supported ROM. Do not open
 issues requesting game data or download links.
+</details>
+
+<details>
+<summary><strong>Why is there no BearBirdPad folder in Files?</strong></summary>
+
+You do not need that folder for first-time setup. Put the supported ROM in
+Downloads, iCloud Drive, or another Files location, then open BearBirdPad and
+tap **Load ROM**. BearBirdPad creates and uses its own
+`Documents/BanjoRecompiled/` storage after launch. Some container-style
+sideloading methods expose an app's files differently from a normal signed
+installation.
 </details>
 
 <details>

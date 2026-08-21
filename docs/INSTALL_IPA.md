@@ -23,7 +23,21 @@ The GitHub release page records the SHA-256 for the exact published asset.
 3. Download the BearBirdPad `-unsigned.ipa` and save it to Files.
 4. In AltStore Classic, open **My Apps**, tap **+**, select the IPA, and let
    AltStore sign and install it.
-5. Launch BearBirdPad and import your own supported ROM through Files.
+5. Save your supported ROM anywhere accessible in Files, such as Downloads or
+   iCloud Drive.
+6. Launch BearBirdPad, tap **Load ROM**, and select that ROM in Apple's Files
+   picker.
+
+Do not wait for or manually create a BearBirdPad folder under **On My iPhone**
+or **On My iPad**. The ROM picker can open files from any Files location. The
+app's own `Documents/BanjoRecompiled/` folder is storage for its imported copy,
+saves, and settings; it is not a prerequisite for importing the ROM.
+
+If tapping **Load ROM** does not open the picker, force-quit and reopen the app.
+If it still fails, include the device model, OS version, exact signing/install
+method, whether **Controls** and **Settings** respond, and a short screen
+recording in the bug report. Container-style sideloading methods may expose app
+storage differently from a normal signed installation.
 
 Your Apple ID credentials are handled by the signing tool and Apple, not by
 BearBirdPad. Consult the tool's current documentation before signing.
