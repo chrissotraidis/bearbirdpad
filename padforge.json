@@ -4,7 +4,7 @@
   "name": "BearBirdPad",
   "game": "Banjo-Kazooie (N64) via static recompilation",
   "kind": "disc-translation",
-  "status": "draft-untested",
+  "status": "experimental",
   "inputs": [
     {
       "type": "n64-rom",
