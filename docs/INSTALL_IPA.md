@@ -1,5 +1,9 @@
 # Install the BearBirdPad developer preview
 
+> [!IMPORTANT]
+> **Downloads retired.** Prebuilt builds are no longer published, and release
+> links on this page no longer work. A build-it-yourself version is in progress.
+
 The BearBirdPad download is an unsigned developer-preview IPA. It is not an
 App Store or TestFlight build. A sideloading tool must sign it with your Apple
 ID for your own iPhone or iPad.
@@ -8,7 +12,7 @@ The IPA contains no ROM, save, extracted game assets, provisioning profile, or
 maintainer certificate. You must provide your own legally acquired
 Banjo-Kazooie NTSC-U 1.0 ROM after installation.
 
-[Download BearBirdPad 0.1.0 Preview 2](https://github.com/chrissotraidis/bearbirdpad/releases/download/v0.1.0-preview.2/BearBirdPad-0.1.0-preview.2-unsigned.ipa)
+Download BearBirdPad 0.1.0 Preview 2 (retired)
 
 The GitHub release page records the SHA-256 for the exact published asset.
 
