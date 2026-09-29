@@ -84,7 +84,17 @@ two-controller acceptance remain open.
 
 ## Developer preview
 
-Previous builds have been retired; a new version is in progress.
+Releases publish no app: BearBirdPad contains code translated from the game,
+so you make your own from your own ROM. On an Apple Silicon Mac with Xcode and
+`brew install cmake ninja rust llvm lld`, download
+[PadForge](https://github.com/chrissotraidis/padforge/releases/latest), unzip it,
+double-click `PadForge.command`, choose BearBirdPad and pick your
+Banjo-Kazooie (USA) ROM. PadForge builds BearBirdPad from this repository's
+[latest release](https://github.com/chrissotraidis/bearbirdpad/releases/latest)
+and saves an unsigned IPA in the folder you choose. Install it with AltStore
+Classic, SideStore or Sideloadly. The IPA contains code translated from your
+ROM: it is yours alone; never share it. To build by hand instead, see
+[Get started](#get-started).
 
 ## Get started
 
@@ -252,7 +262,9 @@ claim about rights in the original game.
 <details>
 <summary><strong>Where is the IPA?</strong></summary>
 
-Previous builds have been retired; a new version is in progress.
+There is no public IPA: the app contains code translated from the game, so
+PadForge builds your own from your ROM on an Apple Silicon Mac. See
+[Developer preview](#developer-preview).
 </details>
 
 <details>
