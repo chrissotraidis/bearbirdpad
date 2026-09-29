@@ -3,6 +3,9 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# One version for the app, its release and PadForge: version.json.
+BEARBIRDPAD_VERSION="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$ROOT/version.json")"
+BEARBIRDPAD_BUILD="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["build"])' "$ROOT/version.json")"
 MODE="--simulator"
 PRODUCT="smoke"
 CONFIG="Release"
@@ -223,6 +226,8 @@ if [[ "$PRODUCT" == "app" ]]; then
         -DSDL2_DIR="$SDL_PREFIX/lib/cmake/SDL2" \
         -DFreetype_DIR="$FREETYPE_PREFIX/lib/cmake/freetype" \
         -DBEARBIRDPAD_IOS_DIR="$ROOT/ios/app" \
+        -DBEARBIRDPAD_VERSION="$BEARBIRDPAD_VERSION" \
+        -DBEARBIRDPAD_BUILD="$BEARBIRDPAD_BUILD" \
         -DBANJO_MOBILE_RENDERER_STUB=OFF \
         -DDEVELOPMENT_TEAM="${DEVELOPMENT_TEAM:-}" \
         -DDXC_PATH="$ROOT/sources/banjo/lib/rt64/src/contrib/dxc/bin/arm64/dxc-macos" \
