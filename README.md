@@ -85,7 +85,8 @@ two-controller acceptance remain open.
 ## Developer preview
 
 Releases publish no app: BearBirdPad contains code translated from the game,
-so you make your own from your own ROM. On an Apple Silicon Mac with Xcode and
+so you make your own from your own ROM. On an Apple Silicon Mac with
+Xcode (plus its Metal Toolchain: `xcodebuild -downloadComponent MetalToolchain`) and
 `brew install cmake ninja rust`, download
 [PadMint](https://github.com/chrissotraidis/padmint/releases/latest), unzip it,
 double-click `PadMint.command`, choose BearBirdPad and pick your
