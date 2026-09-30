@@ -91,7 +91,7 @@ so you make your own from your own ROM. On an Apple Silicon Mac with Xcode and
 double-click `PadMint.command`, choose BearBirdPad and pick your
 Banjo-Kazooie (USA) ROM. PadMint builds BearBirdPad from this repository's
 [latest release](https://github.com/chrissotraidis/bearbirdpad/releases/latest)
-and saves an unsigned IPA in the folder you choose. Install it with AltStore
+and saves an unsigned IPA in your Downloads folder. Install it with AltStore
 Classic, SideStore or Sideloadly. The IPA contains code translated from your
 ROM: it is yours alone; never share it. To build by hand instead, see
 [Get started](#get-started).
