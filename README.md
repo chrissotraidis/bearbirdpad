@@ -86,7 +86,7 @@ two-controller acceptance remain open.
 
 Releases publish no app: BearBirdPad contains code translated from the game,
 so you make your own from your own ROM. On an Apple Silicon Mac with Xcode and
-`brew install cmake ninja rust llvm lld`, download
+`brew install cmake ninja rust`, download
 [PadMint](https://github.com/chrissotraidis/padmint/releases/latest), unzip it,
 double-click `PadMint.command`, choose BearBirdPad and pick your
 Banjo-Kazooie (USA) ROM. PadMint builds BearBirdPad from this repository's
