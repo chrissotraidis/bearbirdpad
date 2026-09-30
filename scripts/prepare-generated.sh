@@ -114,16 +114,26 @@ done
 if [ "$have_patch_sources" = true ]; then
     echo "Generated patch sources are already present."
 else
-    llvm_prefix=$(brew --prefix llvm 2>/dev/null || true)
-    lld_prefix=$(brew --prefix lld 2>/dev/null || true)
-    patch_cc="$llvm_prefix/bin/clang"
-    patch_ld="$lld_prefix/bin/ld.lld"
+    # The N64 patches need LLVM's clang and ld.lld (Apple's clang cannot target
+    # MIPS): PadMint's LLVM first (PADMINT_LLVM_ROOT, or PADFORGE_LLVM_ROOT from
+    # before the rename), then Homebrew's llvm and lld.
+    llvm_root=${PADMINT_LLVM_ROOT:-${PADFORGE_LLVM_ROOT:-}}
+    if [ -n "$llvm_root" ]; then
+        patch_cc="$llvm_root/bin/clang"
+        patch_ld="$llvm_root/bin/ld.lld"
+    else
+        llvm_prefix=$(brew --prefix llvm 2>/dev/null || true)
+        lld_prefix=$(brew --prefix lld 2>/dev/null || true)
+        patch_cc="$llvm_prefix/bin/clang"
+        patch_ld="$lld_prefix/bin/ld.lld"
+    fi
 
     if [ ! -x "$patch_cc" ] || [ ! -x "$patch_ld" ]; then
-        echo "The patch generator requires Homebrew LLVM and lld." >&2
-        echo "Install them with: brew install llvm lld" >&2
+        echo "The patch generator needs LLVM's clang and ld.lld (Apple's clang cannot target the N64)." >&2
+        echo "Update PadMint, which downloads them for you, or install them with: brew install llvm lld" >&2
         exit 1
     fi
+    echo "N64 patch compiler: $patch_cc, linker: $patch_ld"
 
     make -C "$source_root/patches" CC="$patch_cc" LD="$patch_ld"
     (

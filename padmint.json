@@ -74,6 +74,9 @@
             "{output}"
           ]
         }
+      ],
+      "tools": [
+        "llvm"
       ]
     }
   },
@@ -110,6 +113,13 @@
           "-version"
         ],
         "note": "Install Xcode and its iOS platform"
+      },
+      {
+        "name": "cargo",
+        "version_args": [
+          "--version"
+        ],
+        "note": "Rust builds the ROM decompressor: brew install rust"
       }
     ]
   },
