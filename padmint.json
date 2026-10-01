@@ -129,6 +129,7 @@
         "version_args": [
           "--version"
         ],
+        "player": true,
         "note": "Rust builds the ROM decompressor: brew install rust"
       }
     ]
