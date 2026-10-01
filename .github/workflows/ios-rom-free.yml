@@ -24,6 +24,9 @@ jobs:
       - name: Check repository safety
         run: scripts/check-repo-safety.sh
 
+      - name: Check host-tool and publication guards
+        run: python3 -B -m unittest discover -s tests -p '*_test.py' -v
+
       - name: Install build tools
         run: brew install ninja
 
@@ -49,9 +52,5 @@ jobs:
           scripts/package-audit.sh "$app"
           scripts/package-ios.sh "$app" build/ci/BearBirdPad-CIStub-simulator.ipa
 
-      - name: Upload ROM-free proof artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: BearBirdPad-CIStub-simulator
-          path: build/ci/BearBirdPad-CIStub-simulator.ipa
-          if-no-files-found: error
+      # Keep the audited Simulator proof package in the runner while releases
+      # are paused. Restoring downloads requires a separate publication review.
