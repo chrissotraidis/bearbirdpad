@@ -2,6 +2,17 @@
 
 set -eu
 
+jobs=${CMAKE_BUILD_PARALLEL_LEVEL:-}
+if [ -z "$jobs" ]; then
+    jobs=$(sysctl -n hw.logicalcpu 2>/dev/null || echo 4)
+fi
+case "$jobs" in
+    ''|0*|*[!0-9]*)
+        echo "Host-tool job limit must be a positive integer without leading zeros." >&2
+        exit 1
+        ;;
+esac
+
 repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 source_root="$repo_root/sources/banjo"
 build_root="$repo_root/build-host"
@@ -12,8 +23,6 @@ if [ ! -d "$source_root/lib/N64ModernRuntime/N64Recomp" ] ||
     echo "Pinned sources are missing. Run scripts/fetch-sources.sh first." >&2
     exit 1
 fi
-
-jobs=$(sysctl -n hw.logicalcpu 2>/dev/null || echo 4)
 
 cmake \
     -S "$superbuild" \
