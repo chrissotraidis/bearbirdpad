@@ -13,6 +13,8 @@
   <img alt="Custom touch layouts" src="https://img.shields.io/badge/touch%20layouts-customizable-FF9F0A">
   <img alt="ROM not included" src="https://img.shields.io/badge/game%20data-not%20included-FF453A">
   <img alt="GPL version 3 or later" src="https://img.shields.io/badge/license-GPL--3.0--or--later-34C759">
+  <a href="https://github.com/chrissotraidis/padmint"><img alt="Build BearBirdPad with PadMint" src="https://img.shields.io/badge/PadMint-build%20your%20own-3EB489"></a>
+  <a href="https://discord.gg/xwHfUD2bxW"><img alt="Join the BearBirdPad Discord" src="https://img.shields.io/badge/Discord-Join%20the%20community-5865F2?logo=discord&amp;logoColor=white"></a>
 </p>
 
 ![BearBirdPad running Banjo-Kazooie on a physical iPad with its touch controller](docs/readme/bearbirdpad-ipad-gameplay.jpg)
@@ -34,6 +36,13 @@ saves, extracted assets, or a playable preconfigured build. Read the scoped
 [`third-party license audit`](THIRD_PARTY_NOTICES.md). BearBirdPad-owned software
 is GPL-3.0-or-later; third-party projects and game material retain their own
 rights and are not relicensed.
+
+> [!NOTE]
+> **AI disclosure:** BearBirdPad uses substantial AI assistance for code, tests,
+> documentation, debugging and maintenance. Some support replies and maintenance
+> tasks are automated. There is no audited percentage of AI-generated code.
+> Build, test and device records describe what was checked. This disclosure
+> concerns BearBirdPad's workflow, not the authorship of its upstream projects.
 
 ## Gameplay on iPad
 
@@ -342,6 +351,17 @@ for reproducible gameplay or platform defects. Read
 [`CONTRIBUTING.md`](CONTRIBUTING.md) before proposing a change and
 [`SECURITY.md`](SECURITY.md) before reporting a sensitive vulnerability.
 Never attach or request game data.
+
+## Community and support
+
+[Join the Discord](https://discord.gg/xwHfUD2bxW) for help and news. It is one
+community for BearBirdPad and its sibling projects, such as KartPad, BlueWake
+and MeleePad: ask about setup, building with PadMint, and installing, share how
+it runs on your device, and hear about new releases first.
+
+Found a bug? [Open an
+issue](https://github.com/chrissotraidis/bearbirdpad/issues) with your device,
+its OS version, and the steps that led to it.
 
 ## Legal and acknowledgements
 
