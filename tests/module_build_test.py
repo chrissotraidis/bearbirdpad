@@ -171,5 +171,42 @@ class SourceTests(unittest.TestCase):
                 self.assertEqual(snapshot(), before)
 
 
+
+class WindowsCompilerTests(unittest.TestCase):
+    def check_selection(self, host, arm_available, expected_arch):
+        import types
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            installer = root / 'Microsoft Visual Studio/Installer/vswhere.exe'
+            installer.parent.mkdir(parents=True); installer.touch()
+            old, new = root / 'older-x64', root / 'newer-arm'
+            for installation, arch in ((old, 'x64'), (new, 'arm64')):
+                compiler = installation / f'VC/Tools/MSVC/14.44/bin/Host{arch}/{arch}/cl.exe'
+                compiler.parent.mkdir(parents=True); compiler.touch()
+            selected = new if expected_arch == 'arm64' else old
+            calls = []
+            def query(command, **kwargs):
+                calls.append(command)
+                return str(new if '-requiresAny' in command and arm_available else old)
+            process = types.SimpleNamespace(stdout='PATH=prepared-compiler\n')
+            with mock.patch.object(module, 'os', types.SimpleNamespace(name='nt', environ={'ProgramFiles(x86)': str(root)})), \
+                    mock.patch.object(module.platform, 'machine', return_value=host), \
+                    mock.patch.object(module.shutil, 'which', side_effect=[None, 'cl.exe']), \
+                    mock.patch.object(module.subprocess, 'check_output', side_effect=query), \
+                    mock.patch.object(module.subprocess, 'run', return_value=process) as run:
+                module.generator_environment()
+            self.assertEqual('-requiresAny' in calls[0], host == 'ARM64')
+            self.assertIn(str(selected / 'VC/Auxiliary/Build/vcvarsall.bat'), run.call_args.args[0])
+            self.assertIn(' ' + expected_arch + ' >nul', run.call_args.args[0])
+
+    def test_newer_arm_only_install_does_not_hide_x64_compiler(self):
+        self.check_selection('AMD64', True, 'x64')
+
+    def test_arm_host_keeps_native_compiler_preference(self):
+        self.check_selection('ARM64', True, 'arm64')
+
+    def test_arm_host_keeps_x64_fallback(self):
+        self.check_selection('ARM64', False, 'x64')
+
 if __name__ == '__main__':
     unittest.main()

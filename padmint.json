@@ -77,11 +77,29 @@
         "min_version": "17",
         "player": true,
         "hosts": [
-          "windows-arm64",
-          "windows-x86_64"
+          "windows-arm64"
         ],
         "label": "Visual Studio C++ Build Tools",
         "note": "Install Visual Studio 2022 Build Tools with Desktop development with C++ and a Windows SDK. x64 Windows needs x64/x86 C++ tools; Windows ARM64 can use ARM64 tools (preferred) or x64/x86 tools."
+      },
+      {
+        "name": "%ProgramFiles(x86)%/Microsoft Visual Studio/Installer/vswhere.exe",
+        "version_args": [
+          "-latest",
+          "-products",
+          "*",
+          "-requires",
+          "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+          "-property",
+          "installationVersion"
+        ],
+        "min_version": "17",
+        "player": true,
+        "hosts": [
+          "windows-x86_64"
+        ],
+        "label": "Visual Studio C++ Build Tools",
+        "note": "Install Visual Studio 2022 Build Tools with Desktop development with C++, x64/x86 C++ tools and a Windows SDK."
       }
     ]
   },
