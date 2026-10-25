@@ -26,116 +26,43 @@
       "check": "ipa",
       "steps": [
         {
-          "stage": "preflight",
-          "command": [
-            "/bin/bash",
-            "{repo}/scripts/check-repo-safety.sh"
-          ]
-        },
-        {
-          "stage": "dependencies",
-          "command": [
-            "/bin/bash",
-            "{repo}/scripts/fetch-sources.sh"
-          ]
-        },
-        {
-          "stage": "tools",
-          "command": [
-            "/bin/bash",
-            "{repo}/scripts/build-host-tools.sh"
-          ]
-        },
-        {
-          "stage": "translate",
-          "command": [
-            "/bin/bash",
-            "{repo}/scripts/prepare-generated.sh",
-            "{disc}"
-          ]
-        },
-        {
           "stage": "compile",
           "command": [
-            "/bin/bash",
-            "{repo}/scripts/build-ios.sh",
-            "--device",
-            "--app",
-            "--config",
-            "Release"
-          ]
-        },
-        {
-          "stage": "package",
-          "command": [
-            "/bin/bash",
-            "{repo}/scripts/package-ios.sh",
-            "{repo}/build-ios-app-device/Release/BanjoRecompiled.app",
-            "{output}"
+            "{python}",
+            "{repo}/scripts/build-game-module.py",
+            "--rom",
+            "{disc}",
+            "--toolchain",
+            "{ios_toolchain}",
+            "--build-dir",
+            "{work}",
+            "--jobs",
+            "{jobs}"
           ]
         }
       ],
       "tools": [
-        "llvm"
-      ]
+        "git",
+        "cmake",
+        "ninja",
+        "llvm",
+        "libcxx",
+        "mips-clang"
+      ],
+      "published_app": "BearBirdPad-v{version}-ios-shell.ipa",
+      "ios_module": {
+        "file": "{work}/module/BearBirdPadGame.dylib",
+        "into": "BearBirdPadGame.dylib"
+      }
     }
   },
   "requirements": {
-    "disk_gb": 15,
-    "tools": [
-      {
-        "name": "git",
-        "version_args": [
-          "--version"
-        ]
-      },
-      {
-        "name": "cmake",
-        "version_args": [
-          "--version"
-        ]
-      },
-      {
-        "name": "ninja",
-        "version_args": [
-          "--version"
-        ]
-      },
-      {
-        "name": "python3",
-        "version_args": [
-          "--version"
-        ]
-      },
-      {
-        "name": "xcodebuild",
-        "version_args": [
-          "-version"
-        ],
-        "note": "Install Xcode and its iOS platform"
-      },
-      {
-        "name": "xcrun",
-        "label": "Metal Toolchain",
-        "version_args": [
-          "metal",
-          "--version"
-        ],
-        "player": true,
-        "note": "Install Xcode's Metal Toolchain: xcodebuild -downloadComponent MetalToolchain"
-      },
-      {
-        "name": "cargo",
-        "version_args": [
-          "--version"
-        ],
-        "player": true,
-        "note": "Rust builds the ROM decompressor: brew install rust"
-      }
-    ]
+    "disk_gb": 8,
+    "tools": []
   },
   "publication": {
     "public_binaries": false,
-    "reason": "Personal builds contain game code translated from the player's ROM; public releases are source only."
-  }
+    "reason": "Private modules and personal apps contain code translated from the player-owned ROM. Public binary publication remains paused under the repository audit policy."
+  },
+  "notes": "Draft next-release module route. Requires PadMint portable SDK and managed MIPS compiler updates, plus a matching empty shell supplied with --app until an audited shell release exists. Existing manual Mac static build scripts remain supported. See docs/WINDOWS_MODULE.md for evidence and gates."
 }

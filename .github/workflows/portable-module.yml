@@ -1,0 +1,44 @@
+name: Portable module source checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: portable-module-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  public-generators:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            architecture: arm64
+          - os: windows-2022
+            architecture: x64
+          - os: windows-11-arm
+            architecture: arm64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.13'
+          architecture: ${{ matrix.architecture }}
+      - name: Install Ninja on macOS
+        if: runner.os == 'macOS'
+        run: brew install ninja
+      - name: Check portable source behavior
+        run: python -B -m unittest discover -s tests -p module_build_test.py -v
+      - name: Check source preservation and patch replay
+        run: python -B -m unittest discover -s tests -p source_patches_test.py -v
+      - name: Build public pinned generators and synthetic emitter fixture
+        run: python scripts/check-module-generators.py --jobs 4
+      - name: Check module loader and patch precedence on native macOS
+        if: runner.os == 'macOS'
+        run: python scripts/check-module-loader.py
+      # No ROM, private generated output, shell, or IPA is uploaded.

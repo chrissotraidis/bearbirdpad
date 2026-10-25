@@ -88,7 +88,7 @@ class BuildHostToolsTest(unittest.TestCase):
         self.assertEqual(result.stderr, "")
         expected = [["sysctl", "-n", "hw.logicalcpu"]] if probe else []
         expected += [
-            ["cmake", "-S", str(root / "cmake/host-tools"),
+            ["cmake", "--fresh", "-S", str(root / "cmake/host-tools"),
              "-B", str(root / "build-host"), "-G", "Ninja",
              "-DCMAKE_BUILD_TYPE=Release",
              "-DBEARBIRDPAD_SOURCE_ROOT=" + str(root / "sources/banjo")],
