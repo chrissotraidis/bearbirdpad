@@ -1,6 +1,7 @@
 """Portable build checks use only hand-written synthetic data."""
 import hashlib
 import importlib.util
+import io
 import json
 from pathlib import Path
 import subprocess
@@ -176,7 +177,7 @@ class WindowsCompilerTests(unittest.TestCase):
     def check_selection(self, host, arm_available, expected_arch):
         import types
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
+            root = Path(temporary) / 'Visual Studio 雪'
             installer = root / 'Microsoft Visual Studio/Installer/vswhere.exe'
             installer.parent.mkdir(parents=True); installer.touch()
             old, new = root / 'older-x64', root / 'newer-arm'
@@ -187,14 +188,19 @@ class WindowsCompilerTests(unittest.TestCase):
             calls = []
             def query(command, **kwargs):
                 calls.append(command)
+                self.assertIn("-utf8", command)
+                self.assertEqual(kwargs.get("encoding"), "utf-8")
                 return str(new if '-requiresAny' in command and arm_available else old)
-            process = types.SimpleNamespace(stdout='PATH=prepared-compiler\n')
-            with mock.patch.object(module, 'os', types.SimpleNamespace(name='nt', environ={'ProgramFiles(x86)': str(root)})), \
+            process = types.SimpleNamespace(stdout='PATH=prepared-compiler\nTEMP=C:/TEMP 雪\n')
+            with mock.patch.object(module, 'os', types.SimpleNamespace(name='nt', environ={'ProgramFiles(x86)': str(root), 'TEMP': 'C:/TEMP 雪'})), \
                     mock.patch.object(module.platform, 'machine', return_value=host), \
                     mock.patch.object(module.shutil, 'which', side_effect=[None, 'cl.exe']), \
                     mock.patch.object(module.subprocess, 'check_output', side_effect=query), \
                     mock.patch.object(module.subprocess, 'run', return_value=process) as run:
-                module.generator_environment()
+                env = module.generator_environment()
+            self.assertEqual(env['TEMP'], 'C:/TEMP 雪')
+            self.assertIn(' /u ', run.call_args.args[0])
+            self.assertEqual(run.call_args.kwargs['encoding'], 'utf-16le')
             self.assertEqual('-requiresAny' in calls[0], host == 'ARM64')
             self.assertIn(str(selected / 'VC/Auxiliary/Build/vcvarsall.bat'), run.call_args.args[0])
             self.assertIn(' ' + expected_arch + ' >nul', run.call_args.args[0])
@@ -207,6 +213,38 @@ class WindowsCompilerTests(unittest.TestCase):
 
     def test_arm_host_keeps_x64_fallback(self):
         self.check_selection('ARM64', False, 'x64')
+
+
+class UnicodeTests(unittest.TestCase):
+    def test_windows_cli_status_and_error_streams(self):
+        import types
+        output, errors = io.BytesIO(), io.BytesIO()
+        stdout = io.TextIOWrapper(output, encoding='cp1252')
+        stderr = io.TextIOWrapper(errors, encoding='cp1252')
+        with mock.patch.object(module, 'os', types.SimpleNamespace(name='nt')), \
+                mock.patch.object(module.sys, 'stdout', stdout), \
+                mock.patch.object(module.sys, 'stderr', stderr):
+            module.configure_cli_streams()
+            print('Private module: C:/Build 雪/Game.dylib')
+            print('Preserving C:/Build 雪', file=sys.stderr)
+        stdout.flush(); stderr.flush()
+        self.assertEqual(output.getvalue().replace(b'\r\n', b'\n'), 'Private module: C:/Build 雪/Game.dylib\n'.encode('utf-8'))
+        self.assertEqual(errors.getvalue().replace(b'\r\n', b'\n'), 'Preserving C:/Build 雪\n'.encode('utf-8'))
+
+    def test_manifest_changes_source_identity(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / 'sources.lock.json').write_bytes(b'{}')
+            (root / 'scripts').mkdir()
+            for name in ('module_build.py', 'module-identity.py', 'build-game-module.py', 'setup-source.py', 'apply-source-patches.py'):
+                (root / 'scripts' / name).write_bytes(b'')
+            path = root / 'cmake/module-host-tools/windows-utf8.manifest'
+            path.parent.mkdir(parents=True)
+            path.write_bytes(b'UTF-8')
+            with mock.patch.object(module, 'ROOT', root):
+                before = module.identity()
+                path.write_bytes(b'changed')
+                self.assertNotEqual(module.identity(), before)
 
 if __name__ == '__main__':
     unittest.main()

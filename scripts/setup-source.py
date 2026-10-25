@@ -8,6 +8,8 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from module_build import configure_cli_streams
 
 ROOT = Path(__file__).resolve().parents[1]
 PATCH_TREES = {
@@ -122,6 +124,7 @@ def prepare(module_only=False):
 
 
 if __name__ == '__main__':
+    configure_cli_streams()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--module-only', action='store_true')
     args = parser.parse_args()

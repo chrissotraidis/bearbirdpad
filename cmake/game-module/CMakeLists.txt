@@ -7,7 +7,7 @@ get_filename_component(BEARBIRDPAD_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSO
 set(BEARBIRDPAD_GENERATED "" CACHE PATH "Verified private output from build-game-module.py")
 set(BEARBIRDPAD_SOURCE "${BEARBIRDPAD_ROOT}/sources/banjo" CACHE PATH "Verified pinned public source")
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
-execute_process(COMMAND "${Python3_EXECUTABLE}" "${BEARBIRDPAD_ROOT}/scripts/check-module-inputs.py" "${BEARBIRDPAD_GENERATED}" "${BEARBIRDPAD_SOURCE}"
+execute_process(COMMAND "${Python3_EXECUTABLE}" -X utf8 "${BEARBIRDPAD_ROOT}/scripts/check-module-inputs.py" "${BEARBIRDPAD_GENERATED}" "${BEARBIRDPAD_SOURCE}"
     COMMAND_ERROR_IS_FATAL ANY)
 include("${BEARBIRDPAD_ROOT}/cmake/ModuleIdentity.cmake")
 bearbirdpad_module_identity("${BEARBIRDPAD_ROOT}" identity)

@@ -44,3 +44,10 @@ set_property(TARGET N64Recomp PROPERTY SOURCES ${core_sources} "${CMAKE_CURRENT_
 add_executable(BearBirdPadGeneratorTest "${BEARBIRDPAD_ROOT}/tests/module_generator_test.cpp")
 target_link_libraries(BearBirdPadGeneratorTest PRIVATE N64Recomp)
 target_compile_features(BearBirdPadGeneratorTest PRIVATE cxx_std_20)
+
+# These generators use narrow filesystem strings; opt in per process only.
+if(MSVC)
+    foreach(target N64RecompCLI RSPRecomp BearBirdPadGeneratorTest)
+        target_sources(${target} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/windows-utf8.manifest")
+    endforeach()
+endif()
