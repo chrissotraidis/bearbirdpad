@@ -93,6 +93,11 @@ two-controller acceptance remain open.
 
 ## Developer preview
 
+This draft branch adds a private-module build route described in
+[the module development notes](docs/WINDOWS_MODULE.md). It requires a matching
+empty shell and newer PadMint changes; it has not been released. The manual
+Mac static build below remains available.
+
 Releases publish no app: BearBirdPad contains code translated from the game,
 so you make your own from your own ROM. On an Apple Silicon Mac with
 Xcode (plus its Metal Toolchain: `xcodebuild -downloadComponent MetalToolchain`) and

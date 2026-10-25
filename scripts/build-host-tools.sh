@@ -24,7 +24,7 @@ if [ ! -d "$source_root/lib/N64ModernRuntime/N64Recomp" ] ||
     exit 1
 fi
 
-cmake \
+cmake --fresh \
     -S "$superbuild" \
     -B "$build_root" \
     -G Ninja \
