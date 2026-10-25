@@ -121,3 +121,24 @@ the official player checks remain pending for this route.
 All private artifacts and complete receipts remain local. These checks do not
 establish device loading, gameplay, clean Windows player setup, or release
 readiness.
+
+## Unicode path follow-up
+
+Windows generators now request UTF-8 through their own executable manifests.
+Visual Studio environment capture preserves Unicode temporary paths, Git patch
+replay decodes repository roots as UTF-8, and Python entrypoints and CMake
+children handle Unicode diagnostics without changing the system locale.
+
+At `27a7982`, the complete Windows ARM64 private backend passed with Unicode
+source, work, ROM and temporary paths. It used existing verified public source
+and tool caches; this was not a fresh default player installation. All 433
+code/header files matched the previous private output byte for byte. The new
+matching shell/module pair passed strict imports, sole-export and iOS 16 checks;
+IPA insertion preserved all 47 files in the raw empty shell. Independent Apple
+`nm`/`otool` and archive readback also passed. The original ROM was unchanged.
+
+Twenty-two focused tests passed on Apple Python 3.9 and bundled Windows Python.
+Native Windows x64/ARM64 and macOS CI passed public Unicode CLI/TOML path and
+generation checks, including manifest readback on Windows. Those fixtures check
+CPU function generation and RSP BREAK output; they do not execute the emitted
+CPU code. Device and gameplay acceptance remain pending.
