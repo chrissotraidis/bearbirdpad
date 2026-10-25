@@ -107,7 +107,16 @@ the official player checks remain pending for this route.
 - Windows 11 ARM64: native MSVC compiled and linked a synthetic static library
   and executable with UNC source and local C: output. Exact process-local Git
   trust configuration allowed read-only verification of the public cache.
-  Full Windows generation/module/package evidence is still pending.
+  Actual ARM64 private generation, module linking, import checks, identity
+  validation and IPA insertion passed in 110 seconds with packaged PadMint
+  from `ca6fb21`, using the verified read-only source cache and managed tools.
+  All 433 checked source text files exactly matched the Mac LLVM 18 reference.
+- The private x64 MSVC/LLVM build passed under Windows ARM64 emulation in
+  131 seconds; compiler/linker/generator PE headers confirmed x64 code. Native
+  ARM helper tools were reused. Its IPA SHA-256 exactly matched the ARM64
+  toolchain output. This does not claim a private build on native x64 hardware.
+- Native Windows ARM64 and x64 CI independently passed fresh public source
+  preparation, generator compilation, and synthetic tests.
 
 All private artifacts and complete receipts remain local. These checks do not
 establish device loading, gameplay, clean Windows player setup, or release
