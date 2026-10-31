@@ -72,11 +72,11 @@ scripts/package-ios.sh \
 ```
 
 Build the matching private module through this branch's recipe using PadMint
-and that local `--app`. The unpublished prerequisites are
+and that local `--app`. PadMint 0.5.15 and newer include both prerequisites:
 [PadMint #177](https://github.com/chrissotraidis/padmint/pull/177) for portable
 SDK headers and strict imports, and
 [PadMint #180](https://github.com/chrissotraidis/padmint/pull/180) for the managed
-Windows MIPS compiler. No shipped version number is claimed for these changes.
+Windows MIPS compiler.
 The recipe's future `published_app` is not available while publication is paused.
 
 Public-only validation runs the Python behavior tests, builds pinned host
@@ -138,6 +138,18 @@ IPA insertion preserved all 47 files in the raw empty shell. Independent Apple
 `nm`/`otool` and archive readback also passed. The original ROM was unchanged.
 
 Twenty-two focused tests passed on Apple Python 3.9 and bundled Windows Python.
+
+## Packaged PadMint release check (2026-11-01)
+
+The PadMint 0.5.27 Windows ZIP, with its bundled Python on Windows 11 ARM64,
+ran `padmint build bearbirdpad --target ios` from a fresh clone of this branch
+at `f400d31`, the supported ROM and an empty shell built on a Mac from that
+same revision (`build-module-shell.py`, then `package-ios.sh`). It finished in
+98 seconds with warm managed tools and recorded `personal-only`. All 279 shell
+entries stayed unchanged and only `BearBirdPadGame.dylib` was added; the IPA's
+CRCs are valid. A shell built at `294caee` has a different module identity and
+must not be paired with this revision. The ROM copy was deleted afterwards.
+Device launch is still untested.
 Native Windows x64/ARM64 and macOS CI passed public Unicode CLI/TOML path and
 generation checks, including manifest readback on Windows. Those fixtures check
 CPU function generation and RSP BREAK output; they do not execute the emitted
