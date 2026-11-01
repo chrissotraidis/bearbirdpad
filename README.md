@@ -108,6 +108,14 @@ ROM: it is yours alone; never share it. To build by hand instead, see
 
 ## Get started
 
+**No Mac?** Building BearBirdPad for iPhone or iPad needs an Apple Silicon Mac
+today. BearBirdPad reads your own ROM while it builds, so it can't use [GitHub's
+Mac](https://github.com/chrissotraidis/padmint#no-mac-build-on-githubs-mac) the
+way some other ports do: that would mean uploading your game file. A Windows
+build is in progress; [PadMint's Windows
+list](https://github.com/chrissotraidis/padmint/blob/main/docs/WINDOWS.md) shows
+where it stands.
+
 You need:
 
 - an Apple-silicon Mac with Xcode and its command-line tools;
