@@ -1,0 +1,86 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -76,6 +76,13 @@
+ 
+ target_include_directories(rt64 PRIVATE ${CMAKE_BINARY_DIR}/rt64/src)
+ 
++option(BEARBIRDPAD_MODULE_SHELL "Build the app without private generated game code" OFF)
++if(BEARBIRDPAD_MODULE_SHELL AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
++    message(FATAL_ERROR "The module shell currently targets iOS only")
++endif()
++set(BEARBIRDPAD_PRIVATE_LIBRARIES "")
++if(NOT BEARBIRDPAD_MODULE_SHELL)
++set(BEARBIRDPAD_PRIVATE_LIBRARIES PatchesLib RecompiledFuncs)
+ # RecompiledFuncs - Library containing the primary recompiler output
+ add_library(RecompiledFuncs STATIC)
+ 
+@@ -160,6 +167,8 @@
+                        DEPENDS ${CMAKE_SOURCE_DIR}/patches/patches.elf
+     )
+ endif()
++
++endif() # Existing static generated-code route
+ 
+ # Main executable
+ if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
+@@ -436,8 +445,7 @@
+ add_subdirectory(${CMAKE_SOURCE_DIR}/lib/RecompFrontend)
+ 
+ target_link_libraries(BanjoRecompiled PRIVATE
+-    PatchesLib
+-    RecompiledFuncs
++    ${BEARBIRDPAD_PRIVATE_LIBRARIES}
+     recompui
+     recompinput
+     librecomp
+@@ -448,6 +456,9 @@
+ 
+ # Embed all .nrm files in the "mods" directory
+ file(GLOB NRM_FILES "${CMAKE_SOURCE_DIR}/mods/*.nrm")
++if(BEARBIRDPAD_MODULE_SHELL)
++    set(NRM_FILES "")
++endif()
+ 
+ set(GENERATED_NRM_SOURCES "")
+ 
+@@ -467,6 +478,14 @@
+ 
+ target_sources(BanjoRecompiled PRIVATE ${GENERATED_NRM_SOURCES})
+ 
++if(BEARBIRDPAD_MODULE_SHELL)
++    list(REMOVE_ITEM SOURCES
++        "${CMAKE_SOURCE_DIR}/src/main/register_overlays.cpp"
++        "${CMAKE_SOURCE_DIR}/src/main/register_patches.cpp"
++        "${CMAKE_SOURCE_DIR}/rsp/n_aspMain.cpp")
++    include("${BEARBIRDPAD_IOS_DIR}/../../cmake/ModuleShell.cmake")
++    bearbirdpad_module_shell(BanjoRecompiled)
++endif()
+ target_sources(BanjoRecompiled PRIVATE ${SOURCES})
+ 
+ set_property(TARGET BanjoRecompiled PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+diff --git a/src/main/main.cpp b/src/main/main.cpp
+--- a/src/main/main.cpp
++++ b/src/main/main.cpp
+@@ -484,7 +484,11 @@
+         .is_enabled = false,
+         .decompression_routine = banjo::decompress_bk,
+         .has_compressed_code = true,
++#if defined(BEARBIRDPAD_MODULE_SHELL)
++        .entrypoint_address = 0, // Filled after the matching private module loads.
++#else
+         .entrypoint_address = get_entrypoint_address(),
++#endif
+         .entrypoint = recomp_entrypoint,
+         .on_init_callback = banjo::bk_on_init,
+     },
+@@ -841,6 +845,9 @@
+     fprintf(stdout, "BEARBIRDPAD_IOS config path: %s\n", app_folder_path.c_str());
+ #endif
+ 
++#if defined(BEARBIRDPAD_MODULE_SHELL)
++    supported_games[0].entrypoint_address = get_entrypoint_address();
++#endif
+     // Register supported games and patches
+     for (const auto& game : supported_games) {
+         recomp::register_game(game);

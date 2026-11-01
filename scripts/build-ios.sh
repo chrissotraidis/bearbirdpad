@@ -9,6 +9,7 @@ BEARBIRDPAD_BUILD="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[
 MODE="--simulator"
 PRODUCT="smoke"
 CONFIG="Release"
+MODULE_SHELL="OFF"
 SDL_VERSION="2.32.10"
 SDL_SHA256="5f5993c530f084535c65a6879e9b26ad441169b3e25d789d83287040a9ca5165"
 FREETYPE_VERSION="2.13.3"
@@ -40,6 +41,11 @@ while [[ $# -gt 0 ]]; do
             PRODUCT="app"
             shift
             ;;
+        --module-shell)
+            MODULE_SHELL="ON"
+            PRODUCT="app"
+            shift
+            ;;
         --config)
             CONFIG="${2:-}"
             if [[ "$CONFIG" != "Debug" && "$CONFIG" != "Release" ]]; then
@@ -49,7 +55,7 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         *)
-            echo "Usage: scripts/build-ios.sh [--device|--simulator] [--stub|--app] [--config Debug|Release]" >&2
+            echo "Usage: scripts/build-ios.sh [--device|--simulator] [--stub|--app|--module-shell] [--config Debug|Release]" >&2
             exit 2
             ;;
     esac
@@ -79,6 +85,9 @@ FREETYPE_PREFIX="$PREFIX_ROOT/freetype"
 SMOKE_BUILD="$ROOT/build-ios-smoke-$PLATFORM"
 CI_STUB_BUILD="$ROOT/build-ios-ci-stub-$PLATFORM"
 APP_BUILD="$ROOT/build-ios-app-$PLATFORM"
+if [[ "$MODULE_SHELL" == "ON" ]]; then
+    APP_BUILD="$ROOT/build-ios-module-shell-$PLATFORM"
+fi
 
 fetch_archive() {
     local url="$1"
@@ -215,6 +224,9 @@ if [[ "$PRODUCT" == "app" ]]; then
     METAL_COMPILER="$(xcrun -f metal)"
     METALLIB_COMPILER="$(dirname "$METAL_COMPILER")/metallib"
     PRODUCT_LABEL="full app"
+    if [[ "$MODULE_SHELL" == "ON" ]]; then
+        PRODUCT_LABEL="module shell (requires a matching private module)"
+    fi
 
     cmake \
         -S "$ROOT/sources/banjo" \
@@ -234,6 +246,7 @@ if [[ "$PRODUCT" == "app" ]]; then
         -DBEARBIRDPAD_IOS_DIR="$ROOT/ios/app" \
         -DBEARBIRDPAD_VERSION="$BEARBIRDPAD_VERSION" \
         -DBEARBIRDPAD_BUILD="$BEARBIRDPAD_BUILD" \
+        -DBEARBIRDPAD_MODULE_SHELL="$MODULE_SHELL" \
         -DBANJO_MOBILE_RENDERER_STUB=OFF \
         -DDEVELOPMENT_TEAM="${DEVELOPMENT_TEAM:-}" \
         -DDXC_PATH="$ROOT/sources/banjo/lib/rt64/src/contrib/dxc/bin/arm64/dxc-macos" \
