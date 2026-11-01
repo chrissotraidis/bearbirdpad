@@ -93,11 +93,6 @@ two-controller acceptance remain open.
 
 ## Developer preview
 
-This draft branch adds a private-module build route described in
-[the module development notes](docs/WINDOWS_MODULE.md). It requires a matching
-empty shell and newer PadMint changes; it has not been released. The manual
-Mac static build below remains available.
-
 Releases publish no app: BearBirdPad contains code translated from the game,
 so you make your own from your own ROM. On an Apple Silicon Mac with
 Xcode (plus its Metal Toolchain: `xcodebuild -downloadComponent MetalToolchain`) and
@@ -113,13 +108,15 @@ ROM: it is yours alone; never share it. To build by hand instead, see
 
 ## Get started
 
-**No Mac?** Building BearBirdPad for iPhone or iPad needs an Apple Silicon Mac
-today. BearBirdPad reads your own ROM while it builds, so it can't use [GitHub's
-Mac](https://github.com/chrissotraidis/padmint#no-mac-build-on-githubs-mac) the
-way some other ports do: that would mean uploading your game file. A Windows
-build is in progress; [PadMint's Windows
-list](https://github.com/chrissotraidis/padmint/blob/main/docs/WINDOWS.md) shows
-where it stands.
+**No Mac? Build it on a Windows PC (experimental).** PadMint 0.5.27 or newer
+builds BearBirdPad for iPhone or iPad on Windows 11 (x64 or ARM64) from your own
+Banjo-Kazooie (US) ROM. Install Visual Studio 2022 Build Tools with **Desktop development with
+C++**, then choose BearBirdPad in PadMint. PadMint downloads the game-free BearBirdPad app
+from this release and adds the game code it builds from your file on your PC;
+nothing of yours is uploaded. The Mac build is unchanged. This Windows route is
+new: builds pass on Windows 11 ARM64, but a Windows-built copy has not yet been
+played on a device. GitHub's Mac can't build BearBirdPad, because that would mean
+uploading your game file. Details: [Windows module](docs/WINDOWS_MODULE.md).
 
 You need:
 

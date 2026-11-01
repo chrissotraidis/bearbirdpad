@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "id": "bearbirdpad",
   "name": "BearBirdPad",
   "game": "Banjo-Kazooie (N64) via static recompilation",
@@ -28,6 +28,73 @@
       "check": "ipa",
       "steps": [
         {
+          "stage": "preflight",
+          "command": [
+            "/bin/bash",
+            "{repo}/scripts/check-repo-safety.sh"
+          ],
+          "on": [
+            "macos"
+          ]
+        },
+        {
+          "stage": "dependencies",
+          "command": [
+            "/bin/bash",
+            "{repo}/scripts/fetch-sources.sh"
+          ],
+          "on": [
+            "macos"
+          ]
+        },
+        {
+          "stage": "tools",
+          "command": [
+            "/bin/bash",
+            "{repo}/scripts/build-host-tools.sh"
+          ],
+          "on": [
+            "macos"
+          ]
+        },
+        {
+          "stage": "translate",
+          "command": [
+            "/bin/bash",
+            "{repo}/scripts/prepare-generated.sh",
+            "{disc}"
+          ],
+          "on": [
+            "macos"
+          ]
+        },
+        {
+          "stage": "compile",
+          "command": [
+            "/bin/bash",
+            "{repo}/scripts/build-ios.sh",
+            "--device",
+            "--app",
+            "--config",
+            "Release"
+          ],
+          "on": [
+            "macos"
+          ]
+        },
+        {
+          "stage": "package",
+          "command": [
+            "/bin/bash",
+            "{repo}/scripts/package-ios.sh",
+            "{repo}/build-ios-app-device/Release/BanjoRecompiled.app",
+            "{output}"
+          ],
+          "on": [
+            "macos"
+          ]
+        },
+        {
           "stage": "compile",
           "command": [
             "{python}",
@@ -40,27 +107,103 @@
             "{work}",
             "--jobs",
             "{jobs}"
+          ],
+          "on": [
+            "windows"
           ]
         }
       ],
       "tools": [
+        "llvm",
         "git",
         "cmake",
         "ninja",
-        "llvm",
         "libcxx",
         "mips-clang"
       ],
       "published_app": "BearBirdPad-v{version}-ios-shell.ipa",
       "ios_module": {
         "file": "{work}/module/BearBirdPadGame.dylib",
-        "into": "BearBirdPadGame.dylib"
+        "into": "BearBirdPadGame.dylib",
+        "on": [
+          "windows"
+        ]
       }
     }
   },
   "requirements": {
-    "disk_gb": 8,
+    "disk_gb": 15,
     "tools": [
+      {
+        "name": "git",
+        "version_args": [
+          "--version"
+        ],
+        "hosts": [
+          "macos-arm64"
+        ]
+      },
+      {
+        "name": "cmake",
+        "version_args": [
+          "--version"
+        ],
+        "hosts": [
+          "macos-arm64"
+        ]
+      },
+      {
+        "name": "ninja",
+        "version_args": [
+          "--version"
+        ],
+        "hosts": [
+          "macos-arm64"
+        ]
+      },
+      {
+        "name": "python3",
+        "version_args": [
+          "--version"
+        ],
+        "hosts": [
+          "macos-arm64"
+        ]
+      },
+      {
+        "name": "xcodebuild",
+        "version_args": [
+          "-version"
+        ],
+        "note": "Install Xcode and its iOS platform",
+        "hosts": [
+          "macos-arm64"
+        ]
+      },
+      {
+        "name": "xcrun",
+        "label": "Metal Toolchain",
+        "version_args": [
+          "metal",
+          "--version"
+        ],
+        "player": true,
+        "note": "Install Xcode's Metal Toolchain: xcodebuild -downloadComponent MetalToolchain",
+        "hosts": [
+          "macos-arm64"
+        ]
+      },
+      {
+        "name": "cargo",
+        "version_args": [
+          "--version"
+        ],
+        "player": true,
+        "note": "Rust builds the ROM decompressor: brew install rust",
+        "hosts": [
+          "macos-arm64"
+        ]
+      },
       {
         "name": "%ProgramFiles(x86)%/Microsoft Visual Studio/Installer/vswhere.exe",
         "version_args": [
