@@ -1357,7 +1357,9 @@ static BearBirdPadCameraGesture *sCameraGesture;
 static BearBirdPadCameraGestureDelegate *sCameraDelegate;
 static id sResignObserver;
 static std::atomic_bool sEnabled(true);
-static std::atomic_bool sHideWhenControllerConnected(false);
+// Auto-hide starts on only for players who never chose; a saved
+// hide_when_controller_connected value is kept by load_control_settings().
+static std::atomic_bool sHideWhenControllerConnected(true);
 static std::atomic_bool sShowDpad(false);
 static std::atomic_bool sShowL(false);
 static std::atomic_bool sMenuVisible(true);
@@ -1663,6 +1665,22 @@ extern "C" void BearBirdPadTouch_SetHideWhenControllerConnected(int hidden) {
     sHideWhenControllerConnected.store(hidden != 0);
     dispatch_async(dispatch_get_main_queue(), ^{
         save_control_settings();
+        apply_overlay_state();
+    });
+}
+
+// "Show Touch Controls": working touch now, even with the controller still
+// connected. Turns auto-hide off until the player turns it back on and closes
+// the game menu so the restored overlay is live at once. Controller
+// assignment is untouched.
+extern "C" void BearBirdPadTouch_ShowTouchControls(void) {
+    sEnabled.store(true);
+    sHideWhenControllerConnected.store(false);
+    dispatch_async(dispatch_get_main_queue(), ^{
+        save_control_settings();
+        if (sMenuVisible.load()) {
+            push_menu_toggle();
+        }
         apply_overlay_state();
     });
 }

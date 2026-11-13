@@ -13,6 +13,7 @@ void BearBirdPadTouch_BeginLayoutEditing(void);
 void BearBirdPadTouch_Install(void);
 void BearBirdPadTouch_SetEnabled(int enabled);
 void BearBirdPadTouch_SetHideWhenControllerConnected(int hidden);
+void BearBirdPadTouch_ShowTouchControls(void);
 void BearBirdPadTouch_SetShowDpad(int visible);
 void BearBirdPadTouch_SetShowL(int visible);
 void BearBirdPadTouch_SetMenuVisible(int visible);
