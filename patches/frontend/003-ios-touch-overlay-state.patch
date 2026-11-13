@@ -94,7 +94,7 @@ index f379a6f..b53e44e 100644
 +extern "C" void BearBirdPadTouch_SetHideWhenControllerConnected(int hidden);
 +extern "C" void BearBirdPadTouch_SetShowDpad(int visible);
 +extern "C" void BearBirdPadTouch_SetShowL(int visible);
-+extern "C" void BearBirdPadTouch_ShowTouchControls(void);
++extern "C" void BearBirdPadTouch_ShowTouchControls(int close_menu);
 +#endif
 +
  namespace recompui {
@@ -172,7 +172,7 @@ index f379a6f..b53e44e 100644
 +                touch_controls_toggle->set_checked(true);
 +                hide_with_controller_toggle->set_checked(false);
 +                customize_touch_button->set_enabled(game_started);
-+                BearBirdPadTouch_ShowTouchControls();
++                BearBirdPadTouch_ShowTouchControls(game_started ? 1 : 0);
 +            });
 +#endif
 +

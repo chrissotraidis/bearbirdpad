@@ -136,7 +136,7 @@
              *x = 0.0f;
              *y = 0.0f;
              return;
-@@ -397,8 +438,187 @@
+@@ -397,8 +438,226 @@
  void recompinput::remove_controller_state(SDL_JoystickID joystick_id) {
      std::lock_guard lock{ InputState.controllers_mutex };
      InputState.controller_states.erase(joystick_id);
@@ -319,6 +319,45 @@
 +    std::lock_guard lock{ InputState.controllers_mutex };
 +    return InputState.controller_slots.connected_count();
 +}
++
++// Touch auto-hide follows Player 1, the player touch drives: only an attached
++// controller with the stick and buttons gameplay needs counts.
++static bool controller_can_play(SDL_GameController* controller) {
++#if TARGET_OS_SIMULATOR
++    // CoreSimulator's placeholder "Gamepad" is not the player's controller.
++    const char* name = controller != nullptr ? SDL_GameControllerName(controller) : nullptr;
++    if (name != nullptr && std::string_view(name) == "Gamepad") {
++        return false;
++    }
++#endif
++    return controller != nullptr && SDL_GameControllerGetAttached(controller) == SDL_TRUE &&
++        SDL_GameControllerHasAxis(controller, SDL_CONTROLLER_AXIS_LEFTX) == SDL_TRUE &&
++        SDL_GameControllerHasAxis(controller, SDL_CONTROLLER_AXIS_LEFTY) == SDL_TRUE &&
++        SDL_GameControllerHasButton(controller, SDL_CONTROLLER_BUTTON_A) == SDL_TRUE &&
++        SDL_GameControllerHasButton(controller, SDL_CONTROLLER_BUTTON_B) == SDL_TRUE &&
++        SDL_GameControllerHasButton(controller, SDL_CONTROLLER_BUTTON_START) == SDL_TRUE;
++}
++
++bool recompinput::player_one_controller_ready() {
++    if (!players::is_single_player_mode()) {
++        // Another player's controller never hides Player 1's touch controls.
++        return controller_can_play(players::get_player(0).controller);
++    }
++    // Single-player mode feeds every slotted controller to Player 1, so any
++    // remaining usable one keeps touch hidden after another is removed.
++    std::lock_guard lock{ InputState.controllers_mutex };
++    for (size_t slot = 0; slot < 4; ++slot) {
++        const auto identity = InputState.controller_slots.identity_at(slot);
++        if (!identity.has_value()) {
++            continue;
++        }
++        const auto state = InputState.controller_states.find(*identity);
++        if (state != InputState.controller_states.end() && controller_can_play(state->second.controller)) {
++            return true;
++        }
++    }
++    return false;
++}
 +#endif
 +
  void recompinput::add_rotation_deltas(SDL_JoystickID joystick_id, float rot_x, float rot_y) {
@@ -361,7 +400,7 @@
 +        register_controller(controller);
 +    }
 +    BearBirdPadTouch_SetControllerConnected(
-+        recompinput::connected_controller_count() > 0 ? 1 : 0);
++        recompinput::player_one_controller_ready() ? 1 : 0);
 +}
 +#endif
 +
@@ -480,13 +519,14 @@
  
  // disable warning: '/*' within block comment [-Wcomment] for GamepadMotion.hpp
  #pragma GCC diagnostic push
-@@ -46,6 +47,10 @@
+@@ -46,6 +47,11 @@
      SDL_GameController *get_controller_from_joystick_id(SDL_JoystickID joystick_id);
      void add_controller_state(SDL_JoystickID joystick_id, SDL_GameController* controller);
      void remove_controller_state(SDL_JoystickID joystick_id);
 +#if defined(__APPLE__)
 +    std::vector<SDL_GameController*> reconcile_controller_states(const char* reason);
 +    size_t connected_controller_count();
++    bool player_one_controller_ready();
 +#endif
      void add_rotation_deltas(SDL_JoystickID joystick_id, float rot_x, float rot_y);
      void add_mouse_deltas(float delta_x, float delta_y);

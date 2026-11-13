@@ -18,3 +18,14 @@ xcrun --sdk macosx clang++ \
 
 "$OUTPUT"
 echo "Touch input shim tests passed."
+
+VISIBILITY_OUTPUT="${TMPDIR:-/tmp}/bearbirdpad-touch-visibility-test"
+xcrun --sdk macosx clang++ \
+    -std=c++20 \
+    -Wall \
+    -Wextra \
+    -Werror \
+    -I"$ROOT/ios/app" \
+    "$ROOT/tests/touch_visibility_test.cpp" \
+    -o "$VISIBILITY_OUTPUT"
+"$VISIBILITY_OUTPUT"
