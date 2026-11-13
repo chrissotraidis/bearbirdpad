@@ -8,6 +8,7 @@
 
 #include "TouchInputShim.hpp"
 #include "TouchOverlay.h"
+#include "TouchVisibility.hpp"
 
 namespace {
 
@@ -1357,7 +1358,8 @@ static BearBirdPadCameraGesture *sCameraGesture;
 static BearBirdPadCameraGestureDelegate *sCameraDelegate;
 static id sResignObserver;
 static std::atomic_bool sEnabled(true);
-static std::atomic_bool sHideWhenControllerConnected(false);
+static std::atomic_bool sHideWhenControllerConnected(
+    bearbirdpad::touch::saved_auto_hide(false, false));
 static std::atomic_bool sShowDpad(false);
 static std::atomic_bool sShowL(false);
 static std::atomic_bool sMenuVisible(true);
@@ -1425,9 +1427,9 @@ static void load_control_settings() {
     }
     NSNumber *hideWhenControllerConnected =
         [json isKindOfClass:NSDictionary.class] ? json[@"hide_when_controller_connected"] : nil;
-    if ([hideWhenControllerConnected isKindOfClass:NSNumber.class]) {
-        sHideWhenControllerConnected.store(hideWhenControllerConnected.boolValue);
-    }
+    const bool hasSavedAutoHide = [hideWhenControllerConnected isKindOfClass:NSNumber.class];
+    sHideWhenControllerConnected.store(bearbirdpad::touch::saved_auto_hide(
+        hasSavedAutoHide, hasSavedAutoHide && hideWhenControllerConnected.boolValue));
     NSNumber *showDpad = [json isKindOfClass:NSDictionary.class] ? json[@"show_dpad"] : nil;
     if ([showDpad isKindOfClass:NSNumber.class]) {
         sShowDpad.store(showDpad.boolValue);
@@ -1557,8 +1559,8 @@ static void apply_overlay_state() {
     }
     install_menu_button(window);
 
-    BOOL unavailable = !sEnabled.load() ||
-        (sControllerConnected.load() && sHideWhenControllerConnected.load());
+    BOOL unavailable = !bearbirdpad::touch::gameplay_visible(
+        sEnabled.load(), sHideWhenControllerConnected.load(), sControllerConnected.load());
     if (unavailable) {
         sLayoutEditorRequested = NO;
     }
@@ -1618,7 +1620,8 @@ extern "C" void BearBirdPadTouch_BeginLayoutEditing(void) {
             SDL_Log("[BearBirdPad] layout editor requires Touch Controls");
             return;
         }
-        if (sControllerConnected.load() && sHideWhenControllerConnected.load()) {
+        if (!bearbirdpad::touch::gameplay_visible(
+                true, sHideWhenControllerConnected.load(), sControllerConnected.load())) {
             SDL_Log("[BearBirdPad] layout editor unavailable while touch controls are hidden");
             return;
         }
@@ -1663,6 +1666,22 @@ extern "C" void BearBirdPadTouch_SetHideWhenControllerConnected(int hidden) {
     sHideWhenControllerConnected.store(hidden != 0);
     dispatch_async(dispatch_get_main_queue(), ^{
         save_control_settings();
+        apply_overlay_state();
+    });
+}
+
+// "Show Touch Controls": working touch now, even with the controller still
+// connected. Turns auto-hide off until the player turns it back on. During a
+// game it also closes the menu so the restored overlay is live at once; on the
+// launcher the menu stays put. Controller assignment is untouched.
+extern "C" void BearBirdPadTouch_ShowTouchControls(int close_menu) {
+    sEnabled.store(true);
+    sHideWhenControllerConnected.store(false);
+    dispatch_async(dispatch_get_main_queue(), ^{
+        save_control_settings();
+        if (close_menu != 0 && sMenuVisible.load()) {
+            push_menu_toggle();
+        }
         apply_overlay_state();
     });
 }

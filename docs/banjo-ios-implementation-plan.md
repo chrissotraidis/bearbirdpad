@@ -336,7 +336,7 @@ Z is deliberately duplicated: left pill for stick-hand holds (talon trot = hold 
 1. **Gameplay, touch enabled** (default on iOS first run): full overlay visible.
 2. **Config menu open**: gameplay overlay hides and *releases every held input* (zero the TouchState); `•••` stays. On menu close, overlay returns only if the setting is still enabled. Hook: the same code path that opens/closes the recompui modal (`frontend:recompui/src/base/ui_state.cpp:811-843`).
 3. **Setting off** (Settings → Controls → "Touch Controls"): overlay removed immediately, inputs released; persisted; `•••` remains.
-4. **Controller connected**: overlay auto-fades to 40% opacity (still active); optional "Hide when controller connected" toggle (default off) removes it entirely. Hook: SDL controller add/remove events already pass through `frontend:recompinput/src/input_events.cpp:73-106`.
+4. **Controller connected**: overlay auto-fades to 40% opacity (still active); "Auto-hide Touch Controls with Controller" (on unless the player saved a choice) removes it entirely; "Show Touch Controls" in the same page brings working touch back with the controller still connected and turns auto-hide off. Hook: SDL controller add/remove events already pass through `frontend:recompinput/src/input_events.cpp:73-106`.
 5. **Backgrounding**: TouchState zeroed on `WILLENTERBACKGROUND` (no stuck inputs on resume).
 
 ### 5.5 Acceptance checklist (Phase 6 gate)

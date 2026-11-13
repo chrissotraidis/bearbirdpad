@@ -14,13 +14,13 @@ index 16a5f0d..b4292a9 100644
  static struct {
      std::list<std::filesystem::path> files_dropped;
  } DropState;
-@@ -94 +99,5 @@ bool sdl_event_filter(void* userdata, SDL_Event* event) {
+@@ -94,1 +99,5 @@ bool sdl_event_filter(void* userdata, SDL_Event* event) {
 +#if defined(__APPLE__) && TARGET_OS_IPHONE
 +        BearBirdPadTouch_SetControllerConnected(1);
 +#endif
 +
          ControllerGUID guid = profiles::get_guid_from_sdl_controller(controller);
-@@ -107,6 +115,9 @@ bool sdl_event_filter(void* userdata, SDL_Event* event) {
+@@ -107,6 +116,9 @@ bool sdl_event_filter(void* userdata, SDL_Event* event) {
          SDL_ControllerDeviceEvent* controller_event = &event->cdevice;
          printf("Controller removed: %d\n", controller_event->which);
          recompinput::remove_controller_state(controller_event->which);
@@ -30,7 +30,7 @@ index 16a5f0d..b4292a9 100644
      }
      break;
      case SDL_EventType::SDL_QUIT: {
-@@ -240,6 +251,9 @@ bool sdl_event_filter(void* userdata, SDL_Event* event) {
+@@ -240,6 +252,9 @@ bool sdl_event_filter(void* userdata, SDL_Event* event) {
          recompui::drop_files(DropState.files_dropped);
          break;
  #if defined(__APPLE__) && TARGET_OS_IPHONE
@@ -75,7 +75,7 @@ diff --git a/recompui/src/config/ui_config_page_controls.cpp b/recompui/src/conf
 index f379a6f..b53e44e 100644
 --- a/recompui/src/config/ui_config_page_controls.cpp
 +++ b/recompui/src/config/ui_config_page_controls.cpp
-@@ -9,6 +9,23 @@
+@@ -9,6 +9,24 @@
  #include "recompinput/profiles.h"
  #include "recompui/config.h"
 +#include "librecomp/game.hpp"
@@ -94,12 +94,13 @@ index f379a6f..b53e44e 100644
 +extern "C" void BearBirdPadTouch_SetHideWhenControllerConnected(int hidden);
 +extern "C" void BearBirdPadTouch_SetShowDpad(int visible);
 +extern "C" void BearBirdPadTouch_SetShowL(int visible);
++extern "C" void BearBirdPadTouch_ShowTouchControls(int close_menu);
 +#endif
 +
  namespace recompui {
 
  ConfigPageControls *controls_page = nullptr;
-@@ -518,6 +535,61 @@ void ConfigPageControls::render_control_mappings() {
+@@ -518,6 +536,78 @@ void ConfigPageControls::render_control_mappings() {
          body_left_scroll->set_padding_right(8.0f);
          body_left_scroll->set_debug_id("Mappings Scroll Container");
 
@@ -125,8 +126,15 @@ index f379a6f..b53e44e 100644
 +        auto show_dpad_toggle =
 +            create_touch_toggle("Show D-pad", BearBirdPadTouch_ShowDpad() != 0);
 +        auto hide_with_controller_toggle = create_touch_toggle(
-+            "Hide When Controller Connected",
++            "Auto-hide Touch Controls with Controller",
 +            BearBirdPadTouch_HideWhenControllerConnected() != 0);
++        auto show_touch_button = context.create_element<Button>(
++            body_left_scroll,
++            "Show Touch Controls",
++            ButtonStyle::Secondary,
++            ButtonSize::Medium);
++        show_touch_button->set_width(100.0f, Unit::Percent);
++        show_touch_button->set_margin_top(8.0f);
 +        auto customize_touch_button = context.create_element<Button>(
 +            body_left_scroll,
 +            "Customize Touch Layout",
@@ -156,6 +164,16 @@ index f379a6f..b53e44e 100644
 +        hide_with_controller_toggle->add_checked_callback([](bool checked) {
 +            BearBirdPadTouch_SetHideWhenControllerConnected(checked ? 1 : 0);
 +        });
++        // Restores working touch now, even with a controller connected, and
++        // keeps auto-hide off until it is turned back on.
++        show_touch_button->add_pressed_callback(
++            [touch_controls_toggle, hide_with_controller_toggle,
++             customize_touch_button, game_started]() {
++                touch_controls_toggle->set_checked(true);
++                hide_with_controller_toggle->set_checked(false);
++                customize_touch_button->set_enabled(game_started);
++                BearBirdPadTouch_ShowTouchControls(game_started ? 1 : 0);
++            });
 +#endif
 +
          game_input_rows.clear();
