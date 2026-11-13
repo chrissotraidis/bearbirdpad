@@ -80,7 +80,7 @@ case "$MODE" in
 esac
 
 PREFIX_ROOT="$DEPS_ROOT/$PLATFORM"
-SDL_PREFIX="$PREFIX_ROOT/sdl2-scenes"
+SDL_PREFIX="$PREFIX_ROOT/sdl2-scenes-v2"
 FREETYPE_PREFIX="$PREFIX_ROOT/freetype"
 SMOKE_BUILD="$ROOT/build-ios-smoke-$PLATFORM"
 CI_STUB_BUILD="$ROOT/build-ios-ci-stub-$PLATFORM"
@@ -138,7 +138,9 @@ fetch_archive \
     "$FREETYPE_SHA256" \
     "$FREETYPE_ARCHIVE"
 
-extract_archive "$SDL_ARCHIVE" "$SOURCE_ROOT/SDL2-$SDL_VERSION" "SDL2-$SDL_VERSION"
+# The source marker, SDL prefix and SDL build folder name the scene patch
+# revision, so a source or library built with an earlier revision is replaced.
+extract_archive "$SDL_ARCHIVE" "$SOURCE_ROOT/SDL2-$SDL_VERSION" "SDL2-$SDL_VERSION-scenes-v2"
 # UIKit scene startup for SDL 2.32.10: apps built with the iOS 27 SDK need it to open.
 # Applied once; an already patched source is left as it is.
 SDL_SCENE_PATCH="$ROOT/patches/sdl2/uikit-scenes.patch"
@@ -150,7 +152,7 @@ extract_archive "$FREETYPE_ARCHIVE" "$SOURCE_ROOT/freetype-$FREETYPE_VERSION" "f
 if [[ ! -f "$SDL_PREFIX/lib/libSDL2.a" ]]; then
     cmake \
         -S "$SOURCE_ROOT/SDL2-$SDL_VERSION" \
-        -B "$DEPS_ROOT/build-$PLATFORM-sdl2-scenes" \
+        -B "$DEPS_ROOT/build-$PLATFORM-sdl2-scenes-v2" \
         -G Xcode \
         -DCMAKE_SYSTEM_NAME=iOS \
         -DCMAKE_OSX_SYSROOT="$SDK" \
@@ -161,7 +163,7 @@ if [[ ! -f "$SDL_PREFIX/lib/libSDL2.a" ]]; then
         -DSDL_STATIC=ON \
         -DSDL_TEST=OFF \
         -DSDL_TESTS=OFF
-    cmake --build "$DEPS_ROOT/build-$PLATFORM-sdl2-scenes" \
+    cmake --build "$DEPS_ROOT/build-$PLATFORM-sdl2-scenes-v2" \
         --config Release \
         --target install \
         -- -destination "$DESTINATION" CODE_SIGNING_ALLOWED=NO
