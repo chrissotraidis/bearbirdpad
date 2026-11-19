@@ -1,0 +1,102 @@
+diff --git a/plume_uikit.mm b/plume_uikit.mm
+--- a/plume_uikit.mm
++++ b/plume_uikit.mm
+@@ -16,18 +16,28 @@
+         return RenderDeviceVendor::APPLE;
+     }
+ 
++    // The screen this window is on: the TV when the game runs on an external display.
++    // Fall back to the main screen only when the window has no scene yet.
++    static UIScreen *windowScreen(void *windowHandle, CAMetalLayer *metalLayer) {
++        if ([metalLayer.delegate isKindOfClass:UIView.class]) {
++            UIWindow *viewWindow = ((UIView *)metalLayer.delegate).window;
++            if (viewWindow.windowScene.screen != nil) {
++                return viewWindow.windowScene.screen;
++            }
++        }
++        UIWindow *window = (__bridge UIWindow *)windowHandle;
++        if ([window isKindOfClass:UIWindow.class] && window.windowScene.screen != nil) {
++            return window.windowScene.screen;
++        }
++        return UIScreen.mainScreen;
++    }
++
+     static void readWindowState(void *windowHandle, void *viewHandle, CocoaWindowAttributes &attributes, int &refreshRate) {
+-        (void)windowHandle;
+         CAMetalLayer *metalLayer = (__bridge CAMetalLayer *)viewHandle;
+-        UIScreen *screen = UIScreen.mainScreen;
++        UIScreen *screen = windowScreen(windowHandle, metalLayer);
+         CGRect bounds = metalLayer != nil ? metalLayer.bounds : screen.bounds;
+         CGFloat scale = metalLayer != nil ? metalLayer.contentsScale : screen.scale;
+ 
+-        if ([metalLayer.delegate isKindOfClass:UIView.class]) {
+-            UIView *view = (UIView *)metalLayer.delegate;
+-            screen = view.window.windowScene.screen ?: screen;
+-        }
+-
+         attributes.x = 0;
+         attributes.y = 0;
+         attributes.width = (int)round(bounds.size.width * scale);
+@@ -35,6 +45,12 @@
+         refreshRate = screen != nil ? (int)screen.maximumFramesPerSecond : 60;
+     }
+ 
++    // At most one queued refresh per kind, so the main queue never fills up
++    // (the reason 003 froze these values) while size and refresh rate still
++    // follow the window when it moves between the iPad and a TV.
++    static std::atomic_bool attributesRefreshQueued(false);
++    static std::atomic_bool refreshRateRefreshQueued(false);
++
+     CocoaWindow::CocoaWindow(void *window, void *view)
+         : windowHandle(window), viewHandle(view), cachedRefreshRate(60) {
+         cachedAttributes = {0, 0, 0, 0};
+@@ -52,10 +68,6 @@
+     CocoaWindow::~CocoaWindow() {}
+ 
+     void CocoaWindow::updateWindowAttributesInternal(bool forceSync) {
+-        if (!forceSync) {
+-            return;
+-        }
+-
+         auto updateBlock = ^{
+             CocoaWindowAttributes freshAttributes{};
+             int refreshRate = 60;
+@@ -65,14 +77,17 @@
+             cachedAttributes = freshAttributes;
+         };
+ 
+-        dispatch_sync(dispatch_get_main_queue(), updateBlock);
++        if (forceSync) {
++            dispatch_sync(dispatch_get_main_queue(), updateBlock);
++        } else if (!attributesRefreshQueued.exchange(true)) {
++            dispatch_async(dispatch_get_main_queue(), ^{
++                updateBlock();
++                attributesRefreshQueued.store(false);
++            });
++        }
+     }
+ 
+     void CocoaWindow::updateRefreshRateInternal(bool forceSync) {
+-        if (!forceSync) {
+-            return;
+-        }
+-
+         auto updateBlock = ^{
+             CocoaWindowAttributes attributes{};
+             int refreshRate = 60;
+@@ -80,7 +95,14 @@
+             cachedRefreshRate.store(refreshRate);
+         };
+ 
+-        dispatch_sync(dispatch_get_main_queue(), updateBlock);
++        if (forceSync) {
++            dispatch_sync(dispatch_get_main_queue(), updateBlock);
++        } else if (!refreshRateRefreshQueued.exchange(true)) {
++            dispatch_async(dispatch_get_main_queue(), ^{
++                updateBlock();
++                refreshRateRefreshQueued.store(false);
++            });
++        }
+     }
+ 
+     void CocoaWindow::getWindowAttributes(CocoaWindowAttributes *attributes) const {
