@@ -1,6 +1,7 @@
 #include <cstdio>
 
 #include <SDL.h>
+#import <UIKit/UIKit.h>
 
 #include "IosLifecycle.h"
 #include "TouchOverlay.h"
@@ -20,7 +21,10 @@ extern "C" int SDL_main(int argc, char **argv) {
         return 1;
     }
 #endif
-    SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
+    SDL_SetHint(SDL_HINT_ORIENTATIONS,
+                UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad
+                    ? "Portrait PortraitUpsideDown LandscapeLeft LandscapeRight"
+                    : "LandscapeLeft LandscapeRight");
     SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "1");
     SDL_SetHint(SDL_HINT_ACCELEROMETER_AS_JOYSTICK, "0");
     BearBirdPadLifecycle_Install();
